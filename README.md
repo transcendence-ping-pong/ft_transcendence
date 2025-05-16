@@ -91,5 +91,8 @@ ft_transcendence/
 │   └── https_config.php     # HTTPS configuration
 ```
 
+## Agenda
+- [ ] Week 1: Project Setup
+
 ### References
 [Pong Game (1972)](https://www.ponggame.org/)
