@@ -93,6 +93,10 @@ ft_transcendence/
 
 ## Agenda
 - [ ] Week 1: Project Setup
+- [ ] Miguel C. and Manuel - initialize backend (Dockerfile)
+- [ ] Miguel Z. - inittialize frontend (Dockerfile)
+- [ ] Miguel C. and Miguel Z. - docker-compose
+- [ ] Sofia and Dani - Create canvas and start game structure
 
 ### References
 [Pong Game (1972)](https://www.ponggame.org/)
