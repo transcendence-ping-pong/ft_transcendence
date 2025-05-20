@@ -3,8 +3,8 @@ This project was developed for 42 school. For comprehensive information regardin
 
 ```diff
 + keywords: single page application (SPA)
-+ Modular Architecture
 + Pong game (1972)
++ ...
 ```
 
 ## High-level Overview
