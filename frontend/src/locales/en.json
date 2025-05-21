@@ -1,0 +1,18 @@
+{
+  "auth": {
+    "login": "Log In",
+    "logout": "Log Out"
+  },
+  "error": {
+    "network": "Network error. Please try again.",
+    "notFound": "Page not found."
+  },
+  "game": {
+    "start": "Start Game",
+    "pause": "Pause",
+    "over": "Game Over"
+  },
+  "poc": {
+    "boilerplate": "Game Canvas Boilerplate"
+  }
+}
