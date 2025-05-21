@@ -91,5 +91,20 @@ ft_transcendence/
 │   └── https_config.php     # HTTPS configuration
 ```
 
+### Build the project
+```
+<!-- build docker image -->
+sudo docker build -t ft_frontend ./frontend
+<!-- start container -->
+sudo docker-compose up --build
+<!-- FE available at http://localhost:3000 -->
+```
+
+## Concepts
+
+| Task | Prototype | Description |
+|:----|:-----:|:--------|
+| **Installing dependencies** | `cat /home/ubuntu/.npm/_logs/$(ls -t /home/ubuntu/.npm/_logs/ \| head -n1)` | Check for errors in `npm log`. |
+
 ### References
 [Pong Game (1972)](https://www.ponggame.org/)
