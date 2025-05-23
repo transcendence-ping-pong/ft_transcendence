@@ -1,10 +1,32 @@
 // TODO: first test, create a canvas and draw a ball that bounces off the walls
-// TODO: create FE structure
+
+class Ball {
+  constructor(public x: number, public y: number, public dx: number, public dy: number, public radius: number, public color: string = "white") { }
+
+  draw(ctx: CanvasRenderingContext2D) {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.fillStyle = this.color;
+    ctx.fill();
+    ctx.closePath();
+  }
+}
+
+class Paddle {
+  constructor(public x: number, public y: number, public width: number, public height: number, public color: string = "white") { }
+
+  draw(ctx: CanvasRenderingContext2D) {
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+}
+
 export class GameCanvas {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private animationId: number | null = null;
-  private ball = { x: 400, y: 200, dx: 2, dy: 2, radius: 10 };
+  private ball = new Ball(400, 200, 2, 2, 10);
+  private paddles: Paddle[];
 
   constructor(containerId: string) {
     // create and append canvas
@@ -13,6 +35,11 @@ export class GameCanvas {
     this.canvas.height = 400;
     this.canvas.className = "border bg-black";
     document.getElementById(containerId)?.appendChild(this.canvas);
+
+    this.paddles = [
+      new Paddle(50, 150, 10, 100),
+      new Paddle(740, 150, 10, 100)
+    ];
 
     // get canvas context
     const ctx = this.canvas.getContext('2d');
@@ -28,22 +55,34 @@ export class GameCanvas {
     // clear
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // draw ball
-    this.ctx.beginPath();
-    this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
-    this.ctx.fillStyle = "white";
-    this.ctx.fill();
-    this.ctx.closePath();
+    // draw paddles
+    this.paddles.forEach(paddle => paddle.draw(this.ctx));
 
-    // move ball
+    // draw ball
+    this.ball.draw(this.ctx);
+
+    // TODO: encapsulate ball movement, bouncing, collision detection (?)
     this.ball.x += this.ball.dx;
     this.ball.y += this.ball.dy;
 
+    // FOR TESTING ONLY
     // bounce ball off walls
     if (this.ball.x <= this.ball.radius || this.ball.x >= this.canvas.width - this.ball.radius)
       this.ball.dx *= -1;
     if (this.ball.y <= this.ball.radius || this.ball.y >= this.canvas.height - this.ball.radius)
       this.ball.dy *= -1;
+
+    // TODO: paddle collision
+    // this.paddles.forEach(paddle => {
+    //   if (
+    //     this.ball.x - this.ball.radius < paddle.x + paddle.width && // ball left edge < paddle right edge
+    //     this.ball.x + this.ball.radius > paddle.x &&                // ball right edge > paddle left edge
+    //     this.ball.y + this.ball.radius > paddle.y &&                // ball bottom edge > paddle top edge
+    //     this.ball.y - this.ball.radius < paddle.y + paddle.height   // ball top edge < paddle bottom edge
+    //   ) {
+    //     this.ball.dx *= -1;
+    //   }
+    // });
 
     // loop
     this.animationId = requestAnimationFrame(this.render);
