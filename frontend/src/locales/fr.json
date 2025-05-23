@@ -1,18 +1,18 @@
 {
   "auth": {
-    "login": "Log In",
-    "logout": "Log Out"
+    "login": "Se connecter",
+    "logout": "Se déconnecter"
   },
   "error": {
-    "network": "Network error. Please try again.",
-    "notFound": "Page not found."
+    "network": "Erreur réseau. Veuillez réessayer.",
+    "notFound": "Page non trouvée."
   },
   "game": {
-    "start": "Start Game",
+    "start": "Démarrer le jeu",
     "pause": "Pause",
-    "over": "Game Over"
+    "over": "Fin de la partie"
   },
   "poc": {
-    "boilerplate": "BANANA"
+    "boilerplate": "Exemple de canevas de jeu"
   }
 }
