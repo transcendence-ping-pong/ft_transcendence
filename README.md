@@ -107,12 +107,12 @@ sudo docker-compose up --build
 | **Installing dependencies** | `cat /home/ubuntu/.npm/_logs/$(ls -t /home/ubuntu/.npm/_logs/ \| head -n1)` | Check for errors in `npm log`. |
 
 ### References Game History
-![pong_references](https://github.com/user-attachments/assets/0511ef7a-d335-4721-bd3a-d0e399efb321)
 [Pong Game (1972)](https://www.ponggame.org/)</br>
 [Pong, Computer History Museum](https://www.computerhistory.org/revolution/computer-games/16/183)</br>
 [Pong - Video Game Console/TV Game Commercial 1976](https://www.youtube.com/watch?v=uCqIkgFKHr4)</br>
 [Original Atari PONG (1972) arcade machine gameplay video](https://www.youtube.com/watch?v=fiShX2pTz9A)</br>
-[PONG - First documented Video Ping-Pong game - 1969](https://www.youtube.com/watch?v=XNRx5hc4gYc)
+[PONG - First documented Video Ping-Pong game - 1969](https://www.youtube.com/watch?v=XNRx5hc4gYc)</br>
+![pong_references](https://github.com/user-attachments/assets/0511ef7a-d335-4721-bd3a-d0e399efb321)
 ### References Technology
 [HTML5 Canvas Tutorial](https://www.youtube.com/watch?v=EO6OkltgudE)</br>
 ### References Design
