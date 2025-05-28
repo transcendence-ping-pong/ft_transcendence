@@ -105,6 +105,7 @@ sudo docker-compose up --build
 | Task | Prototype | Description |
 |:----|:-----:|:--------|
 | **Installing dependencies** | `cat /home/ubuntu/.npm/_logs/$(ls -t /home/ubuntu/.npm/_logs/ \| head -n1)` | Check for errors in `npm log`. |
+| **Bundlers** | | |
 
 ### References Game History
 [Pong Game (1972)](https://www.ponggame.org/)</br>
@@ -116,5 +117,11 @@ sudo docker-compose up --build
 
 ### References Technology
 [HTML5 Canvas Tutorial](https://www.youtube.com/watch?v=EO6OkltgudE)</br>
+[Babylon Documentation](https://doc.babylonjs.com/features/featuresDeepDive/importers/loadingFileTypes)
 ### References Design
 [Gufram website](https://gufram.it/)
+[Atari Super Pong](https://www.turbosquid.com/3d-models/atari-super-pong-1859697)
+[Using procedural textures with Texture Space](https://www.youtube.com/watch?v=UBOZF5FPx7c)
+[Modeling an Atari Game Controller, Part 1](https://www.youtube.com/watch?v=Kq_H6yO2DrA)
+[Atari 2600 Model](https://sketchfab.com/3d-models/atari-2600-d02fe33dee524447b7dd00e7ca939cc4)
+
