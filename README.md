@@ -112,7 +112,8 @@ sudo docker-compose up --build
 [Pong - Video Game Console/TV Game Commercial 1976](https://www.youtube.com/watch?v=uCqIkgFKHr4)</br>
 [Original Atari PONG (1972) arcade machine gameplay video](https://www.youtube.com/watch?v=fiShX2pTz9A)</br>
 [PONG - First documented Video Ping-Pong game - 1969](https://www.youtube.com/watch?v=XNRx5hc4gYc)</br></br>
-![pong_references](https://github.com/user-attachments/assets/0511ef7a-d335-4721-bd3a-d0e399efb321)
+![pong_references](https://github.com/user-attachments/assets/fb10b1ef-2034-45d7-99a7-49ba54800b8d)
+
 ### References Technology
 [HTML5 Canvas Tutorial](https://www.youtube.com/watch?v=EO6OkltgudE)</br>
 ### References Design
