@@ -118,10 +118,11 @@ sudo docker-compose up --build
 ### References Technology
 [HTML5 Canvas Tutorial](https://www.youtube.com/watch?v=EO6OkltgudE)</br>
 [Babylon Documentation](https://doc.babylonjs.com/features/featuresDeepDive/importers/loadingFileTypes)
+[Basic Scene in BabylonJS](https://www.youtube.com/watch?v=NLZuUtiL50A&list=PLym1B0rdkvqhuCNSXzxw6ofEkrpYI70P4&index=1)
+[Fun with Light Textures](https://www.youtube.com/watch?v=n2DLnMa21K0)
 ### References Design
 [Gufram website](https://gufram.it/)
 [Atari Super Pong](https://www.turbosquid.com/3d-models/atari-super-pong-1859697)
 [Using procedural textures with Texture Space](https://www.youtube.com/watch?v=UBOZF5FPx7c)
 [Modeling an Atari Game Controller, Part 1](https://www.youtube.com/watch?v=Kq_H6yO2DrA)
 [Atari 2600 Model](https://sketchfab.com/3d-models/atari-2600-d02fe33dee524447b7dd00e7ca939cc4)
-

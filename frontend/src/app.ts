@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   state.translations = await getTranslations(state.language);
 
   const app = document.getElementById('app');
-  if (app) app.innerHTML = '<h1>Hello World</h1>';
+  // if (app) app.innerHTML = '<h1>Hello World</h1>';
   // if (app) renderGamePage(app);
-  // if (app) renderHomePage(app);
+  if (app) renderHomePage(app);
 });
