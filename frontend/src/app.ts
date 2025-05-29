@@ -1,4 +1,4 @@
-import { getTranslations } from './utils/translations.js';
+import { getTranslations } from './utils/Translations.js';
 import { renderGamePage } from './pages/Game.js';
 import { renderHomePage } from './pages/Home.js';
 import { state } from './state.js';

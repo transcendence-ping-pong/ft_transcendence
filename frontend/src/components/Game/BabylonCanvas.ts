@@ -1,13 +1,17 @@
+import { createStandardMaterial, MaterialLibrary } from '../../utils/Materials.js';
+
 declare var BABYLON: any; // tyoescript doesn't know about BABYLON global import
 // TODO: Scene and Engine types? how to import them?
+// TODO: not having a bundler is really annoying, check if we can use Vite??
+// Vite: hot module replacement, instant server start, etc.
 
 // basic scene
 export class BabylonCanvas {
-  private canvas;
-  private engine;
-  private scene;
+  private canvas: HTMLCanvasElement;
+  private engine: any; // TODO TYPE: BABYLON.Engine type
+  private scene: any; // TODO TYPE: BABYLON.Scene type
 
-  constructor(containerId) {
+  constructor(containerId: string) {
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'babylon-render-canvas';
     this.canvas.style.width = '100%';
@@ -36,21 +40,31 @@ export class BabylonCanvas {
     window.addEventListener('resize', () => this.engine.resize());
   }
 
-  createScene() {
+  // TODO TYPE: should return type BABYLON.Scene
+  createScene(): any {
     const scene = new BABYLON.Scene(this.engine);
+    this.scene = scene; // store the scene in the class instance
     // Vector3(0, 1, 0) -> x, y, z coordinates, position
     const camera = new BABYLON.FreeCamera('camera', new BABYLON.Vector3(0, 1, -5), scene);
     camera.attachControl();
+    camera.speed = 0.25;
 
     // Vector3(0, 1, 0) -> x, y, z coordinates, direction of the light
     const light = new BABYLON.HemisphericLight('light', new BABYLON.Vector3(0, 1, 0), scene);
-    light.intensity = 0.5;
+    light.intensity = 1;
 
-    // TODO: abstract object creation to a separate method(?)
+    const envText = new BABYLON.CubeTexture('./assets/environment/skybox.env', scene);
+    scene.environmentTexture = envText; // only as light source, not as a background
+    // option: scene.createDefaultEnvironment()
+    scene.createDefaultSkybox(envText, true); // aply the environment texture as a skybox/ background
+
+    // TODO: abstract object creation to a separated method(?)
     const ground = BABYLON.MeshBuilder.CreateGround('ground', { width: 10, height: 10 }, scene);
+    ground.material = createStandardMaterial(scene, MaterialLibrary.stone);
 
     const ball = BABYLON.MeshBuilder.CreateSphere('ball', { diameter: 1 }, scene);
     ball.position = new BABYLON.Vector3(0, 1, 0); // position the ball above the ground
+    ball.material = createStandardMaterial(scene, MaterialLibrary.metal, 3, true);
 
     return scene;
   }

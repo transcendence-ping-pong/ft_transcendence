@@ -1,6 +1,6 @@
 import { state } from '../state.js';
 
-// TODO: if we decide to show different languages,
+// TODO CONCEPT: if we decide to show different languages,
 // fetch from backend, returns json format(?)
 // for now, detach the translations from the code, use a simple object
 

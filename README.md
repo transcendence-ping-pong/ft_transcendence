@@ -105,24 +105,31 @@ sudo docker-compose up --build
 | Task | Prototype | Description |
 |:----|:-----:|:--------|
 | **Installing dependencies** | `cat /home/ubuntu/.npm/_logs/$(ls -t /home/ubuntu/.npm/_logs/ \| head -n1)` | Check for errors in `npm log`. |
-| **Bundlers** | | |
+| **Bundlers** | `Webpack, Vite, Parcel` | Prepares the code (JS and other assets e.g. CSS, images, etc) for the browser, ready to be loaded. |
+| **Material JPG 1K** | `Ambient Occlusion(AO)` `Normal` `Specular` `Diffuse` | |
+| **HDRI 2K HDR** | `` | |
+| **Convert HDRI image** | [Babylon IBL tool](https://www.babylonjs.com/tools/ibl/) | After processing you should see something like an unwrapped box (environment file). |
 
 ### References Game History
 [Pong Game (1972)](https://www.ponggame.org/)</br>
 [Pong, Computer History Museum](https://www.computerhistory.org/revolution/computer-games/16/183)</br>
 [Pong - Video Game Console/TV Game Commercial 1976](https://www.youtube.com/watch?v=uCqIkgFKHr4)</br>
 [Original Atari PONG (1972) arcade machine gameplay video](https://www.youtube.com/watch?v=fiShX2pTz9A)</br>
+[The space age pinball machine (The New York Times, 1974)](https://www.nytimes.com/1974/09/15/archives/the-space-age-pinball-machine.html)</br>
 [PONG - First documented Video Ping-Pong game - 1969](https://www.youtube.com/watch?v=XNRx5hc4gYc)</br></br>
+
 ![pong_references](https://github.com/user-attachments/assets/fb10b1ef-2034-45d7-99a7-49ba54800b8d)
 
 ### References Technology
 [HTML5 Canvas Tutorial](https://www.youtube.com/watch?v=EO6OkltgudE)</br>
-[Babylon Documentation](https://doc.babylonjs.com/features/featuresDeepDive/importers/loadingFileTypes)
-[Basic Scene in BabylonJS](https://www.youtube.com/watch?v=NLZuUtiL50A&list=PLym1B0rdkvqhuCNSXzxw6ofEkrpYI70P4&index=1)
-[Fun with Light Textures](https://www.youtube.com/watch?v=n2DLnMa21K0)
+[Babylon Documentation](https://doc.babylonjs.com/features/featuresDeepDive/importers/loadingFileTypes)</br>
+[Basic Scene in BabylonJS](https://www.youtube.com/watch?v=NLZuUtiL50A&list=PLym1B0rdkvqhuCNSXzxw6ofEkrpYI70P4&index=1)</br>
+[Fun with Light Textures](https://www.youtube.com/watch?v=n2DLnMa21K0)</br>
 ### References Design
-[Gufram website](https://gufram.it/)
-[Atari Super Pong](https://www.turbosquid.com/3d-models/atari-super-pong-1859697)
-[Using procedural textures with Texture Space](https://www.youtube.com/watch?v=UBOZF5FPx7c)
-[Modeling an Atari Game Controller, Part 1](https://www.youtube.com/watch?v=Kq_H6yO2DrA)
-[Atari 2600 Model](https://sketchfab.com/3d-models/atari-2600-d02fe33dee524447b7dd00e7ca939cc4)
+[Gufram website](https://gufram.it/)</br>
+[Atari Super Pong](https://www.turbosquid.com/3d-models/atari-super-pong-1859697)</br>
+[Using procedural textures with Texture Space](https://www.youtube.com/watch?v=UBOZF5FPx7c)</br>
+[Modeling an Atari Game Controller, Part 1](https://www.youtube.com/watch?v=Kq_H6yO2DrA)</br>
+[Atari 2600 Model](https://sketchfab.com/3d-models/atari-2600-d02fe33dee524447b7dd00e7ca939cc4)</br>
+[Poly Haven](https://polyhaven.com/)</br>
+[Game Textures](https://gametextures.com/)</br>
