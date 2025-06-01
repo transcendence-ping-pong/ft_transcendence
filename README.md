@@ -4,6 +4,7 @@ This project was developed for 42 school. For comprehensive information regardin
 ```diff
 + keywords: single page application (SPA)
 + Pong game (1972)
++ Babylon.js open web rendering engine
 + ...
 ```
 
@@ -109,6 +110,8 @@ sudo docker-compose up --build
 | **Material JPG 1K** | `Ambient Occlusion(AO)` `Normal` `Specular` `Diffuse` | |
 | **HDRI 2K HDR** | `` | |
 | **Convert HDRI image** | [Babylon IBL tool](https://www.babylonjs.com/tools/ibl/) | After processing you should see something like an unwrapped box (environment file). |
+| **Importing 3D models** | `Blender` | Check that location (x, y, z, set to zero), rotation (x, y, z, set to zero) and scale (x, y, z, set to one) are all normalised. If these values need to be changed, `CMD + A` ``Apply all transforms`. Moreover, it is important to review the meshes naming. For creating a new mesh `SHIFT + A`. |
+| **[Babylon Node Material Editor](https://nme.babylonjs.com/)** | | |
 
 ### References Game History
 [Pong Game (1972)](https://www.ponggame.org/)</br>
@@ -125,6 +128,7 @@ sudo docker-compose up --build
 [Babylon Documentation](https://doc.babylonjs.com/features/featuresDeepDive/importers/loadingFileTypes)</br>
 [Basic Scene in BabylonJS](https://www.youtube.com/watch?v=NLZuUtiL50A&list=PLym1B0rdkvqhuCNSXzxw6ofEkrpYI70P4&index=1)</br>
 [Fun with Light Textures](https://www.youtube.com/watch?v=n2DLnMa21K0)</br>
+[Babylon 2D controlers](https://www.youtube.com/watch?v=dISLIZ4SdAM)
 ### References Design
 [Gufram website](https://gufram.it/)</br>
 [Atari Super Pong](https://www.turbosquid.com/3d-models/atari-super-pong-1859697)</br>

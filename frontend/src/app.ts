@@ -10,6 +10,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const app = document.getElementById('app');
   // if (app) app.innerHTML = '<h1>Hello World</h1>';
-  // if (app) renderGamePage(app);
-  if (app) renderHomePage(app);
+  if (app) renderGamePage(app);
+  // if (app) renderHomePage(app); // TESTING BABYLON CANVAS HERE
 });
