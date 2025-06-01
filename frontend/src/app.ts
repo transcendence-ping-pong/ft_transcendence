@@ -1,5 +1,6 @@
-import { getTranslations } from './utils/translations.js';
+import { getTranslations } from './utils/Translations.js';
 import { renderGamePage } from './pages/Game.js';
+import { renderHomePage } from './pages/Home.js';
 import { state } from './state.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -8,5 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   state.translations = await getTranslations(state.language);
 
   const app = document.getElementById('app');
+  // if (app) app.innerHTML = '<h1>Hello World</h1>';
   if (app) renderGamePage(app);
+  // if (app) renderHomePage(app); // TESTING BABYLON CANVAS HERE
 });
