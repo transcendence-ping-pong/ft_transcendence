@@ -36,6 +36,15 @@ export class BabylonCanvas {
     //   // Model loaded! Add settings/logic here
     // });
 
+    BABYLON.SceneLoader.ImportMesh("", "./assets/models/", "barrel.glb", this.scene, (meshes) => {
+      // Model loaded! Add settings/logic here
+      // meshes.forEach(mesh => {
+      //   mesh.position.y = 1; // position the model above the ground
+      // });
+      console.log('Model loaded:', meshes);
+    }
+    );
+
     this.engine.runRenderLoop(() => this.scene.render()); // constantly update the scene, e.g. animations, physics
     window.addEventListener('resize', () => this.engine.resize());
   }
