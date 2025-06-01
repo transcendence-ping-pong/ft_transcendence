@@ -110,7 +110,7 @@ sudo docker-compose up --build
 | **Material JPG 1K** | `Ambient Occlusion(AO)` `Normal` `Specular` `Diffuse` | |
 | **HDRI 2K HDR** | `` | |
 | **Convert HDRI image** | [Babylon IBL tool](https://www.babylonjs.com/tools/ibl/) | After processing you should see something like an unwrapped box (environment file). |
-| **Importing 3D models** | `Blender` | Check that location (x, y, z, set to zero), rotation (x, y, z, set to zero) and scale (x, y, z, set to one) are all normalised. If these values need to be changed, `CMD + A` ``Apply all transforms`. Moreover, it is important to review the meshes naming. For creating a new mesh `SHIFT + A`. |
+| **Importing 3D models** | `Blender` | Check that location (x, y, z, set to zero), rotation (x, y, z, set to zero) and scale (x, y, z, set to one) are all normalised. If these values need to be changed, `CMD + A` `Apply all transforms`. Moreover, it is important to review the meshes naming. For creating a new mesh `SHIFT + A`. |
 | **[Babylon Node Material Editor](https://nme.babylonjs.com/)** | | |
 
 ### References Game History
