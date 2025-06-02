@@ -1,9 +1,10 @@
-import { BabylonCanvas } from '../components/Game/BabylonCanvas.js';
+import { BabylonCanvas } from '../components/Game/BabylonCanvas2.js';
 
 export function renderHomePage(container: HTMLElement) {
   container.innerHTML = `
-    <h1 class="text-2xl font-bold mb-4">Home</h1>
+    <div id="game-canvas-container"></div>
     <div id="babylon-container" class="mb-8"></div>
   `;
-  new BabylonCanvas('babylon-container');
+
+  const babylon = new BabylonCanvas('babylon-container');
 }

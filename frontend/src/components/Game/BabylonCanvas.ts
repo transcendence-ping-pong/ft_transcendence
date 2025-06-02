@@ -22,6 +22,7 @@ export class BabylonCanvas {
     this.scene = this.createScene();
     // this.scene = new BABYLON.Scene(this.engine);
 
+
     // const camera = new BABYLON.ArcRotateCamera('camera', Math.PI / 2, Math.PI / 2.5, 10, BABYLON.Vector3.Zero(), this.scene);
     // camera.attachControl(this.canvas, true);
     // new BABYLON.HemisphericLight('light', new BABYLON.Vector3(0, 1, 0), this.scene);
@@ -36,14 +37,16 @@ export class BabylonCanvas {
     //   // Model loaded! Add settings/logic here
     // });
 
-    BABYLON.SceneLoader.ImportMesh("", "./assets/models/", "barrel.glb", this.scene, (meshes) => {
-      // Model loaded! Add settings/logic here
-      // meshes.forEach(mesh => {
-      //   mesh.position.y = 1; // position the model above the ground
-      // });
-      console.log('Model loaded:', meshes);
-    }
-    );
+    // BABYLON.SceneLoader.ImportMesh("", "./assets/models/", "barrel.glb", this.scene, (meshes) => {
+    //   // Model loaded! Add settings/logic here
+    //   // meshes.forEach(mesh => {
+    //   //   mesh.position.y = 1; // position the model above the ground
+    //   // });
+    //   console.log('Model loaded:', meshes);
+    // }
+    // );
+
+    this.initialize();
 
     this.engine.runRenderLoop(() => this.scene.render()); // constantly update the scene, e.g. animations, physics
     window.addEventListener('resize', () => this.engine.resize());
@@ -92,7 +95,7 @@ export class BabylonCanvas {
     camera.speed = 0.25;
 
     const light = new BABYLON.HemisphericLight('light', new BABYLON.Vector3(0, 1, 0), scene);
-    light.intensity = 0;
+    light.intensity = 1;
 
     const envText = new BABYLON.CubeTexture('./assets/environment/skybox.env', scene);
     scene.environmentTexture = envText;
@@ -102,5 +105,46 @@ export class BabylonCanvas {
     ground.material = createPBRMaterial(scene, PBRMaterialLibrary.asphalt, { invertNormalMap: true });
 
     return scene;
+  }
+
+  async importMeshAsync(meshName: string, path: string, filename: string): Promise<any> {
+    try {
+      const models = await BABYLON.SceneLoader.ImportMeshAsync(
+        meshName,
+        path,
+        filename,
+        this.scene
+      );
+
+      if (!models || !models.meshes || models.meshes.length === 0) {
+        throw new Error(`No meshes found in ${path}${filename} (meshName: "${meshName}")`);
+      }
+
+      // manipulate meshes after loading if needed
+      // root mesh is at index 0 and can be used to set the global position, rotation, scale, etc.
+      models.meshes.forEach(mesh => {
+        console.log('Loaded mesh:', mesh.name, mesh);
+      });
+
+      return models;
+
+    } catch (error) {
+      console.error(`Failed to import mesh "${meshName}" from ${path}${filename}:`, error);
+      throw error;
+    }
+  }
+
+  changeMeshPosition(meshName: string, position: { x: number; y: number; z: number }): void {
+    const mesh = this.scene.getMeshByName(meshName);
+    if (mesh) {
+      mesh.position = new BABYLON.Vector3(position.x, position.y, position.z);
+    } else {
+      console.warn(`Mesh "${meshName}" not found in the scene.`);
+    }
+  }
+
+  async initialize() {
+    await this.importMeshAsync("", "./assets/models/", "barrel.glb");
+    this.changeMeshPosition("__root__", { x: 0, y: 1, z: 0 });
   }
 }

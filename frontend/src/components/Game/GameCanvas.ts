@@ -28,17 +28,17 @@ export class GameCanvas {
   private ball = new Ball(400, 200, 2, 2, 10);
   private paddles: Paddle[];
 
-  constructor(containerId: string) {
+  constructor(containerId?: string, width?: number, height?: number) {
     // create and append canvas
     this.canvas = document.createElement('canvas');
-    this.canvas.width = 800;
-    this.canvas.height = 400;
+    this.canvas.height = height;
+    this.canvas.width = width; // width based on aspect ratio
     this.canvas.className = "border bg-black";
-    document.getElementById(containerId)?.appendChild(this.canvas);
+    // document.getElementById(containerId)?.appendChild(this.canvas);
 
     this.paddles = [
       new Paddle(50, 150, 10, 100),
-      new Paddle(740, 150, 10, 100)
+      new Paddle(740, 150, 10, 100),
     ];
 
     // get canvas context
@@ -53,7 +53,8 @@ export class GameCanvas {
 
   private render() {
     // clear
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.fillStyle = "rgba(10, 20, 40, 0.7)";
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     // draw paddles
     this.paddles.forEach(paddle => paddle.draw(this.ctx));
@@ -86,6 +87,10 @@ export class GameCanvas {
 
     // loop
     this.animationId = requestAnimationFrame(this.render);
+  }
+
+  public getCanvasElement(): HTMLCanvasElement {
+    return this.canvas;
   }
 
   public stop() {
