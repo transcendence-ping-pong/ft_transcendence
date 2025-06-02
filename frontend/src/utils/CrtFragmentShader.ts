@@ -1,3 +1,4 @@
+// read more about the CRT shader here: https://babylonjs.medium.com/retro-crt-shader-a-post-processing-effect-study-1cb3f783afbc
 export const crtFragmentShader = `#ifdef GL_ES
         precision highp float;
 #endif

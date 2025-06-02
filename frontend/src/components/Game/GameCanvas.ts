@@ -25,7 +25,7 @@ export class GameCanvas {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private animationId: number | null = null;
-  private ball = new Ball(400, 200, 2, 2, 10);
+  private ball: Ball;
   private paddles: Paddle[];
 
   constructor(containerId?: string, width?: number, height?: number) {
@@ -33,12 +33,21 @@ export class GameCanvas {
     this.canvas = document.createElement('canvas');
     this.canvas.height = height;
     this.canvas.width = width; // width based on aspect ratio
-    this.canvas.className = "border bg-black";
+    // this.canvas.className = "border bg-black";
     // document.getElementById(containerId)?.appendChild(this.canvas);
 
+    const paddleWidth = width * 0.02;
+    const paddleHeight = height * 0.22;
+    const paddleLeftX = width * 0.05; // 5% from left
+    const paddleRightX = width * 0.95 - paddleWidth; // 5% from right
+    const paddleY = height / 2 - paddleHeight / 2;
+
+    const ballRadius = height * 0.02;
+    this.ball = new Ball(width / 2, height / 2, 4, 4, ballRadius);
+
     this.paddles = [
-      new Paddle(50, 150, 10, 100),
-      new Paddle(740, 150, 10, 100),
+      new Paddle(paddleLeftX, paddleY, paddleWidth, paddleHeight),
+      new Paddle(paddleRightX, paddleY, paddleWidth, paddleHeight),
     ];
 
     // get canvas context
