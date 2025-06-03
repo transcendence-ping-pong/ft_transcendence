@@ -110,9 +110,10 @@ sudo docker-compose up --build
 | **Material JPG 1K** | `Ambient Occlusion(AO)` `Normal` `Specular` `Diffuse` | |
 | **HDRI 2K HDR** | `` | |
 | **Convert HDRI image** | [Babylon IBL tool](https://www.babylonjs.com/tools/ibl/) | After processing you should see something like an unwrapped box (environment file). |
-| **Exporting Blender 3D models** | [Babylon Sandbox](https://sandbox.babylonjs.com/) | Check that location (x, y, z, set to zero), rotation (x, y, z, set to zero) and scale (x, y, z, set to one) are all normalised. If these values need to be changed, `CMD + A` `Apply all transforms`. Moreover, it is important to review the meshes naming. For creating a new mesh `SHIFT + A`. **VISUALISE MODEL FIRST IN BABYLON SANDBOX.** <img width="441" alt="Screenshot 2025-06-01 at 18 27 54" src="https://github.com/user-attachments/assets/cab197b8-41a5-4519-ac78-b712eaac6ba1" /> |
+| **Exporting Blender 3D models** | [Babylon Sandbox](https://sandbox.babylonjs.com/) | Check that location (x, y, z, set to zero), rotation (x, y, z, set to zero) and scale (x, y, z, set to one) are all normalised. If these values need to be changed, `CMD + A` `Apply all transforms`. Moreover, it is important to review the meshes naming (so it is possible to reference it properly in the code). Include selected objects, press `A` for selecting all. **VISUALISE MODEL FIRST IN BABYLON SANDBOX.** <img width="441" alt="Screenshot 2025-06-01 at 18 27 54" src="https://github.com/user-attachments/assets/cab197b8-41a5-4519-ac78-b712eaac6ba1" /> |
+| **Blender basic commands** | | Create new mesh `SHIFT + A`. |
 | **[Babylon Node Material Editor](https://nme.babylonjs.com/)** | | |
-
+Z axis is pointing forward, babylon has different coordinate system than Blender
 ### References Game History
 [Pong Game (1972)](https://www.ponggame.org/)</br>
 [Pong, Computer History Museum](https://www.computerhistory.org/revolution/computer-games/16/183)</br>
@@ -128,7 +129,8 @@ sudo docker-compose up --build
 [Babylon Documentation](https://doc.babylonjs.com/features/featuresDeepDive/importers/loadingFileTypes)</br>
 [Basic Scene in BabylonJS](https://www.youtube.com/watch?v=NLZuUtiL50A&list=PLym1B0rdkvqhuCNSXzxw6ofEkrpYI70P4&index=1)</br>
 [Fun with Light Textures](https://www.youtube.com/watch?v=n2DLnMa21K0)</br>
-[Babylon 2D controlers](https://www.youtube.com/watch?v=dISLIZ4SdAM)
+[Babylon 2D controlers](https://www.youtube.com/watch?v=dISLIZ4SdAM)</br>
+[Retro CRT Shader — A post processing effect study](https://babylonjs.medium.com/retro-crt-shader-a-post-processing-effect-study-1cb3f783afbc)
 ### References Design
 [Gufram website](https://gufram.it/)</br>
 [Atari Super Pong](https://www.turbosquid.com/3d-models/atari-super-pong-1859697)</br>
