@@ -1,6 +1,6 @@
-import { createStandardMaterial, StandardMaterialLibrary, createPBRMaterial, PBRMaterialLibrary } from '../../utils/Materials.js';
-import { GameCanvas } from './GameCanvas.js'; // import GameCanvas and its element
-import { crtFragmentShader } from '../../utils/CrtFragmentShader.js';
+import { GameCanvas } from './GameCanvas.js';
+import { crtFragmentShader } from '../../utils/gameUtils/CrtFragmentShader.js';
+import { addRetroStartButton } from '../../utils/gameUtils/BabylonGUI.js';
 
 declare var BABYLON: any; // tyoescript doesn't know about BABYLON global import
 // TODO: Scene and Engine types? how to import them?
@@ -156,44 +156,6 @@ export class BabylonCanvas {
     glowLayer.intensity = 1; // TODO FIX: is it making any difference?
   }
 
-  private addRetroStartButton(onClick?: () => void) {
-    const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
-    const button = BABYLON.GUI.Button.CreateSimpleButton("startButton", "START GAME");
-
-    button.width = "400px";
-    button.height = "200px";
-    button.fontSize = 48;
-    button.color = "#fff";
-    // button.color = "#fccc6d"; // text color
-    button.background = "#1a2233";
-    button.thickness = 4;
-    button.cornerRadius = 20;
-    button.paddingTop = "20px";
-    button.paddingBottom = "20px";
-    button.paddingLeft = "40px";
-    button.paddingRight = "40px";
-    button.fontWeight = "bold"; // TODO FIX: may not work in all browsers
-    button.borderColor = "#fff";
-
-    // shadow
-    button.shadowOffsetX = 2;
-    button.shadowOffsetY = 2;
-    button.shadowColor = "#000";
-    button.shadowBlur = 8;
-
-    button.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-    button.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
-
-    advancedTexture.addControl(button);
-
-    if (onClick) {
-      button.onPointerUpObservable.add(onClick);
-    }
-
-    advancedTexture.addControl(button);
-    return button;
-  }
-
   // draw stuff here?
   async initialize() {
     // TODO CONCEPT: import TV model and apply a dynamic texture to its screen
@@ -206,8 +168,8 @@ export class BabylonCanvas {
     plane.position = new BABYLON.Vector3(0, 0, 1); // put plane in front of the camera
 
     // TODO CONCEPT: start game, score board, users info, etc
-    this.addRetroStartButton(() => {
-      console.log("Start button clicked!");
+    addRetroStartButton(() => {
+      this.gameCanvas.gameManager.startGame();
     });
 
     this.applyDynamicTextureToMesh("gameScreen", this.gameCanvas.getCanvasElement());

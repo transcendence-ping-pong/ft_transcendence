@@ -1,44 +1,48 @@
 // TODO: first test, create a canvas and draw a ball that bounces off the walls
+import { GameManager } from './GameManager.js';
+import { BallSpeedState, PaddleSpeedState, GameSize, CourtBoundsSpecs } from '../../utils/gameUtils/types.js';
 
 // single source of truth for the game limits
 class GameCourtBounds {
-  public left: number;
-  public right: number;
-  public top: number;
-  public bottom: number;
+  public specs: CourtBoundsSpecs = {
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  };
 
-  constructor(public width: number, public height: number) {
-    const marginX = width * 0.15;
-    const marginY = height * 0.10;
-    this.left = marginX;
-    this.right = width - marginX;
-    this.top = marginY;
-    this.bottom = height - marginY;
+  constructor(private width: number, private height: number, private color: string = "white") {
+    const marginX = width * GameSize.COURT_MARGIN_X;
+    const marginY = height * GameSize.COURT_MARGIN_Y;
+    this.specs.left = marginX;
+    this.specs.right = width - marginX;
+    this.specs.top = marginY;
+    this.specs.bottom = height - marginY;
   }
 
   draw(ctx: CanvasRenderingContext2D) {
     // is this overkill? maybe......
     ctx.save(); // save current state in stack, sp it doesn't affect other drawings
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = this.width * 0.01;
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = this.width * GameSize.LINE_WIDTH_RATIO;
 
-    ctx.setLineDash([40, 20]); // line, space
+    ctx.setLineDash([GameSize.DASH_LENGTH, GameSize.DASH_GAP]);
     // top horizontal line
     ctx.beginPath();
-    ctx.moveTo(this.left, this.top);
-    ctx.lineTo(this.right, this.top);
+    ctx.moveTo(this.specs.left, this.specs.top);
+    ctx.lineTo(this.specs.right, this.specs.top);
     ctx.stroke();
 
     // bottom horizontal line
     ctx.beginPath();
-    ctx.moveTo(this.left, this.bottom);
-    ctx.lineTo(this.right, this.bottom);
+    ctx.moveTo(this.specs.left, this.specs.bottom);
+    ctx.lineTo(this.specs.right, this.specs.bottom);
     ctx.stroke();
 
     // center line
     ctx.beginPath();
-    ctx.moveTo(this.width / 2, this.top);
-    ctx.lineTo(this.width / 2, this.bottom);
+    ctx.moveTo(this.width / 2, this.specs.top);
+    ctx.lineTo(this.width / 2, this.specs.bottom);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore(); // restore previous state from stack
@@ -47,12 +51,13 @@ class GameCourtBounds {
 
 class Ball {
   constructor(
-    public x: number,
-    public y: number,
-    public dx: number,
-    public dy: number,
-    public size: number,
-    public color: string = "white"
+    public x: number, // x coordinate
+    public y: number, // y coordinate
+    public speedX: number, // horizontal speed
+    public speedY: number, // vertical speed
+    public size: number, // size of the ball (it is a square, as the original Pong game)
+    public color: string = "white",
+    public speedState: BallSpeedState = BallSpeedState.INITIAL
   ) { }
 
   draw(ctx: CanvasRenderingContext2D) {
@@ -62,12 +67,59 @@ class Ball {
 }
 
 class Paddle {
-  constructor(public x: number, public y: number, public width: number, public height: number, public color: string = "white") { }
+  private width: number;
+  private height: number;
+  private x: number;
+  private y: number;
+  private color: string;
 
-  draw(ctx: CanvasRenderingContext2D) {
+  constructor(
+    private playerIndex: number, // 0 for left, 1 for right
+    private canvasWidth: number,
+    private canvasHeight: number,
+    private courtBounds: GameCourtBounds,
+    color: string = "white"
+  ) {
+    this.color = color;
+    this.recalculate();
+    this.resetPosition();
+  }
+
+  // Calculate width, height, and initial position
+  public recalculate() {
+    this.width = this.canvasWidth * GameSize.PADDLE_WIDTH_RATIO;
+    this.height = (this.canvasHeight - this.courtBounds.specs.top * 2) * GameSize.PADDLE_HEIGHT_RATIO;
+    this.x = this.playerIndex === 0
+      ? this.canvasWidth * GameSize.PADDLE_MARGIN_X
+      : this.canvasWidth * (1 - GameSize.PADDLE_MARGIN_X) - this.width;
+    this.resetPosition();
+  }
+
+  // Center paddle vertically
+  public resetPosition() {
+    this.y = this.canvasHeight / 2 - this.height / 2;
+  }
+
+  public draw(ctx: CanvasRenderingContext2D) {
     ctx.fillStyle = this.color;
     ctx.fillRect(this.x, this.y, this.width, this.height);
   }
+
+  // move paddles using arrow keys and WASD keys (two players at the same time)
+  // TODO CONCEPT: how to organise it when second player is AI?
+  // does mouse movement needs to be handled too?
+  public moveUp(step: number) {
+    this.y = Math.max(this.y - step, this.courtBounds.specs.top);
+  }
+
+  public moveDown(step: number) {
+    this.y = Math.min(this.y + step, this.courtBounds.specs.bottom - this.height);
+  }
+
+  public getX() { return this.x; }
+  public getY() { return this.y; }
+  public getWidth() { return this.width; }
+  public getHeight() { return this.height; }
 }
 
 export class GameCanvas {
@@ -78,6 +130,7 @@ export class GameCanvas {
   private paddles: Paddle[];
   private paddleDirections: { [player: number]: 'up' | 'down' | null } = { 0: null, 1: null };
   private courtBounds: GameCourtBounds;
+  public gameManager: GameManager;
 
   // initialise variables, create canvas, paddles, ball, event listeners(?)
   // TODO CONCEPT: where to put event listeners?
@@ -89,20 +142,15 @@ export class GameCanvas {
     // this.canvas.className = "border bg-black";
     // document.getElementById(containerId)?.appendChild(this.canvas);
 
+    this.gameManager = new GameManager();
     this.courtBounds = new GameCourtBounds(width, height);
 
-    const paddleWidth = width * 0.01;
-    const paddleHeight = (height - this.courtBounds.top * 2) * 0.22;
-    const paddleLeftX = width * 0.20; // 10% from left
-    const paddleRightX = width * 0.80 - paddleWidth; // 10% from right
-    const paddleY = height / 2 - paddleHeight / 2;
-
-    const ballSize = height * 0.025;
+    const ballSize = height * GameSize.BALL_SIZE_RATIO;
     this.ball = new Ball(width / 2, height / 2, 4, 4, ballSize);
 
     this.paddles = [
-      new Paddle(paddleLeftX, paddleY, paddleWidth, paddleHeight),
-      new Paddle(paddleRightX, paddleY, paddleWidth, paddleHeight),
+      new Paddle(0, width, height, this.courtBounds),
+      new Paddle(1, width, height, this.courtBounds),
     ];
 
     window.addEventListener('keydown', (event) => {
@@ -162,8 +210,10 @@ export class GameCanvas {
     this.ball.draw(this.ctx);
 
     // ball constantly moves... TODO CONCEPT: add some randomness to the ball movement
-    this.ball.x += this.ball.dx;
-    this.ball.y += this.ball.dy;
+    if (this.gameManager.isStarted) {
+      this.ball.x += this.ball.speedX;
+      this.ball.y += this.ball.speedY;
+    }
 
     this.handleBallCollisions();
 
@@ -172,57 +222,41 @@ export class GameCanvas {
     // Move paddles if direction is set
     for (let i = 0; i < this.paddles.length; i++) {
       const dir = this.paddleDirections[i];
-      if (dir === 'up') this.movePaddle(i, 'up', paddleSpeed);
-      if (dir === 'down') this.movePaddle(i, 'down', paddleSpeed);
+      if (dir === 'up') this.paddles[i].moveUp(paddleSpeed);
+      if (dir === 'down') this.paddles[i].moveDown(paddleSpeed);
     }
 
     // loop!!!!!!!!!!
     this.animationId = requestAnimationFrame(this.render);
   }
 
-  // move paddles using arrow keys and WASD keys (two players at the same time)
-  // TODO CONCEPT: how to organise it when second player is AI?
-  // does mouse movement needs to be handled too?
-  public movePaddle(player: number, direction: 'up' | 'down', step: number = 20, gap: number = 5) {
-    const paddle = this.paddles[player];
-    if (direction === 'up') {
-      if (paddle.y - step >= this.courtBounds.top + gap) {
-        paddle.y -= step;
-      }
-    } else if (direction === 'down') {
-      if (paddle.y + paddle.height + step <= this.courtBounds.bottom - gap) {
-        paddle.y += step;
-      }
-    }
-  }
-
   private handleBallCollisions() {
     // left/right walls
     if (
-      this.ball.x - this.ball.size / 2 <= this.courtBounds.left ||
-      this.ball.x + this.ball.size / 2 >= this.courtBounds.right
+      this.ball.x - this.ball.size / 2 <= this.courtBounds.specs.left ||
+      this.ball.x + this.ball.size / 2 >= this.courtBounds.specs.right
     ) {
-      this.ball.dx *= -1;
+      this.ball.speedX *= -1;
       // TODO CONCEPT: handle scoring???
     }
 
     // top/bottom walls
     if (
-      this.ball.y - this.ball.size / 2 <= this.courtBounds.top ||
-      this.ball.y + this.ball.size / 2 >= this.courtBounds.bottom
+      this.ball.y - this.ball.size / 2 <= this.courtBounds.specs.top ||
+      this.ball.y + this.ball.size / 2 >= this.courtBounds.specs.bottom
     ) {
-      this.ball.dy *= -1;
+      this.ball.speedY *= -1;
     }
 
     // paddle collisions
     for (const paddle of this.paddles) {
       if (
-        this.ball.x + this.ball.size / 2 > paddle.x &&
-        this.ball.x - this.ball.size / 2 < paddle.x + paddle.width &&
-        this.ball.y + this.ball.size / 2 > paddle.y &&
-        this.ball.y - this.ball.size / 2 < paddle.y + paddle.height
+        this.ball.x + this.ball.size / 2 > paddle.getX() &&
+        this.ball.x - this.ball.size / 2 < paddle.getX() + paddle.getWidth() &&
+        this.ball.y + this.ball.size / 2 > paddle.getY() &&
+        this.ball.y - this.ball.size / 2 < paddle.getY() + paddle.getHeight()
       ) {
-        this.ball.dx *= -1;
+        this.ball.speedX *= -1;
         // TODO CONCEPT: add some randomness or speed up the ball
       }
     }
