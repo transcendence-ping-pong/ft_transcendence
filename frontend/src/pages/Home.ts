@@ -1,4 +1,4 @@
-import { BabylonCanvas } from '../components/Game/BabylonCanvas2.js';
+import { BabylonCanvas } from '../components/Game/BabylonCanvas.js';
 
 export function renderHomePage(container: HTMLElement) {
   container.innerHTML = `
