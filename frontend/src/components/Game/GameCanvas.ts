@@ -1,6 +1,6 @@
 // TODO: first test, create a canvas and draw a ball that bounces off the walls
 import { GameManager } from './GameManager.js';
-import { BallSpeedState, PaddleSpeedState, GameSize, CourtBoundsSpecs } from '../../utils/gameUtils/types.js';
+import { GameLevel, BallLevelConfig, PADDLE_SPEED, GameSize, CourtBoundsSpecs } from '../../utils/gameUtils/types.js';
 
 // single source of truth for the game limits
 class GameCourtBounds {
@@ -53,16 +53,98 @@ class Ball {
   constructor(
     public x: number, // x coordinate
     public y: number, // y coordinate
-    public speedX: number, // horizontal speed
-    public speedY: number, // vertical speed
+    public vx: number, // velocity: x axis direction (positive or negative) + step for jumping pixels (speed) 
+    public vy: number, // idem, but for y axis
     public size: number, // size of the ball (it is a square, as the original Pong game)
     public color: string = "white",
-    public speedState: BallSpeedState = BallSpeedState.INITIAL
+    // public currentLevel: GameLevel = GameLevel.EASY
   ) { }
 
   draw(ctx: CanvasRenderingContext2D) {
     ctx.fillStyle = this.color;
     ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+  }
+
+  // https://www.youtube.com/watch?v=6i5kZV_KOCU
+  updatePosition(
+    dt: number,
+    courtBounds: GameCourtBounds,
+    paddles: Paddle[],
+    currentLevel: GameLevel,
+    onPaddleBounce?: () => void // optional callback for speed increase, sound, etc.
+  ) {
+    const { MIN, MAX, maxBounceAngle } = BallLevelConfig[currentLevel];
+    const { top, bottom, right, left } = courtBounds.specs;
+    const isCollisionWithPaddle = (paddle: Paddle) => {
+      return (
+        this.x + this.size / 2 >= paddle.getX() &&
+        this.x - this.size / 2 <= paddle.getX() + paddle.getWidth() &&
+        this.y + this.size / 2 >= paddle.getY() &&
+        this.y - this.size / 2 <= paddle.getY() + paddle.getHeight()
+      );
+    };
+
+    const isOutOfBounds = () => {
+      return (
+        this.x - this.size / 2 < left || // left side wall courtBounds
+        this.x + this.size / 2 > right // right side wall courtBounds
+      );
+    };
+
+    // reminder: for...in - iterate over keys (indexes) of an object or array
+    for (const paddle of paddles) {
+      // check if the ball is colliding with the paddle
+      if (isCollisionWithPaddle(paddle)) {
+        // prevent sticking to the paddle
+        if (this.vx < 0) {
+          this.x = paddle.getX() + paddle.getWidth() + this.size / 2; // left paddle
+        } else {
+          this.x = paddle.getX() - this.size / 2; // right paddle
+        }
+
+        // calculate normalized hit position (-1 to 1)
+        const relativeIntersectY = (this.y - (paddle.getY() + paddle.getHeight() / 2));
+        const normalized = relativeIntersectY / (paddle.getHeight() / 2);
+        const bounceAngle = normalized * maxBounceAngle;
+
+        // TODO CONCEPT: should we increase speed after each hit? or after first hit?
+        // calculate current speed and increase by 10% (cap at MAX_BALL_SPEED)
+        let speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+        speed = Math.min(speed * 1.1, MAX);
+
+        // update velocity: always right direction after left paddle, or left direction after right paddle
+        this.vx = (this.vx < 0 ? Math.abs(speed * Math.cos(bounceAngle)) : -Math.abs(speed * Math.cos(bounceAngle)));
+        this.vy = speed * Math.sin(bounceAngle);
+
+        if (onPaddleBounce) onPaddleBounce(); // TODO CONCEPT: sound?? log??
+      } else if (isOutOfBounds()) {
+        // TODO CONCEPT: score??? reset to center?? Check if score is less than 11?
+
+        this.x = (left + right) / 2;
+        this.y = (top + bottom) / 2;
+
+        // TODO FIX: check!!!!!!!!!!!!!!!!!!!!!
+        const angle = (Math.random() - 0.5) * maxBounceAngle; // random angle?
+        const direction = (this.vx < 0 ? 1 : -1); // send ball to the opposite direction???
+        this.vx = direction * MIN * Math.cos(angle);
+        this.vy = MIN * Math.sin(angle);
+      }
+    }
+
+    // top/bottom wall collision CourtBounds
+    if (this.y - this.size / 2 < top) {
+      this.y = top + this.size / 2;
+      this.vy = -this.vy;
+    }
+    if (this.y + this.size / 2 > bottom) {
+      this.y = bottom - this.size / 2;
+      this.vy = -this.vy;
+    }
+
+    // position = position + velocity
+    // velocity = velocity + acceleration
+    this.x += this.vx * dt; // update x position
+    this.y += this.vy * dt; // update y position
   }
 }
 
@@ -85,7 +167,7 @@ class Paddle {
     this.resetPosition();
   }
 
-  // Calculate width, height, and initial position
+  // calculate width, height, and initial position
   public recalculate() {
     this.width = this.canvasWidth * GameSize.PADDLE_WIDTH_RATIO;
     this.height = (this.canvasHeight - this.courtBounds.specs.top * 2) * GameSize.PADDLE_HEIGHT_RATIO;
@@ -95,7 +177,8 @@ class Paddle {
     this.resetPosition();
   }
 
-  // Center paddle vertically
+  // center paddle vertically
+  // TODO CONCEPT: check score?? centralize after every point is made?
   public resetPosition() {
     this.y = this.canvasHeight / 2 - this.height / 2;
   }
@@ -108,12 +191,14 @@ class Paddle {
   // move paddles using arrow keys and WASD keys (two players at the same time)
   // TODO CONCEPT: how to organise it when second player is AI?
   // does mouse movement needs to be handled too?
-  public moveUp(step: number) {
-    this.y = Math.max(this.y - step, this.courtBounds.specs.top);
+  public moveUp() {
+    const { top } = this.courtBounds.specs;
+    this.y = Math.max(this.y - PADDLE_SPEED, top);
   }
 
-  public moveDown(step: number) {
-    this.y = Math.min(this.y + step, this.courtBounds.specs.bottom - this.height);
+  public moveDown() {
+    const { bottom } = this.courtBounds.specs;
+    this.y = Math.min(this.y + PADDLE_SPEED, bottom - this.height);
   }
 
   public getX() { return this.x; }
@@ -130,6 +215,9 @@ export class GameCanvas {
   private paddles: Paddle[];
   private paddleDirections: { [player: number]: 'up' | 'down' | null } = { 0: null, 1: null };
   private courtBounds: GameCourtBounds;
+  private handleKeyDown: (event: KeyboardEvent) => void;
+  private handleKeyUp: (event: KeyboardEvent) => void;
+  // TODO CONCEPT: public so it is possible to access it from BabylonCanvas?
   public gameManager: GameManager;
 
   // initialise variables, create canvas, paddles, ball, event listeners(?)
@@ -138,7 +226,7 @@ export class GameCanvas {
     // create and append canvas
     this.canvas = document.createElement('canvas');
     this.canvas.height = height;
-    this.canvas.width = width; // width based on aspect ratio
+    this.canvas.width = width;
     // this.canvas.className = "border bg-black";
     // document.getElementById(containerId)?.appendChild(this.canvas);
 
@@ -146,46 +234,17 @@ export class GameCanvas {
     this.courtBounds = new GameCourtBounds(width, height);
 
     const ballSize = height * GameSize.BALL_SIZE_RATIO;
-    this.ball = new Ball(width / 2, height / 2, 4, 4, ballSize);
+    this.ball = new Ball(width / 2, height / 2, 4, -2, ballSize);
 
     this.paddles = [
       new Paddle(0, width, height, this.courtBounds),
       new Paddle(1, width, height, this.courtBounds),
     ];
 
-    window.addEventListener('keydown', (event) => {
-      switch (event.key) {
-        case 'ArrowUp':
-          this.paddleDirections[1] = 'up';
-          break;
-        case 'ArrowDown':
-          this.paddleDirections[1] = 'down';
-          break;
-        case 'w':
-        case 'W':
-          this.paddleDirections[0] = 'up';
-          break;
-        case 's':
-        case 'S':
-          this.paddleDirections[0] = 'down';
-          break;
-      }
-    });
-
-    window.addEventListener('keyup', (event) => {
-      switch (event.key) {
-        case 'ArrowUp':
-        case 'ArrowDown':
-          this.paddleDirections[1] = null;
-          break;
-        case 'w':
-        case 'W':
-        case 's':
-        case 'S':
-          this.paddleDirections[0] = null;
-          break;
-      }
-    });
+    this.handleKeyDown = this.onKeyDown.bind(this);
+    this.handleKeyUp = this.onKeyUp.bind(this);
+    window.addEventListener('keydown', this.handleKeyDown);
+    window.addEventListener('keyup', this.handleKeyUp);
 
     // canvas 2D context
     const ctx = this.canvas.getContext('2d');
@@ -211,62 +270,69 @@ export class GameCanvas {
 
     // ball constantly moves... TODO CONCEPT: add some randomness to the ball movement
     if (this.gameManager.isStarted) {
-      this.ball.x += this.ball.speedX;
-      this.ball.y += this.ball.speedY;
+      this.ball.updatePosition(
+        1, // or your delta time... delta time???
+        this.courtBounds,
+        this.paddles,
+        this.gameManager.getLevel(),
+        () => {
+          // sound?? log?? messages?
+        }
+      );
     }
-
-    this.handleBallCollisions();
-
-    const paddleSpeed = 12; // pixels per frame
 
     // Move paddles if direction is set
     for (let i = 0; i < this.paddles.length; i++) {
       const dir = this.paddleDirections[i];
-      if (dir === 'up') this.paddles[i].moveUp(paddleSpeed);
-      if (dir === 'down') this.paddles[i].moveDown(paddleSpeed);
+      if (dir === 'up') this.paddles[i].moveUp();
+      if (dir === 'down') this.paddles[i].moveDown();
     }
 
     // loop!!!!!!!!!!
     this.animationId = requestAnimationFrame(this.render);
   }
 
-  private handleBallCollisions() {
-    // left/right walls
-    if (
-      this.ball.x - this.ball.size / 2 <= this.courtBounds.specs.left ||
-      this.ball.x + this.ball.size / 2 >= this.courtBounds.specs.right
-    ) {
-      this.ball.speedX *= -1;
-      // TODO CONCEPT: handle scoring???
-    }
-
-    // top/bottom walls
-    if (
-      this.ball.y - this.ball.size / 2 <= this.courtBounds.specs.top ||
-      this.ball.y + this.ball.size / 2 >= this.courtBounds.specs.bottom
-    ) {
-      this.ball.speedY *= -1;
-    }
-
-    // paddle collisions
-    for (const paddle of this.paddles) {
-      if (
-        this.ball.x + this.ball.size / 2 > paddle.getX() &&
-        this.ball.x - this.ball.size / 2 < paddle.getX() + paddle.getWidth() &&
-        this.ball.y + this.ball.size / 2 > paddle.getY() &&
-        this.ball.y - this.ball.size / 2 < paddle.getY() + paddle.getHeight()
-      ) {
-        this.ball.speedX *= -1;
-        // TODO CONCEPT: add some randomness or speed up the ball
-      }
-    }
-  }
-
   public getCanvasElement(): HTMLCanvasElement {
     return this.canvas;
   }
 
+  private onKeyDown(event: KeyboardEvent) {
+    switch (event.key) {
+      case 'ArrowUp':
+        this.paddleDirections[1] = 'up';
+        break;
+      case 'ArrowDown':
+        this.paddleDirections[1] = 'down';
+        break;
+      case 'w':
+      case 'W':
+        this.paddleDirections[0] = 'up';
+        break;
+      case 's':
+      case 'S':
+        this.paddleDirections[0] = 'down';
+        break;
+    }
+  }
+
+  private onKeyUp(event: KeyboardEvent) {
+    switch (event.key) {
+      case 'ArrowUp':
+      case 'ArrowDown':
+        this.paddleDirections[1] = null;
+        break;
+      case 'w':
+      case 'W':
+      case 's':
+      case 'S':
+        this.paddleDirections[0] = null;
+        break;
+    }
+  }
+
   public stop() {
     if (this.animationId) cancelAnimationFrame(this.animationId);
+    window.removeEventListener('keydown', this.handleKeyDown);
+    window.removeEventListener('keyup', this.handleKeyUp);
   }
 }

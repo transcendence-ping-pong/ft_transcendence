@@ -1,35 +1,19 @@
 
-enum speedState {
-  INITIAL = 0,
-  BALL_DEFAULT = 4,
-  PADDLE_DEFAULT = 12,
-  BALL_SPEED_UP = 6,
-  PADDLE_SPEED_UP = 16,
-  BALL_SPEED_DOWN = 2,
-  PADDLE_SPEED_DOWN = 8,
-  BALL_MAX = 10,
-  PADDLE_MAX = 20,
-  BALL_MIN = 1,
-  PADDLE_MIN = 4,
+export enum GameLevel {
+  EASY = 'EASY',
+  MEDIUM = 'MEDIUM',
+  HARD = 'HARD'
 }
 
-export enum BallSpeedState {
-  INITIAL = speedState.INITIAL,
-  DEFAULT = speedState.BALL_DEFAULT,
-  SPEED_UP = speedState.BALL_SPEED_UP,
-  SPEED_DOWN = speedState.BALL_SPEED_DOWN,
-  MAX = speedState.BALL_MAX,
-  MIN = speedState.BALL_MIN,
-}
+// TODO CONCEPT: speed increases after hits, until reaches MAX?? Or after first hit?
+export const BallLevelConfig = {
+  [GameLevel.EASY]: { MIN: 4, MAX: 6, maxBounceAngle: Math.PI / 6 }, // 30°
+  [GameLevel.MEDIUM]: { MIN: 4, MAX: 10, maxBounceAngle: Math.PI / 4 }, // 45°
+  [GameLevel.HARD]: { MIN: 6, MAX: 16, maxBounceAngle: Math.PI / 3 }, // 60°
+};
 
-export enum PaddleSpeedState {
-  INITIAL = speedState.INITIAL,
-  DEFAULT = speedState.PADDLE_DEFAULT,
-  SPEED_UP = speedState.PADDLE_SPEED_UP,
-  SPEED_DOWN = speedState.PADDLE_SPEED_DOWN,
-  MAX = speedState.PADDLE_MAX,
-  MIN = speedState.PADDLE_MIN,
-}
+// constant speed, pixels per frame
+export const PADDLE_SPEED = 10;
 
 // traditional Pong game size constants
 // paddle width: 1-2% screen width

@@ -1,6 +1,7 @@
 import { GameCanvas } from './GameCanvas.js';
 import { crtFragmentShader } from '../../utils/gameUtils/CrtFragmentShader.js';
-import { addRetroStartButton } from '../../utils/gameUtils/BabylonGUI.js';
+import { BabylonGUI } from '../../utils/gameUtils/BabylonGUI.js';
+import { GameLevel } from '../../utils/gameUtils/types.js';
 
 declare var BABYLON: any; // tyoescript doesn't know about BABYLON global import
 // TODO: Scene and Engine types? how to import them?
@@ -62,6 +63,7 @@ export class BabylonCanvas {
     camera.position = new BABYLON.Vector3(0, 0, -1.4);
     camera.setTarget(new BABYLON.Vector3(0, 0, 1));
     camera.attachControl(this.canvas, false); // "false" disables user controls, otherwise true
+    camera.detachControl(); // prevents camera from being controlled by user
 
     // TODO: hemispheric light or environment light?
     // BABYLON.MeshBuilder.CreateBox('box', {}, this.scene);
@@ -168,8 +170,16 @@ export class BabylonCanvas {
     plane.position = new BABYLON.Vector3(0, 0, 1); // put plane in front of the camera
 
     // TODO CONCEPT: start game, score board, users info, etc
-    addRetroStartButton(() => {
-      this.gameCanvas.gameManager.startGame();
+    const gui = new BabylonGUI(this.scene);
+    gui.showStartButton(() => {
+      gui.showDifficultySelector((level) => {
+        this.gameCanvas.gameManager.setLevel(level as GameLevel);
+        console.log(`Game started with difficulty: ${level}`);
+        gui.showCountdown(3, () => {
+          this.gameCanvas.gameManager.startGame();
+          // TODO CONCEPT: GameManager logics (??) improve organisation
+        });
+      });
     });
 
     this.applyDynamicTextureToMesh("gameScreen", this.gameCanvas.getCanvasElement());
