@@ -91,6 +91,46 @@ ft_transcendence/
 │   ├── sql_injection.php    # SQL injection prevention
 │   └── https_config.php     # HTTPS configuration
 ```
+```
+AppController (main application orchestrator)
+│
+├── BabylonCanvas (3D scene, mesh, engine, render loop)
+│     └── uses GameCanvas (2D game logic & rendering)
+│     └── uses BabylonGUI (menus, overlays)
+│
+├── GameCanvas (2D Pong game logic & rendering)
+│
+└── BabylonGUI (Babylon.js GUI overlays)
+```
+
+```
+frontend/
+└── src/
+    ├── app.ts
+    ├── appController.ts
+    ├── game/
+    │   ├── BabylonCanvas.ts
+    │   ├── GameCanvas.ts
+    │   ├── GameManager.ts
+    │   ├── Ball.ts
+    │   ├── Paddle.ts
+    │   ├── GameCourtBounds.ts
+    │   └── ... (other game logic)
+    ├── gui/
+    │   └── BabylonGUI.ts
+    ├── utils/
+    │   ├── gameUtils/
+    │   │   ├── types.ts
+    │   │   ├── CrtFragmentShader.ts
+    │   │   └── ...
+    │   └── ...
+    ├── pages/
+    │   ├── Home.ts
+    │   ├── Game.ts
+    │   └── About.ts
+    ├── styles/
+    └── assets/
+```
 
 ### Build the project
 ```
