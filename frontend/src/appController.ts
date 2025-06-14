@@ -1,7 +1,7 @@
-import { BabylonCanvas } from './components/Game/BabylonCanvas.js';
-import { BabylonGUI } from './utils/gameUtils/BabylonGUI.js';
+import { BabylonCanvas } from './game/BabylonCanvas.js';
+import { BabylonGUI } from './game/BabylonGUI.js';
 // import GameCanvas for its type and to access its methods/control game state
-import { GameCanvas } from './components/Game/GameCanvas.js';
+import { GameCanvas } from './game/GameCanvas.js';
 import { GameLevel } from './utils/gameUtils/types.js';
 
 export class AppController {
@@ -16,6 +16,7 @@ export class AppController {
     this.gui = new BabylonGUI(this.babylonCanvas.getScene());
 
     this.setupMenuFlow();
+    this.babylonCanvas.startRenderLoop();
   }
 
   setupMenuFlow() {

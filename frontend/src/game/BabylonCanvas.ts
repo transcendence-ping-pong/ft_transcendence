@@ -1,7 +1,5 @@
 import { GameCanvas } from './GameCanvas.js';
-import { crtFragmentShader } from '../../utils/gameUtils/CrtFragmentShader.js';
-import { BabylonGUI } from '../../utils/gameUtils/BabylonGUI.js';
-import { GameLevel } from '../../utils/gameUtils/types.js';
+import { crtFragmentShader } from '../utils/gameUtils/CrtFragmentShader.js';
 
 declare var BABYLON: any; // tyoescript doesn't know about BABYLON global import
 // TODO: Scene and Engine types? how to import them?
@@ -44,22 +42,6 @@ export class BabylonCanvas {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
     this.gameCanvas = new GameCanvas("", this.canvas.width, this.canvas.height);
-
-    // const startGameMenu = this.setInterfaceMenu();
-
-    // constantly update the scene, i.e. animations
-    // SINGLE ANIMATION LOOP: in Babylon render loop, call a method to update the 2D game too
-    // avoid two separate requestAnimationFrame running at the same time
-    this.engine.runRenderLoop(() => {
-      if (this.gameCanvas) {
-        this.gameCanvas.render2DGameCanvas();
-      }
-      if (this.dynamicTexture && this.gameCanvas) {
-        this.dynamicTexture.getContext().drawImage(this.gameCanvas.getCanvasElement(), 0, 0);
-        this.dynamicTexture.update();
-      }
-      this.scene.render();
-    });
 
     this.applyDynamicTextureToMesh("gameScreen", this.gameCanvas.getCanvasElement());
     window.addEventListener('resize', () => this.engine.resize());
@@ -104,6 +86,22 @@ export class BabylonCanvas {
     };
 
     return scene;
+  }
+
+  // constantly update the scene, i.e. animations
+  // SINGLE ANIMATION LOOP: in Babylon render loop, call a method to update the 2D game too
+  // avoid two separate requestAnimationFrame running at the same time
+  public startRenderLoop() {
+    this.engine.runRenderLoop(() => {
+      if (this.gameCanvas) {
+        this.gameCanvas.render2DGameCanvas();
+      }
+      if (this.dynamicTexture && this.gameCanvas) {
+        this.dynamicTexture.getContext().drawImage(this.gameCanvas.getCanvasElement(), 0, 0);
+        this.dynamicTexture.update();
+      }
+      this.scene.render();
+    });
   }
 
   // apply a dynamic texture to a mesh (e.g., TV screen or plane)

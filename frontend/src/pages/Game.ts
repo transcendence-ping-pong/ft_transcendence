@@ -1,5 +1,5 @@
 import { state } from '../state.js';
-import { GameCanvas } from '../components/Game/GameCanvas.js';
+import { GameCanvas } from '../game/GameCanvas.js';
 // import { getTranslations } from '../utils/translations.js';
 
 // TODO: type for translations(??)

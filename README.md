@@ -103,6 +103,35 @@ AppController (main application orchestrator)
 └── BabylonGUI (Babylon.js GUI overlays)
 ```
 
+```
+frontend/
+└── src/
+    ├── app.ts
+    ├── appController.ts
+    ├── game/
+    │   ├── BabylonCanvas.ts
+    │   ├── GameCanvas.ts
+    │   ├── GameManager.ts
+    │   ├── Ball.ts
+    │   ├── Paddle.ts
+    │   ├── GameCourtBounds.ts
+    │   └── ... (other game logic)
+    ├── gui/
+    │   └── BabylonGUI.ts
+    ├── utils/
+    │   ├── gameUtils/
+    │   │   ├── types.ts
+    │   │   ├── CrtFragmentShader.ts
+    │   │   └── ...
+    │   └── ...
+    ├── pages/
+    │   ├── Home.ts
+    │   ├── Game.ts
+    │   └── About.ts
+    ├── styles/
+    └── assets/
+```
+
 ### Build the project
 ```
 <!-- build docker image -->
