@@ -114,6 +114,8 @@ sudo docker-compose up --build
 | **Blender basic commands** | | Create new mesh `SHIFT + A`. |
 | **[Babylon Node Material Editor](https://nme.babylonjs.com/)** | | |
 Z axis is pointing forward, babylon has different coordinate system than Blender
+| **requestAnimationFrame** | [MDN web docs](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame) | Constantly updates the scene, i.e. animations. Running two loops, one for Babylon.js and other for GameCanvas should be avoided. In Babylon render loop, call a method to update the 2D game (that acts as a dynamic texture in Babylon, applied to a plane). |
+
 ### References Game History
 [Pong Game (1972)](https://www.ponggame.org/)</br>
 [Pong, Computer History Museum](https://www.computerhistory.org/revolution/computer-games/16/183)</br>

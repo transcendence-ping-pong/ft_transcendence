@@ -13,7 +13,7 @@ export const BallLevelConfig = {
 };
 
 // constant speed, pixels per frame
-export const PADDLE_SPEED = 10;
+export const PADDLE_SPEED = 6;
 
 // traditional Pong game size constants
 // paddle width: 1-2% screen width

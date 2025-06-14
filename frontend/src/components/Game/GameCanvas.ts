@@ -132,6 +132,7 @@ class Ball {
     }
 
     // top/bottom wall collision CourtBounds
+    // TODO CONCEPT: add more getters?
     if (this.y - this.size / 2 < top) {
       this.y = top + this.size / 2;
       this.vy = -this.vy;
@@ -227,8 +228,11 @@ export class GameCanvas {
     this.canvas = document.createElement('canvas');
     this.canvas.height = height;
     this.canvas.width = width;
-    // this.canvas.className = "border bg-black";
-    // document.getElementById(containerId)?.appendChild(this.canvas);
+    this.canvas.className = "";
+
+    if (containerId) {
+      document.getElementById(containerId)?.appendChild(this.canvas);
+    }
 
     this.gameManager = new GameManager();
     this.courtBounds = new GameCourtBounds(width, height);
@@ -251,13 +255,18 @@ export class GameCanvas {
     if (!ctx) throw new Error("Could not get canvas context");
     this.ctx = ctx;
 
-    // start rendering/drawing stuff
-    this.render = this.render.bind(this);
-    this.render();
+    // SINGLE ANIMATION LOOP running in BabylonCanvas
+    // if there is the intention of instantiating this class outside Babylon 3D...
+    // run animation loop here. Otherwise, BabylonCanvas will be responsible for it
+    if (containerId) {
+      // start rendering/drawing stuff
+      this.render2DGameCanvas = this.render2DGameCanvas.bind(this);
+      this.render2DGameCanvas(true);
+    }
   }
 
   // draw stuff
-  private render() {
+  public render2DGameCanvas(runLoop: boolean = false) {
     // clear!!!!!!!!!!!!!!!!!!!
     this.ctx.fillStyle = "rgba(10, 20, 40, 0.7)";
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -288,8 +297,10 @@ export class GameCanvas {
       if (dir === 'down') this.paddles[i].moveDown();
     }
 
-    // loop!!!!!!!!!!
-    this.animationId = requestAnimationFrame(this.render);
+    // runLoop when GameCanvas is responsible for the animation
+    if (runLoop) {
+      this.animationId = requestAnimationFrame(() => this.render2DGameCanvas(true));
+    }
   }
 
   public getCanvasElement(): HTMLCanvasElement {
