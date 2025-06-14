@@ -91,6 +91,17 @@ ft_transcendence/
 │   ├── sql_injection.php    # SQL injection prevention
 │   └── https_config.php     # HTTPS configuration
 ```
+```
+AppController (main application orchestrator)
+│
+├── BabylonCanvas (3D scene, mesh, engine, render loop)
+│     └── uses GameCanvas (2D game logic & rendering)
+│     └── uses BabylonGUI (menus, overlays)
+│
+├── GameCanvas (2D Pong game logic & rendering)
+│
+└── BabylonGUI (Babylon.js GUI overlays)
+```
 
 ### Build the project
 ```

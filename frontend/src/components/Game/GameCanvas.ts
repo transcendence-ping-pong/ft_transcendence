@@ -307,6 +307,26 @@ export class GameCanvas {
     return this.canvas;
   }
 
+  public setLevel(level: GameLevel) {
+    this.gameManager.setLevel(level);
+  }
+
+  public startGame() {
+    this.gameManager.startGame();
+    // Optionally reset ball and paddles here if needed
+    this.reset();
+  }
+
+  public reset() {
+    // Reset ball and paddles to initial positions
+    const width = this.canvas.width;
+    const height = this.canvas.height;
+    const ballSize = height * GameSize.BALL_SIZE_RATIO;
+    this.ball = new Ball(width / 2, height / 2, 4, -2, ballSize);
+    this.paddles[0].resetPosition();
+    this.paddles[1].resetPosition();
+  }
+
   private onKeyDown(event: KeyboardEvent) {
     switch (event.key) {
       case 'ArrowUp':

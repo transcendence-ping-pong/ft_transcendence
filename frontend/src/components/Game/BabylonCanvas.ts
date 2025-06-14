@@ -8,6 +8,19 @@ declare var BABYLON: any; // tyoescript doesn't know about BABYLON global import
 // TODO: not having a bundler is really annoying, check if we can use Vite??
 // Vite: hot module replacement, instant server start, etc.
 
+/*
+  BabylonCanvas responsabilities:
+  - initialize and manage the Babylon.js scene and engine
+  - create the 3D scene with camera, lights, and meshes
+  - apply dynamic textures to meshes (i.e. 2D game canvas)
+  - provide hooks for starting/stopping the render loop
+  - delegate all 2D game logic to GameCanvas
+  - delegate all GUI logic to BabylonGUI
+
+  Do not:
+  - handle game logic, GUI logic, or user input directly
+*/
+
 // Example ground and applying a PBR material/ Standard material is similar
 // const ground = BABYLON.MeshBuilder.CreateGround('ground', { width: 10, height: 10 }, scene);
 // ground.material = createPBRMaterial(scene, PBRMaterialLibrary.asphalt, { invertNormalMap: true });
@@ -32,7 +45,7 @@ export class BabylonCanvas {
     this.canvas.height = window.innerHeight;
     this.gameCanvas = new GameCanvas("", this.canvas.width, this.canvas.height);
 
-    const startGameMenu = this.setInterfaceMenu();
+    // const startGameMenu = this.setInterfaceMenu();
 
     // constantly update the scene, i.e. animations
     // SINGLE ANIMATION LOOP: in Babylon render loop, call a method to update the 2D game too
@@ -93,10 +106,6 @@ export class BabylonCanvas {
     return scene;
   }
 
-  render3DGameCanvas() {
-
-  }
-
   // apply a dynamic texture to a mesh (e.g., TV screen or plane)
   // dynamic texture = the game itself
   applyDynamicTextureToMesh(meshName: string, sourceCanvas: HTMLCanvasElement) {
@@ -124,22 +133,14 @@ export class BabylonCanvas {
     glowLayer.intensity = 1; // TODO FIX: is it making any difference?
   }
 
-  async setInterfaceMenu() {
-    // TODO CONCEPT: start game, score board, users info, etc
-    const gui = new BabylonGUI(this.scene);
-    gui.showStartButton(() => {
-      gui.showDifficultySelector((level) => {
-        this.gameCanvas.gameManager.setLevel(level as GameLevel);
-        console.log(`Game started with difficulty: ${level}`);
-        gui.showCountdown(3, () => {
-          this.gameCanvas.gameManager.startGame();
-          // TODO CONCEPT: GameManager logics (??) improve organisation
-        });
-      });
-    });
+  public getGameCanvas() {
+    return this.gameCanvas;
   }
 
-  // TODO FIX: where to call it?
+  public getScene() {
+    return this.scene;
+  }
+
   public cleanupGame() {
     if (this.engine) {
       // requestAnimationFrame is cleaned under the hood

@@ -1,15 +1,21 @@
-import { getTranslations } from './utils/Translations.js';
-import { renderGamePage } from './pages/Game.js';
-import { renderHomePage } from './pages/Home.js';
-import { state } from './state.js';
+// import { getTranslations } from './utils/Translations.js';
+// import { renderGamePage } from './pages/Game.js';
+// import { renderHomePage } from './pages/Home.js';
+// import { state } from './state.js';
 
-document.addEventListener('DOMContentLoaded', async () => {
-  // TODO: translations by default will be in english. Apply switching to other languages later
-  // TODO: populate state, watch for changes? (?)
-  state.translations = await getTranslations(state.language);
+// document.addEventListener('DOMContentLoaded', async () => {
+//   // TODO: translations by default will be in english. Apply switching to other languages later
+//   // TODO: populate state, watch for changes? (?)
+//   state.translations = await getTranslations(state.language);
 
-  const app = document.getElementById('app');
-  // if (app) app.innerHTML = '<h1>Hello World</h1>';
-  // if (app) renderGamePage(app);
-  if (app) renderHomePage(app); // TESTING BABYLON CANVAS HERE
+//   const app = document.getElementById('app');
+//   // if (app) app.innerHTML = '<h1>Hello World</h1>';
+//   // if (app) renderGamePage(app);
+//   if (app) renderHomePage(app); // TESTING BABYLON CANVAS HERE
+// });
+
+import { AppController } from './appController.js';
+
+document.addEventListener('DOMContentLoaded', () => {
+  const controller = new AppController('app'); // pass your container id
 });
