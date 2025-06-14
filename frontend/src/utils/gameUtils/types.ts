@@ -1,4 +1,3 @@
-
 export enum GameLevel {
   EASY = 'EASY',
   MEDIUM = 'MEDIUM',

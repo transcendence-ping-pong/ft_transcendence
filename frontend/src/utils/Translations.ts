@@ -8,3 +8,8 @@ export async function getTranslations(lang: string) {
   const res = await fetch(`../locales/${lang}.json`);
   return await res.json();
 }
+
+// get translation by key
+export function t(key: string): string {
+  return key.split('.').reduce((obj, k) => obj?.[k], state.translations) ?? key;
+}

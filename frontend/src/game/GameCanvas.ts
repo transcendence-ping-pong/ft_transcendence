@@ -1,7 +1,7 @@
 import { GameManager } from './GameManager.js';
-import { GameCourtBounds } from './GameCourtBounds.js';
-import { Ball } from './Ball.js';
-import { Paddle } from './Paddle.js';
+import { GameCourtBounds } from './objects/GameCourtBounds.js';
+import { Ball } from './objects/Ball.js';
+import { Paddle } from './objects/Paddle.js';
 import { GameLevel, GameSize } from '../utils/gameUtils/types.js';
 
 /*

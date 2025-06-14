@@ -1,3 +1,6 @@
+import { t } from '../utils/Translations.js';
+import { GameLevel } from '../utils/gameUtils/types.js';
+
 declare var BABYLON: any; // tyoescript doesn't know about BABYLON global import
 // TODO: Scene and Engine types? how to import them?
 // TODO: not having a bundler is really annoying, check if we can use Vite??
@@ -18,7 +21,7 @@ export class BabylonGUI {
   showStartButton(onStart: () => void) {
     this.clearGUI();
 
-    this.startButton = BABYLON.GUI.Button.CreateSimpleButton("startButton", "START GAME");
+    this.startButton = BABYLON.GUI.Button.CreateSimpleButton("startButton", t("game.start"));
     this.startButton.width = "400px";
     this.startButton.height = "200px";
     this.startButton.fontSize = 48;
@@ -53,11 +56,12 @@ export class BabylonGUI {
   showDifficultySelector(onDifficultySelected: (difficulty: string) => void) {
     this.clearGUI();
 
-    const levels = ["EASY", "MEDIUM", "HARD"];
+    const levelKeys = [GameLevel.EASY, GameLevel.MEDIUM, GameLevel.HARD];
     this.difficultyButtons = [];
 
-    levels.forEach((level, idx) => {
-      const button = BABYLON.GUI.Button.CreateSimpleButton(level + "Button", level);
+    levelKeys.forEach((level, idx) => {
+      const label = t(`game.level${idx + 1}`);
+      const button = BABYLON.GUI.Button.CreateSimpleButton(level + "Button", label);
       button.width = "400px";
       button.height = "150px";
       button.fontSize = 42;

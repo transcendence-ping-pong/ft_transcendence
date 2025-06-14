@@ -8,11 +8,11 @@
     "notFound": "Page non trouvée."
   },
   "game": {
-    "start": "Démarrer le jeu",
-    "pause": "Pause",
-    "over": "Fin de la partie"
-  },
-  "poc": {
-    "boilerplate": "Exemple de canevas de jeu"
+    "start": "COMMENCER LE JEU",
+    "pause": "PAUSE",
+    "over": "FIN DE PARTIE",
+    "level1": "FACILE",
+    "level2": "MOYEN",
+    "level3": "DIFFICILE"
   }
 }

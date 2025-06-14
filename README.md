@@ -134,10 +134,8 @@ frontend/
 
 ### Build the project
 ```
-<!-- build docker image -->
-sudo docker build -t ft_frontend ./frontend
-<!-- start container -->
-sudo docker-compose up --build
+<!-- build docker image && start container, add -d for detached mode -->
+sudo docker-compose up --build frontend
 <!-- FE available at http://localhost:3000 -->
 ```
 
@@ -155,6 +153,7 @@ sudo docker-compose up --build
 | **[Babylon Node Material Editor](https://nme.babylonjs.com/)** | | |
 Z axis is pointing forward, babylon has different coordinate system than Blender
 | **requestAnimationFrame** | [MDN web docs](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame) | Constantly updates the scene, i.e. animations. Running two loops, one for Babylon.js and other for GameCanvas should be avoided. In Babylon render loop, call a method to update the 2D game (that acts as a dynamic texture in Babylon, applied to a plane). |
+| **Prune/remove docker** | `docker system prune -af` `docker volume prune -f` | Prune unused resources. Clean unused volumes and images/containers `docker rmi` `docker rm`. |
 
 ### References Game History
 [Pong Game (1972)](https://www.ponggame.org/)</br>
@@ -162,6 +161,7 @@ Z axis is pointing forward, babylon has different coordinate system than Blender
 [Pong - Video Game Console/TV Game Commercial 1976](https://www.youtube.com/watch?v=uCqIkgFKHr4)</br>
 [Original Atari PONG (1972) arcade machine gameplay video](https://www.youtube.com/watch?v=fiShX2pTz9A)</br>
 [The space age pinball machine (The New York Times, 1974)](https://www.nytimes.com/1974/09/15/archives/the-space-age-pinball-machine.html)</br>
+[Woolco - TV Fun Pong Game (Commercial, 1976)](https://www.youtube.com/watch?v=6i5kZV_KOCU)</br>
 [PONG - First documented Video Ping-Pong game - 1969](https://www.youtube.com/watch?v=XNRx5hc4gYc)</br></br>
 
 ![pong_references](https://github.com/user-attachments/assets/fb10b1ef-2034-45d7-99a7-49ba54800b8d)

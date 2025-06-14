@@ -50,12 +50,14 @@ export class BabylonCanvas {
   // TODO TYPE: should return type BABYLON.Scene
   createScene(): any {
     const scene = new BABYLON.Scene(this.engine);
-    this.scene = scene;
+    // TODO FIX: color should be set dynamically, centralized
+    scene.clearColor = new BABYLON.Color4(10 / 255, 20 / 255, 40 / 255, 1);
 
     // lock camera at origin, looking forward
     // Vector3(0, 1, -5) -> x, y, z coordinates, position
     const camera = new BABYLON.FreeCamera('camera', new BABYLON.Vector3(0, 1, -5), scene);
     camera.position = new BABYLON.Vector3(0, 0, -1.4);
+
     camera.setTarget(new BABYLON.Vector3(0, 0, 1));
     camera.attachControl(this.canvas, false); // "false" disables user controls, otherwise true
     camera.detachControl(); // prevents camera from being controlled by user
