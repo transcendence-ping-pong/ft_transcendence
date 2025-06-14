@@ -154,6 +154,7 @@ sudo docker-compose up --build frontend
 Z axis is pointing forward, babylon has different coordinate system than Blender
 | **requestAnimationFrame** | [MDN web docs](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame) | Constantly updates the scene, i.e. animations. Running two loops, one for Babylon.js and other for GameCanvas should be avoided. In Babylon render loop, call a method to update the 2D game (that acts as a dynamic texture in Babylon, applied to a plane). |
 | **Prune/remove docker** | `docker system prune -af` `docker volume prune -f` | Prune unused resources. Clean unused volumes and images/containers `docker rmi` `docker rm`. |
+| **node_modules** | `docker-compose exec backend ls node_modules` | See backend/frontend `node_modules`, you can exec into the container. |
 
 ### References Game History
 [Pong Game (1972)](https://www.ponggame.org/)</br>

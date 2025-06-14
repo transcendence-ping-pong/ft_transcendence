@@ -1,0 +1,10 @@
+{
+  "name": "ft_transcendence-backend",
+  "version": "1.0.0",
+  "main": "src/services/mock-server.js",
+  "type": "commonjs",
+  "dependencies": {
+    "fastify": "^4.27.2",
+    "@fastify/cors": "^8.4.0"
+  }
+}
