@@ -21,6 +21,6 @@ RUN		npm install fastify @fastify/static
 
 COPY src ./src
 
-EXPOSE 4000
+EXPOSE 5000
 
 CMD ["node", "src/index.js"]
