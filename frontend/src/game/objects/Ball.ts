@@ -1,6 +1,6 @@
-import { Paddle } from '../objects/Paddle.js';
-import { GameLevel, BallLevelConfig } from '../../utils/gameUtils/types.js';
-import { GameCourtBounds } from './GameCourtBounds.js';
+import { Paddle } from '@/game/objects/Paddle.js';
+import { GameLevel, BallLevelConfig } from '@/utils/gameUtils/types.js';
+import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
 
 export class Ball {
   constructor(

@@ -1,8 +1,8 @@
-import { GameManager } from './GameManager.js';
-import { GameCourtBounds } from './objects/GameCourtBounds.js';
-import { Ball } from './objects/Ball.js';
-import { Paddle } from './objects/Paddle.js';
-import { GameLevel, GameSize } from '../utils/gameUtils/types.js';
+import { GameManager } from '@/game/GameManager.js';
+import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
+import { Ball } from '@/game/objects/Ball.js';
+import { Paddle } from '@/game/objects/Paddle.js';
+import { GameLevel, GameSize } from '@/utils/gameUtils/types.js';
 
 /*
   Game Canvas responsabilities:

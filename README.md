@@ -144,7 +144,7 @@ sudo docker-compose up --build frontend
 | Task | Prototype | Description |
 |:----|:-----:|:--------|
 | **Installing dependencies** | `cat /home/ubuntu/.npm/_logs/$(ls -t /home/ubuntu/.npm/_logs/ \| head -n1)` | Check for errors in `npm log`. |
-| **Bundlers** | `Webpack, Vite, Parcel` | Prepares the code (JS and other assets e.g. CSS, images, etc) for the browser, ready to be loaded. |
+| **Bundler** | `Webpack, Vite, Parcel` | Prepares the code (JS and other assets e.g. CSS, images, etc) for the browser, ready to be loaded. Using vite as bundler, don't need to manually compile tailwind CSS or Typescript. No need of `RUN npx tailwindcss -i ./src/styles/tailwind.css -o ./src/styles/output.css` `RUN npx tsc`. Moreover, now hot reload is available. |
 | **Material JPG 1K** | `Ambient Occlusion(AO)` `Normal` `Specular` `Diffuse` | |
 | **HDRI 2K HDR** | `` | |
 | **Convert HDRI image** | [Babylon IBL tool](https://www.babylonjs.com/tools/ibl/) | After processing you should see something like an unwrapped box (environment file). |
@@ -153,8 +153,8 @@ sudo docker-compose up --build frontend
 | **[Babylon Node Material Editor](https://nme.babylonjs.com/)** | | |
 Z axis is pointing forward, babylon has different coordinate system than Blender
 | **requestAnimationFrame** | [MDN web docs](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame) | Constantly updates the scene, i.e. animations. Running two loops, one for Babylon.js and other for GameCanvas should be avoided. In Babylon render loop, call a method to update the 2D game (that acts as a dynamic texture in Babylon, applied to a plane). |
-| **Prune/remove docker** | `docker system prune -af` `docker volume prune -f` | Prune unused resources. Clean unused volumes and images/containers `docker rmi` `docker rm`. |
-| **node_modules** | `docker-compose exec backend ls node_modules` | See backend/frontend `node_modules`, you can exec into the container. |
+| **Prune/remove docker** | `docker system prune -af` `docker volume prune -f` | Prune unused resources. Clean unused volumes and images/containers `docker rmi` `docker rm` `docker-compose down`. |
+| **node_modules** | `docker-compose exec backend ls node_modules` `docker-compose exec frontend ls -l /app/dist` | See backend/frontend `node_modules`, you can exec into the container. |
 
 ### References Game History
 [Pong Game (1972)](https://www.ponggame.org/)</br>

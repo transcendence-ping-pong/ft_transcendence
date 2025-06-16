@@ -1,4 +1,4 @@
-import { GameSize, CourtBoundsSpecs } from '../../utils/gameUtils/types.js';
+import { GameSize, CourtBoundsSpecs } from '@/utils/gameUtils/types.js';
 
 // single source of truth for the game limits
 export class GameCourtBounds {

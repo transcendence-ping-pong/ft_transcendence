@@ -1,5 +1,5 @@
-import { GameSize, PADDLE_SPEED } from '../../utils/gameUtils/types.js';
-import { GameCourtBounds } from './GameCourtBounds.js';
+import { GameSize, PADDLE_SPEED } from '@/utils/gameUtils/types.js';
+import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
 
 export class Paddle {
   private width: number;

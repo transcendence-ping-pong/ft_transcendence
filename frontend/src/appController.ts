@@ -1,8 +1,8 @@
-import { BabylonCanvas } from './game/BabylonCanvas.js';
-import { BabylonGUI } from './game/BabylonGUI.js';
+import { BabylonCanvas } from '@/game/BabylonCanvas';
+import { BabylonGUI } from '@/game/BabylonGUI.js';
 // import GameCanvas for its type and to access its methods/control game state
-import { GameCanvas } from './game/GameCanvas.js';
-import { GameLevel } from './utils/gameUtils/types.js';
+import { GameCanvas } from '@/game/GameCanvas.js';
+import { GameLevel } from '@/utils/gameUtils/types.js';
 
 export class AppController {
   private babylonCanvas: BabylonCanvas;

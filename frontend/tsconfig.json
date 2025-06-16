@@ -2,16 +2,17 @@
   "compilerOptions": {
     "module": "esnext",
     "target": "es2016",
+    "outDir": "dist",
+    "rootDir": "src",
     "moduleResolution": "node",
     "resolveJsonModule": true, // allow importing JSON files
     "allowSyntheticDefaultImports": true,
-    // TODO FIX: only work with bundler!!!!
-    // "baseUrl": "./",
-    // "paths": {
-    //   "@/*": [
-    //     "src/*"
-    //   ]
-    // },
+    "baseUrl": "./",
+    "paths": {
+      "@/*": [
+        "src/*" // it is possible to use aliases because of Vite Bundler
+      ]
+    },
   },
   "include": [
     "src/**/*"

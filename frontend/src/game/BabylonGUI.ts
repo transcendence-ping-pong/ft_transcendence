@@ -1,5 +1,5 @@
-import { t } from '../utils/Translations.js';
-import { GameLevel } from '../utils/gameUtils/types.js';
+import { t } from '@/utils/Translations.js';
+import { GameLevel } from '@/utils/gameUtils/types.js';
 
 declare var BABYLON: any; // tyoescript doesn't know about BABYLON global import
 // TODO: Scene and Engine types? how to import them?

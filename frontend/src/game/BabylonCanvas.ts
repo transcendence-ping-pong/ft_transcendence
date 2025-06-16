@@ -1,5 +1,5 @@
-import { GameCanvas } from './GameCanvas.js';
-import { crtFragmentShader } from '../utils/gameUtils/CrtFragmentShader.js';
+import { GameCanvas } from '@/game/GameCanvas.js';
+import { crtFragmentShader } from '@/utils/gameUtils/CrtFragmentShader.js';
 
 declare var BABYLON: any; // tyoescript doesn't know about BABYLON global import
 // TODO: Scene and Engine types? how to import them?

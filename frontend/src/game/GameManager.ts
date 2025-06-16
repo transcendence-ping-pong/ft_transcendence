@@ -1,4 +1,4 @@
-import { GameLevel } from '../utils/gameUtils/types.js';
+import { GameLevel } from '@/utils/gameUtils/types.js';
 
 export class GameManager {
   public score: [number, number] = [0, 0];
