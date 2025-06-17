@@ -10,4 +10,4 @@ COPY src ./src
 
 EXPOSE 4000
 
-CMD ["node", "src/services/mock-server.js"]
+CMD ["node", "src/index.js"]

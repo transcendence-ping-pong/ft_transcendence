@@ -1,10 +1,13 @@
 {
-  "name": "ft_transcendence-backend",
+  "name": "testingauthenticator",
   "version": "1.0.0",
-  "main": "src/services/mock-server.js",
-  "type": "commonjs",
+  "main": "./src/index.js",
   "dependencies": {
-    "fastify": "^4.27.2",
-    "@fastify/cors": "^8.4.0"
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
+    "speakeasy": "^2.0.0",
+    "qrcode": "^1.5.1",
+    "google-auth-library": "^8.0.0",
+    "dotenv": "^16.0.3"
   }
 }
