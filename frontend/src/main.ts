@@ -1,15 +1,16 @@
-import { AppController } from './appController.js';
 import { getTranslations } from './utils/Translations.js';
 import { state } from './state.js';
-import { getUsers } from './services/api.js';
 import { renderHome } from './pages/home.js';
-import { login } from './pages/login.js';
-import { game } from './pages/game.js';
+import { renderLogin } from '@/pages/login.js';
+import { renderGame } from '@/pages/game.js';
+import '@/styles/index.css';
+
+// import { getUsers } from './services/api.js';
 
 const routes = {
   "/": renderHome,
-  // "/login": login,
-  // "/game": game,
+  "/login": renderLogin,
+  "/game": renderGame,
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -24,16 +25,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else if (contentDiv) {
     contentDiv.innerHTML = `<h1>404 Not Found</h1`;
   }
-  // const controller = new AppController('app'); // pass container id
-
-  // try {
-  //   const users = await getUsers();
-  //   const h1 = document.createElement('h1');
-  //   h1.textContent = 'Users: ' + users.map(u => u.name).join(', ');
-  //   document.body.prepend(h1);
-  // } catch (err) {
-  //   const h1 = document.createElement('h1');
-  //   h1.textContent = 'Failed to fetch users';
-  //   document.body.prepend(h1);
-  // }
 });

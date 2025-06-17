@@ -144,7 +144,8 @@ sudo docker-compose up --build frontend
 | Task | Prototype | Description |
 |:----|:-----:|:--------|
 | **Installing dependencies** | `cat /home/ubuntu/.npm/_logs/$(ls -t /home/ubuntu/.npm/_logs/ \| head -n1)` | Check for errors in `npm log`. |
-| **Bundler** | `Webpack, Vite, Parcel` | Prepares the code (JS and other assets e.g. CSS, images, etc) for the browser, ready to be loaded. Using vite as bundler, don't need to manually compile tailwind CSS or Typescript. No need of `RUN npx tailwindcss -i ./src/styles/tailwind.css -o ./src/styles/output.css` `RUN npx tsc`. Moreover, now hot reload is available. |
+| **Bundler** | `Webpack, Vite, Parcel` | Prepares the code (JS and other assets e.g. CSS, images, etc) for the browser, ready to be loaded. Using vite as bundler, don't need to manually compile tailwind CSS or Typescript. No need of `RUN npx tailwindcss -i ./src/styles/tailwind.css -o ./src/styles/output.css` `RUN npx tsc`. Moreover, now hot reload is available and not need of `<link href="./styles/output.css" rel="stylesheet" />` in `index.html`. |
+| **ES module** | `declare var BABYLON: any;` | Typescript doesn't know about BABYLON global import. Scene and Engine TS types? how to import them? Not having a bundler is really annoying (e.g. Vite: hot module replacement, instant server start, etc.) — with Vite it is possible to import Babylon as an ES module and get full TS support. |
 | **Material JPG 1K** | `Ambient Occlusion(AO)` `Normal` `Specular` `Diffuse` | |
 | **HDRI 2K HDR** | `` | |
 | **Convert HDRI image** | [Babylon IBL tool](https://www.babylonjs.com/tools/ibl/) | After processing you should see something like an unwrapped box (environment file). |
