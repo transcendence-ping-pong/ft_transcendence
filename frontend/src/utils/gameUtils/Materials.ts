@@ -1,5 +1,5 @@
-declare var BABYLON: any; // tyoescript doesn't know about BABYLON global import
-// TODO: see comments in BabylonCanvas.ts regarding import
+import * as BABYLON from "@babylonjs/core";
+import { Color3, Engine, Scene, FreeCamera, HemisphericLight, Vector3, MeshBuilder, DynamicTexture, StandardMaterial, PBRMaterial } from "@babylonjs/core";
 
 const STANDARD_TEXTURE_PATH = './assets/standardTextures/';
 const PBR_TEXTURE_PATH = './assets/pbrTextures/';
@@ -33,7 +33,7 @@ export interface PBRMaterialSpecs {
 
 export interface PBREmissiveMaterialSpecs extends PBRMaterialSpecs {
   emissive?: string; // emissive texture for PBR materials
-  emissiveColor?: { r: number; g: number; b: number }; // TODO TYPE: BABYLON.Color3
+  emissiveColor?: Color3;
   emissiveIntensity?: number; // intensity of the emissive color
   glowIntensity?: number; // intensity of the glow effect
 }
@@ -82,7 +82,7 @@ function generatePBREmissiveMaterialSpecs(name: string): PBREmissiveMaterialSpec
   return generateTextureSpecs<PBREmissiveMaterialSpecs>(
     name,
     ['diffuse', 'normal', 'arm', 'metallic', 'roughness', 'emissive'],
-    { emissiveColor: { r: 1, g: 1, b: 1 }, emissiveIntensity: 1, glowIntensity: 1 }
+    { emissiveColor: new Color3(1, 1, 1), emissiveIntensity: 1, glowIntensity: 1 }
   );
 }
 
@@ -107,17 +107,15 @@ export const PBRMaterialLibrary: { [key: string]: PBRMaterialSpecs } = {
  * @returns A new StandardMaterial with the specified textures applied.
  */
 export function createStandardMaterial(
-  scene: any,
+  scene: Scene,
   specs: StandardMaterialSpecs,
   options: { uvScale: number; invertNormalMap: boolean } = { uvScale: 4, invertNormalMap: false }
-): any {
+): StandardMaterial {
 
   if (!specs) {
     throw new Error(`Standard material not found in library.`);
   }
 
-  // TODO TYPE: scene should be Scene type from Babylon.js
-  // TODO TYPE: function should return type BABYLON.StandardMaterial
   const material = new BABYLON.StandardMaterial(specs.name, scene);
 
   // Helper to load and scale a texture
@@ -148,12 +146,11 @@ export function createStandardMaterial(
 }
 
 // Physically Based Rendering (PBR) materials
-// TODO TYPE: should return type BABYLON.PBRMaterial
 export function createPBRMaterial(
-  scene: any,
+  scene: Scene,
   specs: PBRMaterialSpecs,
   options: { roughness?: number; metallic?: number; invertNormalMap?: boolean } = {}
-): any {
+): PBRMaterial {
 
   if (!specs) {
     throw new Error(`PBR material not found in library.`); // TODO ERROR

@@ -1,27 +1,23 @@
 import { t } from '@/utils/Translations.js';
 import { GameLevel } from '@/utils/gameUtils/types.js';
-
-declare var BABYLON: any; // tyoescript doesn't know about BABYLON global import
-// TODO: Scene and Engine types? how to import them?
-// TODO: not having a bundler is really annoying, check if we can use Vite??
-// Vite: hot module replacement, instant server start, etc.
+import { AdvancedDynamicTexture, Button, Control, TextBlock } from "@babylonjs/gui";
 
 // read more here: https://doc.babylonjs.com/features/featuresDeepDive/gui/gui3D/
 export class BabylonGUI {
-  private advancedTexture: any;
-  private startButton: any;
-  private difficultyButtons: any[] = [];
-  private countdownText: any;
+  private advancedTexture: AdvancedDynamicTexture;
+  private startButton: Button | null = null;
+  private difficultyButtons: Button[] = [];
+  private countdownText: TextBlock | null = null;
 
   constructor(scene: any) {
-    this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
+    this.advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
     this.advancedTexture.background = "#000000cc"; // semi-transparent black
   }
 
   showStartButton(onStart: () => void) {
     this.clearGUI();
 
-    this.startButton = BABYLON.GUI.Button.CreateSimpleButton("startButton", t("game.start"));
+    this.startButton = Button.CreateSimpleButton("startButton", t("game.start"));
     this.startButton.width = "400px";
     this.startButton.height = "200px";
     this.startButton.fontSize = 48;
@@ -30,13 +26,14 @@ export class BabylonGUI {
     this.startButton.thickness = 4;
     this.startButton.cornerRadius = 20;
     this.startButton.fontWeight = "bold";
+    // @ts-ignore
     this.startButton.borderColor = "#fff";
     this.startButton.shadowOffsetX = 2;
     this.startButton.shadowOffsetY = 2;
     this.startButton.shadowColor = "#000";
     this.startButton.shadowBlur = 8;
-    this.startButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-    this.startButton.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+    this.startButton.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+    this.startButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
 
     this.startButton.onPointerUpObservable.add(() => {
       onStart();
@@ -61,7 +58,7 @@ export class BabylonGUI {
 
     levelKeys.forEach((level, idx) => {
       const label = t(`game.level${idx + 1}`);
-      const button = BABYLON.GUI.Button.CreateSimpleButton(level + "Button", label);
+      const button = Button.CreateSimpleButton(level + "Button", label);
       button.width = "400px";
       button.height = "150px";
       button.fontSize = 42;
@@ -70,13 +67,14 @@ export class BabylonGUI {
       button.thickness = 4;
       button.cornerRadius = 20;
       button.fontWeight = "bold";
+      // @ts-ignore
       button.borderColor = "#fff";
       button.shadowOffsetX = 2;
       button.shadowOffsetY = 2;
       button.shadowColor = "#000";
       button.shadowBlur = 8;
-      button.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-      button.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+      button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+      button.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
       button.top = (idx - 1) * 200; // 160px vertical spacing (centered, above, below)
 
       button.onPointerUpObservable.add(() => {
@@ -97,13 +95,13 @@ export class BabylonGUI {
   showCountdown(seconds: number, onDone: () => void) {
     this.clearGUI();
 
-    this.countdownText = new BABYLON.GUI.TextBlock();
+    this.countdownText = new TextBlock();
     this.countdownText.text = seconds.toString();
     this.countdownText.color = "#fff";
     this.countdownText.fontSize = 250;
     this.countdownText.fontWeight = "bold";
-    this.countdownText.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-    this.countdownText.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+    this.countdownText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+    this.countdownText.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
 
     this.advancedTexture.addControl(this.countdownText);
 

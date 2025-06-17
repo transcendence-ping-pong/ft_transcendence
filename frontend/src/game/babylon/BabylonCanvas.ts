@@ -1,10 +1,7 @@
 import { GameCanvas } from '@/game/GameCanvas.js';
 import { crtFragmentShader } from '@/utils/gameUtils/CrtFragmentShader.js';
-
-declare var BABYLON: any; // tyoescript doesn't know about BABYLON global import
-// TODO: Scene and Engine types? how to import them?
-// TODO: not having a bundler is really annoying, check if we can use Vite??
-// Vite: hot module replacement, instant server start, etc.
+import * as BABYLON from "@babylonjs/core";
+import { Engine, Scene, FreeCamera, HemisphericLight, Vector3, MeshBuilder, DynamicTexture, StandardMaterial, GlowLayer, PostProcess } from "@babylonjs/core";
 
 /*
   BabylonCanvas responsabilities:
@@ -25,8 +22,8 @@ declare var BABYLON: any; // tyoescript doesn't know about BABYLON global import
 export class BabylonCanvas {
   private canvas: HTMLCanvasElement;
   private gameCanvas: GameCanvas;
-  private engine: any; // TODO TYPE: BABYLON.Engine type
-  private scene: any; // TODO TYPE: BABYLON.Scene type
+  private engine: Engine;
+  private scene: Scene;
   private dynamicTexture?: any;
 
   constructor(containerId: string) {
@@ -47,8 +44,7 @@ export class BabylonCanvas {
     window.addEventListener('resize', () => this.engine.resize());
   }
 
-  // TODO TYPE: should return type BABYLON.Scene
-  createScene(): any {
+  createScene(): Scene {
     const scene = new BABYLON.Scene(this.engine);
     // TODO FIX: color should be set dynamically, centralized
     scene.clearColor = new BABYLON.Color4(10 / 255, 20 / 255, 40 / 255, 1);
