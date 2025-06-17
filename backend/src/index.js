@@ -17,7 +17,7 @@ const client = new OAuth2Client(
 
 let currentLoggedInUser = null;
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static('src/public'));
 
 const db = new sqlite3.Database('./authenticator.db');
 
