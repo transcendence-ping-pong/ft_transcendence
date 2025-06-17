@@ -6,7 +6,7 @@ const { OAuth2Client } = require('google-auth-library');
 require('dotenv').config();
 
 const app = express();
-const port = 3000;
+const port = 4000;
 
 // Initialize Google OAuth Client
 const client = new OAuth2Client(
@@ -15,9 +15,9 @@ const client = new OAuth2Client(
     process.env.GOOGLE_REDIRECT_URI
 );
 
-let currentLoggedInUser = null; 
+let currentLoggedInUser = null;
 app.use(express.json());
-app.use(express.static('public')); 
+app.use(express.static('public'));
 
 const db = new sqlite3.Database('./authenticator.db');
 
@@ -50,14 +50,14 @@ app.post('/generate', (req, res) => {
             return res.status(404).send({ error: 'User not found' });
         }
 
-        const secret = speakeasy.generateSecret({ name: "ft_transcendence("+ currentLoggedInUser+")" });
+        const secret = speakeasy.generateSecret({ name: "ft_transcendence(" + currentLoggedInUser + ")" });
 
-        db.run(`UPDATE users SET secret = ? WHERE username = ?`, [secret.base32, username], function(err) {
+        db.run(`UPDATE users SET secret = ? WHERE username = ?`, [secret.base32, username], function (err) {
             if (err) {
                 return res.status(500).send({ error: 'Error saving secret to database' });
             }
 
-            qrcode.toDataURL(secret.otpauth_url, function(err, qrCodeUrl) {
+            qrcode.toDataURL(secret.otpauth_url, function (err, qrCodeUrl) {
                 if (err) {
                     return res.status(500).send({ error: 'Error generating QR code' });
                 }
@@ -142,7 +142,7 @@ app.post('/signup', (req, res) => {
         return res.status(400).send({ error: 'Username and password are required' });
     }
 
-    db.run(`INSERT INTO users (username, password, secret) VALUES (?, ?, ?)`, [username, password, ''], function(err) {
+    db.run(`INSERT INTO users (username, password, secret) VALUES (?, ?, ?)`, [username, password, ''], function (err) {
         if (err) {
             if (err.code === 'SQLITE_CONSTRAINT') {
                 return res.status(400).send({ error: 'Username already exists' });
@@ -198,7 +198,7 @@ app.post('/logout', (req, res) => {
     //     return res.status(403).send({ error: 'You are not logged in' });
     // }//idek why i cant logout if reload the server logged on with gmail
     currentLoggedInUser = null;
-    req.session = null; 
+    req.session = null;
 
     res.send({ message: 'Logout successful' });
 });
@@ -258,15 +258,15 @@ app.get('/auth/google/callback', async (req, res) => {
 
             if (!row) {
                 // Create a new user if not found
-                db.run(`INSERT INTO users (username, password, secret, google_id, email) VALUES (?, ?, ?, ?, ?)`, 
-                    [name, '', '', googleId, email], function(err) {
-                    if (err) {
-                        return res.status(500).send({ error: 'Error creating user in database' });
-                    }
+                db.run(`INSERT INTO users (username, password, secret, google_id, email) VALUES (?, ?, ?, ?, ?)`,
+                    [name, '', '', googleId, email], function (err) {
+                        if (err) {
+                            return res.status(500).send({ error: 'Error creating user in database' });
+                        }
 
-                    currentLoggedInUser = name; // Update currentLoggedInUser
-                    res.redirect(`/logged-in?username=${name}`);
-                });
+                        currentLoggedInUser = name; // Update currentLoggedInUser
+                        res.redirect(`/logged-in?username=${name}`);
+                    });
             } else {
                 // User exists, log them in
                 currentLoggedInUser = row.username; // Update currentLoggedInUser
