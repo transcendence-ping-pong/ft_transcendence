@@ -1,26 +1,26 @@
 # Uses latest node.js image as a base image.
-FROM 	node:latest
+FROM 	node:18-alpine
  
 WORKDIR /app
 
 # Installs SQLite
 
-RUN apt-get update && apt-get install -y sqlite3
+# RUN apt-get update && apt-get install -y sqlite3
 
 # Installs fastify
 
-RUN		npm init -y
+# RUN		npm init -y
 
-RUN		npm install fastify @fastify/static 
+# RUN		npm install fastify @fastify/static 
 
 # OR installs fastify from package.json
 
-# COPY package.json ./
+COPY package.json ./
 
-# RUN npm install
+RUN npm install
 
 COPY src ./src
 
-EXPOSE 5000
+EXPOSE 4000
 
 CMD ["node", "src/index.js"]
