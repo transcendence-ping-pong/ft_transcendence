@@ -4,6 +4,16 @@ export enum GameLevel {
   HARD = 'HARD'
 }
 
+export enum GameScore {
+  WIN = 1,         // Player wins the game
+  LOSE = -1,       // Player loses the game
+  DRAW = 0,        // Game ends in a draw
+  POINT = 1,       // Player scores a point
+  NO_POINT = 0,     // No point scored
+  LEFT = 'LEFT',   // Player is on the left side
+  RIGHT = 'RIGHT'  // Player is on the right side
+}
+
 // TODO CONCEPT: speed increases after hits, until reaches MAX?? Or after first hit?
 export const BallLevelConfig = {
   [GameLevel.EASY]: { MIN: 4, MAX: 6, maxBounceAngle: Math.PI / 6 }, // 30°

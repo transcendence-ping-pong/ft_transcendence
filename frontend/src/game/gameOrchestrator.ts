@@ -2,7 +2,7 @@ import { BabylonCanvas } from '@/game/babylon/BabylonCanvas';
 import { BabylonGUI } from '@/game/babylon/BabylonGUI.js';
 // import GameCanvas for its type and to access its methods/control game state
 import { GameCanvas } from '@/game/GameCanvas.js';
-import { GameLevel } from '@/utils/gameUtils/types.js';
+import { GameLevel, GameScore } from '@/utils/gameUtils/types.js';
 
 export class gameOrchestrator {
   private babylonCanvas: BabylonCanvas;
@@ -25,6 +25,7 @@ export class gameOrchestrator {
         this.gameCanvas.setLevel(level as GameLevel);
         this.gui.showCountdown(3, () => {
           this.gameCanvas.startGame();
+          this.gui.showScoreBoard({ [GameScore.LEFT]: 1, [GameScore.RIGHT]: 0 }, () => { });
         });
       });
     });
