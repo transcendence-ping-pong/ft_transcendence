@@ -4,14 +4,16 @@ export enum GameLevel {
   HARD = 'HARD'
 }
 
+// TODO CONCEPT: should we use the win by two points rule?
 export enum GameScore {
-  WIN = 1,         // Player wins the game
-  LOSE = -1,       // Player loses the game
-  DRAW = 0,        // Game ends in a draw
-  POINT = 1,       // Player scores a point
-  NO_POINT = 0,     // No point scored
+  WIN = 1,
+  LOSE = -1,
+  DRAW = 0,
+  POINT = 1,
+  NO_POINT = 0,
+  SCORE_MAX = 11,
   LEFT = 'LEFT',   // Player is on the left side
-  RIGHT = 'RIGHT'  // Player is on the right side
+  RIGHT = 'RIGHT',  // Player is on the right side
 }
 
 // TODO CONCEPT: speed increases after hits, until reaches MAX?? Or after first hit?

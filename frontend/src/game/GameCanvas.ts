@@ -61,7 +61,7 @@ export class GameCanvas {
     window.addEventListener('keyup', this.handleKeyUp);
 
     // canvas 2D context
-    const ctx = this.canvas.getContext('2d');
+    const ctx = this.canvas.getContext('2d', { alpha: true });
     if (!ctx) throw new Error("Could not get canvas context");
     this.ctx = ctx;
 
@@ -77,16 +77,10 @@ export class GameCanvas {
 
   // draw stuff
   public render2DGameCanvas(runLoop: boolean = false) {
-    // clear!!!!!!!!!!!!!!!!!!!
-    this.ctx.fillStyle = "rgba(10, 20, 40, 0.7)";
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    // clear canvas
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    this.courtBounds.draw(this.ctx);
-
-    this.paddles.forEach(paddle => paddle.draw(this.ctx));
-
-    this.ball.draw(this.ctx);
-
+    // update position ball + paddles
     // ball constantly moves... TODO CONCEPT: add some randomness to the ball movement
     if (this.gameManager.isStarted) {
       this.ball.updatePosition(
@@ -100,12 +94,17 @@ export class GameCanvas {
       );
     }
 
-    // Move paddles if direction is set
+    // move paddles if direction is set
     for (let i = 0; i < this.paddles.length; i++) {
       const dir = this.paddleDirections[i];
       if (dir === 'up') this.paddles[i].moveUp();
       if (dir === 'down') this.paddles[i].moveDown();
     }
+
+    // draw stuff
+    this.courtBounds.draw(this.ctx);
+    this.paddles.forEach(paddle => paddle.draw(this.ctx));
+    this.ball.draw(this.ctx);
 
     // runLoop when GameCanvas is responsible for the animation
     if (runLoop) {
@@ -123,7 +122,7 @@ export class GameCanvas {
 
   public startGame() {
     this.gameManager.startGame();
-    // Optionally reset ball and paddles here if needed
+    // reset ball and paddles here?????
     this.reset();
   }
 

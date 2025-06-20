@@ -4,9 +4,8 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#1DA1F2', // TODO STYLE: check primary, secondary, accent colors
-        secondary: '#14171A',
-        accent: '#657786',
+        primary: "#ff0000",
+        secondary: "",
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],

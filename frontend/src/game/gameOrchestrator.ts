@@ -2,21 +2,24 @@ import { BabylonCanvas } from '@/game/babylon/BabylonCanvas';
 import { BabylonGUI } from '@/game/babylon/BabylonGUI.js';
 // import GameCanvas for its type and to access its methods/control game state
 import { GameCanvas } from '@/game/GameCanvas.js';
+// import { GameManager } from '@/game/GameManager';
 import { GameLevel, GameScore } from '@/utils/gameUtils/types.js';
 
 export class gameOrchestrator {
   private babylonCanvas: BabylonCanvas;
   private gui: BabylonGUI;
   private gameCanvas: GameCanvas;
+  // TODO CONCEPT: should we have a GameManager here?
+  // instead of instantiating it in GameCanvas?
+  // private gameManager: GameManager;
 
   constructor(containerId: string) {
     this.babylonCanvas = new BabylonCanvas(containerId);
+    this.gui = new BabylonGUI(this.babylonCanvas.getScene());
     // reference instance of GameCanvas being created/managed by BabylonCanvas
     this.gameCanvas = this.babylonCanvas.getGameCanvas();
-    this.gui = new BabylonGUI(this.babylonCanvas.getScene());
-
     this.setupMenuFlow();
-    this.babylonCanvas.startRenderLoop();
+    this.babylonCanvas.startRenderLoop(this.gameCanvas);
   }
 
   setupMenuFlow() {
