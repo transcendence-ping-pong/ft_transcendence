@@ -1,7 +1,8 @@
 import { GameCanvas } from '@/game/GameCanvas.js';
+import { hexToColor4 } from '@/utils/Colors.js';
 import { crtFragmentShader } from '@/utils/gameUtils/CrtFragmentShader.js';
 import * as BABYLON from "@babylonjs/core";
-import { Engine, Scene, FreeCamera, HemisphericLight, Vector3, MeshBuilder, DynamicTexture, StandardMaterial, GlowLayer, PostProcess } from "@babylonjs/core";
+import { Engine, Scene, Color3, StandardMaterial } from "@babylonjs/core";
 
 /*
   BabylonCanvas responsabilities:
@@ -46,8 +47,9 @@ export class BabylonCanvas {
 
   createScene(): Scene {
     const scene = new BABYLON.Scene(this.engine);
-    // TODO FIX: color should be set dynamically, centralized
-    scene.clearColor = new BABYLON.Color4(10 / 255, 20 / 255, 40 / 255, 1);
+
+    // TODO: centralize color management
+    scene.clearColor = hexToColor4("#1a2233", 1);
 
     // lock camera at origin, looking forward
     // Vector3(0, 1, -5) -> x, y, z coordinates, position
@@ -75,12 +77,12 @@ export class BabylonCanvas {
 
     var postProcess = new BABYLON.PostProcess("CRTShaderPostProcess", "crt", ["curvature", "screenResolution", "scanLineOpacity", "vignetteOpacity", "brightness", "vignetteRoundness"], null, 0.25, camera);
     postProcess.onApply = function (effect) {
-      effect.setFloat2("curvature", 4.5, 4.5); // by default was 3.0, 3.0
-      effect.setFloat2("screenResolution", 240, 160);
-      effect.setFloat2("scanLineOpacity", 1, 1);
+      effect.setFloat2("curvature", 4.5, 4.5); // default 3.0, 3.0
+      effect.setFloat2("screenResolution", 240, 240); // default 240, 160
+      effect.setFloat2("scanLineOpacity", 0.8, 0.8); // default 1, 1
       effect.setFloat("vignetteOpacity", 1);
       effect.setFloat("brightness", 4);
-      effect.setFloat("vignetteRoundness", 2.0)
+      effect.setFloat("vignetteRoundness", 2.0) // default 2.0
     };
 
     return scene;
@@ -89,15 +91,27 @@ export class BabylonCanvas {
   // constantly update the scene, i.e. animations
   // SINGLE ANIMATION LOOP: in Babylon render loop, call a method to update the 2D game too
   // avoid two separate requestAnimationFrame running at the same time
-  public startRenderLoop() {
+  // MAIN LOOP WILL BE CALLED BY GAME ORCHESTRATOR
+  public startRenderLoop(gameCanvas: GameCanvas) {
     this.engine.runRenderLoop(() => {
-      if (this.gameCanvas) {
-        this.gameCanvas.render2DGameCanvas();
-      }
-      if (this.dynamicTexture && this.gameCanvas) {
-        this.dynamicTexture.getContext().drawImage(this.gameCanvas.getCanvasElement(), 0, 0);
+      if (this.dynamicTexture && gameCanvas) {
+        // render 2D game onto offscreen canvas (buffer) managed by GameCanvas
+        gameCanvas.render2DGameCanvas();
+
+        const texSize = this.dynamicTexture.getSize();
+        const ctx = this.dynamicTexture.getContext();
+        ctx.clearRect(0, 0, texSize.width, texSize.height);
+        // copy offscreen canvas to dynamic texture
+        // map sorce canvas to destination texture, scaling it to fit
+        // drawImage(src,0,0,sw,sh,0,0,dw,dh);
+        ctx.drawImage(
+          gameCanvas.getCanvasElement(),
+          0, 0, gameCanvas.getCanvasElement().width, gameCanvas.getCanvasElement().height,
+          0, 0, texSize.width, texSize.height
+        );
         this.dynamicTexture.update();
       }
+
       this.scene.render();
     });
   }
@@ -110,24 +124,37 @@ export class BabylonCanvas {
       console.warn(`Mesh "${meshName}" not found for dynamic texture.`);
       return;
     }
+
     this.dynamicTexture = new BABYLON.DynamicTexture(
       "dynamicGameTexture",
       { width: sourceCanvas.width, height: sourceCanvas.height },
       this.scene,
-      false
+      false // do not generate mipmaps (2D canvas doesn't need them)
     );
-    this.dynamicTexture.getContext().drawImage(sourceCanvas, 0, 0);
-    this.dynamicTexture.update();
 
-    const mat = new BABYLON.StandardMaterial("screenMat", this.scene);
+    this.dynamicTexture.hasAlpha = true;
+
+    // material setup
+    // 2D canvas background is trasparent
+    // material needs to have alpha blending
+    // so background color is set by Babylon scene and...
+    // there is no need of matching the plane width size perfectly with the camera view
+    const mat = new StandardMaterial("screenMat", this.scene);
+    mat.diffuseTexture = this.dynamicTexture;
+    mat.diffuseTexture.hasAlpha = true;
     mat.emissiveTexture = this.dynamicTexture;
-    mat.emissiveColor = new BABYLON.Color3(0.1, 0.1, 0.1);
-    mat.diffuseColor = new BABYLON.Color3(0, 0, 0);
+    mat.opacityTexture = this.dynamicTexture;
+    mat.diffuseColor = new Color3(0, 0, 0);
+    mat.emissiveColor = new Color3(1, 1, 1);
+    mat.alpha = 1;
+    mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+    mat.backFaceCulling = false;
     mesh.material = mat;
 
     const glowLayer = new BABYLON.GlowLayer("glow", this.scene);
-    glowLayer.intensity = 1; // TODO FIX: is it making any difference?
+    glowLayer.intensity = 0.25;
   }
+
 
   public getGameCanvas() {
     return this.gameCanvas;

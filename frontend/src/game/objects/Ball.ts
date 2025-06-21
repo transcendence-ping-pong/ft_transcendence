@@ -10,6 +10,9 @@ export class Ball {
     public vy: number, // idem, but for y axis
     public size: number, // size of the ball (it is a square, as the original Pong game)
     public color: string = "white",
+    public trail: { x: number; y: number; alpha?: number }[] = [],
+    private lastTrailX?: number,
+    private lastTrailY?: number
     // public currentLevel: GameLevel = GameLevel.EASY
   ) { }
 
@@ -75,6 +78,9 @@ export class Ball {
 
         this.x = (left + right) / 2;
         this.y = (top + bottom) / 2;
+        this.trail = [];
+        this.lastTrailX = undefined;
+        this.lastTrailY = undefined;
 
         // TODO FIX: check!!!!!!!!!!!!!!!!!!!!!
         const angle = (Math.random() - 0.5) * maxBounceAngle; // random angle?

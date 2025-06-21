@@ -1,5 +1,5 @@
 import { t } from '@/utils/Translations.js';
-import { GameLevel } from '@/utils/gameUtils/types.js';
+import { GameLevel, GameScore } from '@/utils/gameUtils/types.js';
 import { AdvancedDynamicTexture, Button, Control, TextBlock } from "@babylonjs/gui";
 
 // read more here: https://doc.babylonjs.com/features/featuresDeepDive/gui/gui3D/
@@ -8,6 +8,7 @@ export class BabylonGUI {
   private startButton: Button | null = null;
   private difficultyButtons: Button[] = [];
   private countdownText: TextBlock | null = null;
+  private scoreBoard: TextBlock[] = [];
 
   constructor(scene: any) {
     this.advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
@@ -142,6 +143,28 @@ export class BabylonGUI {
       }
     };
     fade();
+  }
+
+  showScoreBoard(score: { [GameScore.LEFT]: number, [GameScore.RIGHT]: number }, onDone: () => void) {
+    const positions = {
+      [GameScore.LEFT]: "-8%",
+      [GameScore.RIGHT]: "8%",
+    };
+
+    Object.entries(score).forEach(([key, value], index) => {
+      const scoreText = new TextBlock();
+      scoreText.text = `${value}`;
+      // scoreText.color = "rgba(255,255,255,0.15)"; // semi-transparent white text
+      scoreText.color = "rgba(0,0,0,0.25)"; // semi-transparent black text
+      scoreText.fontSize = 250;
+      scoreText.fontWeight = "bold";
+      scoreText.left = positions[key as GameScore];
+      scoreText.top = "10%";
+      scoreText.textVerticalAlignment = TextBlock.VERTICAL_ALIGNMENT_TOP;
+
+      this.scoreBoard.push(scoreText);
+      this.advancedTexture.addControl(this.scoreBoard[index]);
+    });
   }
 
   clearGUI() {
