@@ -77,12 +77,12 @@ export class BabylonCanvas {
 
     var postProcess = new BABYLON.PostProcess("CRTShaderPostProcess", "crt", ["curvature", "screenResolution", "scanLineOpacity", "vignetteOpacity", "brightness", "vignetteRoundness"], null, 0.25, camera);
     postProcess.onApply = function (effect) {
-      effect.setFloat2("curvature", 4.5, 4.5); // by default was 3.0, 3.0
-      effect.setFloat2("screenResolution", 240, 160);
-      effect.setFloat2("scanLineOpacity", 1, 1);
+      effect.setFloat2("curvature", 4.5, 4.5); // default 3.0, 3.0
+      effect.setFloat2("screenResolution", 240, 240); // default 240, 160
+      effect.setFloat2("scanLineOpacity", 0.8, 0.8); // default 1, 1
       effect.setFloat("vignetteOpacity", 1);
       effect.setFloat("brightness", 4);
-      effect.setFloat("vignetteRoundness", 2.0)
+      effect.setFloat("vignetteRoundness", 2.0) // default 2.0
     };
 
     return scene;

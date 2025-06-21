@@ -1,6 +1,8 @@
 import { GameSize, PADDLE_SPEED } from '@/utils/gameUtils/types.js';
 import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
 
+const { PADDLE_WIDTH_RATIO, PADDLE_HEIGHT_RATIO, PADDLE_MARGIN_X, PADDLE_TO_COURT_GAP } = GameSize;
+
 export class Paddle {
   private width: number;
   private height: number;
@@ -22,11 +24,11 @@ export class Paddle {
 
   // calculate width, height, and initial position
   public recalculate() {
-    this.width = this.canvasWidth * GameSize.PADDLE_WIDTH_RATIO;
-    this.height = (this.canvasHeight - this.courtBounds.specs.top * 2) * GameSize.PADDLE_HEIGHT_RATIO;
+    this.width = this.canvasWidth * PADDLE_WIDTH_RATIO;
+    this.height = (this.canvasHeight - this.courtBounds.specs.top * 2) * PADDLE_HEIGHT_RATIO;
     this.x = this.playerIndex === 0
-      ? this.canvasWidth * GameSize.PADDLE_MARGIN_X
-      : this.canvasWidth * (1 - GameSize.PADDLE_MARGIN_X) - this.width;
+      ? this.canvasWidth * PADDLE_MARGIN_X
+      : this.canvasWidth * (1 - PADDLE_MARGIN_X) - this.width;
     this.resetPosition();
   }
 
@@ -46,12 +48,12 @@ export class Paddle {
   // does mouse movement needs to be handled too?
   public moveUp() {
     const { top } = this.courtBounds.specs;
-    this.y = Math.max(this.y - PADDLE_SPEED, top);
+    this.y = Math.max(this.y - PADDLE_SPEED, top + PADDLE_TO_COURT_GAP);
   }
 
   public moveDown() {
     const { bottom } = this.courtBounds.specs;
-    this.y = Math.min(this.y + PADDLE_SPEED, bottom - this.height);
+    this.y = Math.min(this.y + PADDLE_SPEED, (bottom - this.height) - PADDLE_TO_COURT_GAP);
   }
 
   public getX() { return this.x; }

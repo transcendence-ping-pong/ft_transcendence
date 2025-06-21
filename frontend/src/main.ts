@@ -16,7 +16,6 @@ const routes = {
 document.addEventListener('DOMContentLoaded', async () => {
   // TODO: translations by default will be in english. Apply switching to other languages later
   // TODO: populate state, watch for changes? (?)
-  state.language = 'fr';
   state.translations = await getTranslations(state.language);
   let contentDiv = document.getElementById('app');
   const render = routes[window.location.pathname];

@@ -35,6 +35,7 @@ export enum GameSize {
   PADDLE_HEIGHT_RATIO = 0.15,     // Paddle height as % of playfield height
   PADDLE_MARGIN_X = 0.20,         // 20% margin for left/right paddles
   PADDLE_MARGIN_Y = 0.05,         // 5% margin for top/bottom paddles
+  PADDLE_TO_COURT_GAP = 20,     // Space between paddles and court bounds
   BALL_SIZE_RATIO = 0.025,        // Ball size as % of canvas height
   COURT_MARGIN_X = 0.15,          // 15% margin for left/right
   COURT_MARGIN_Y = 0.10,          // 10% margin for top/bottom
