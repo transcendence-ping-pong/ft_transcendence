@@ -3,6 +3,7 @@ import { hexToColor4 } from '@/utils/Colors.js';
 import { crtFragmentShader } from '@/utils/gameUtils/CrtFragmentShader.js';
 import * as BABYLON from "@babylonjs/core";
 import { Engine, Scene, Color3, StandardMaterial } from "@babylonjs/core";
+import { _AbstractAudioSubGraph } from '@babylonjs/core/AudioV2/abstractAudio/subNodes/abstractAudioSubGraph';
 
 /*
   BabylonCanvas responsabilities:
@@ -26,6 +27,7 @@ export class BabylonCanvas {
   private engine: Engine;
   private scene: Scene;
   private dynamicTexture?: any;
+  private lastTimestamp: number = performance.now(); // used to calculate deltaTime
 
   constructor(containerId: string) {
     this.canvas = document.createElement('canvas');
@@ -93,10 +95,15 @@ export class BabylonCanvas {
   // avoid two separate requestAnimationFrame running at the same time
   // MAIN LOOP WILL BE CALLED BY GAME ORCHESTRATOR
   public startRenderLoop(gameCanvas: GameCanvas) {
+    // calculate ellapsed time (dt) in seconds between frames
+    const currentTimestamp = performance.now();
+    const deltaTime = (currentTimestamp - this.lastTimestamp) / 1000;
+    this.lastTimestamp = currentTimestamp;
+
     this.engine.runRenderLoop(() => {
       if (this.dynamicTexture && gameCanvas) {
         // render 2D game onto offscreen canvas (buffer) managed by GameCanvas
-        gameCanvas.render2DGameCanvas();
+        gameCanvas.render2DGameCanvas(false, deltaTime);
 
         const texSize = this.dynamicTexture.getSize();
         const ctx = this.dynamicTexture.getContext();

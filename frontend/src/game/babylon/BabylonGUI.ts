@@ -2,6 +2,8 @@ import { t } from '@/utils/Translations.js';
 import { GameLevel, GameScore } from '@/utils/gameUtils/types.js';
 import { AdvancedDynamicTexture, Button, Control, TextBlock } from "@babylonjs/gui";
 
+// TODO: centralize constants for button styles, colors, etc.
+
 // read more here: https://doc.babylonjs.com/features/featuresDeepDive/gui/gui3D/
 export class BabylonGUI {
   private advancedTexture: AdvancedDynamicTexture;
@@ -145,7 +147,7 @@ export class BabylonGUI {
     fade();
   }
 
-  showScoreBoard(score: { [GameScore.LEFT]: number, [GameScore.RIGHT]: number }, onDone: () => void) {
+  showScoreBoard(score: { [GameScore.LEFT]: number, [GameScore.RIGHT]: number }, onDone?: () => void) {
     const positions = {
       [GameScore.LEFT]: "-8%",
       [GameScore.RIGHT]: "8%",
@@ -178,5 +180,6 @@ export class BabylonGUI {
     this.startButton = null;
     this.difficultyButtons = [];
     this.countdownText = null;
+    this.scoreBoard = [];
   }
 }

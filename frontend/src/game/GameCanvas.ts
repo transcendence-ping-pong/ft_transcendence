@@ -2,14 +2,13 @@ import { GameManager } from '@/game/GameManager.js';
 import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
 import { Ball } from '@/game/objects/Ball.js';
 import { Paddle } from '@/game/objects/Paddle.js';
-import { GameLevel, GameSize } from '@/utils/gameUtils/types.js';
+import { BallLevelConfig, GameLevel, GameSize } from '@/utils/gameUtils/types.js';
 
 /*
   Game Canvas responsabilities:
   - initialize and manage the 2D game canvas
   - create the game court, paddles, and ball
   - handle user input for paddle movement
-  - provide methods to start, reset, and stop the game
   - manage the game loop for updating the game state and rendering
   - delegate game logic to GameManager
 
@@ -18,7 +17,7 @@ import { GameLevel, GameSize } from '@/utils/gameUtils/types.js';
   - handle GUI logic or BabylonGUI specific logic
 */
 
-export class GameCanvas {
+export class GameCanvas extends EventTarget {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private animationId: number | null = null;
@@ -34,6 +33,7 @@ export class GameCanvas {
   // initialise variables, create canvas, paddles, ball, event listeners(?)
   // TODO CONCEPT: where to put event listeners?
   constructor(containerId?: string, width?: number, height?: number) {
+    super();
     // create and append canvas
     this.canvas = document.createElement('canvas');
     this.canvas.height = height;
@@ -44,11 +44,12 @@ export class GameCanvas {
       document.getElementById(containerId)?.appendChild(this.canvas);
     }
 
-    this.gameManager = new GameManager();
+    this.gameManager = new GameManager;
+
     this.courtBounds = new GameCourtBounds(width, height);
 
     const ballSize = height * GameSize.BALL_SIZE_RATIO;
-    this.ball = new Ball(width / 2, height / 2, 4, -2, ballSize);
+    this.ball = new Ball(width / 2, height / 2, this.gameManager.getLevel(), ballSize);
 
     this.paddles = [
       new Paddle(0, width, height, this.courtBounds),
@@ -76,20 +77,25 @@ export class GameCanvas {
   }
 
   // draw stuff
-  public render2DGameCanvas(runLoop: boolean = false) {
+  public render2DGameCanvas(runLoop: boolean = false, deltaTime: number = 1) {
+    const { isStarted } = this.gameManager;
+
     // clear canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     // update position ball + paddles
     // ball constantly moves... TODO CONCEPT: add some randomness to the ball movement
-    if (this.gameManager.isStarted) {
+    if (isStarted) {
       this.ball.updatePosition(
-        1, // or your delta time... delta time???
+        deltaTime,
         this.courtBounds,
         this.paddles,
-        this.gameManager.getLevel(),
+        () => { }, // onPaddleBounce callback, sound?? log?? messages?
         () => {
-          // sound?? log?? messages?
+          this.gameManager.addScore(this.ball.scoringPlayer);
+          // this.emit('scoreChanged', this.gameManager.score);
+          this.dispatchEvent(new CustomEvent('scoreChanged', { detail: this.gameManager.score }));
+          this.ball.resetPosition();
         }
       );
     }
@@ -116,6 +122,10 @@ export class GameCanvas {
     return this.canvas;
   }
 
+  public getGameManager(): GameManager {
+    return this.gameManager;
+  }
+
   public setLevel(level: GameLevel) {
     this.gameManager.setLevel(level);
   }
@@ -128,10 +138,7 @@ export class GameCanvas {
 
   public reset() {
     // Reset ball and paddles to initial positions
-    const width = this.canvas.width;
-    const height = this.canvas.height;
-    const ballSize = height * GameSize.BALL_SIZE_RATIO;
-    this.ball = new Ball(width / 2, height / 2, 4, -2, ballSize);
+    this.ball.resetPosition();
     this.paddles[0].resetPosition();
     this.paddles[1].resetPosition();
   }

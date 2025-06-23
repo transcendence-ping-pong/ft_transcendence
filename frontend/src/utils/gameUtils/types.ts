@@ -16,12 +16,20 @@ export enum GameScore {
   RIGHT = 'RIGHT',  // Player is on the right side
 }
 
-// TODO CONCEPT: speed increases after hits, until reaches MAX?? Or after first hit?
-export const BallLevelConfig = {
-  [GameLevel.EASY]: { MIN: 4, MAX: 6, maxBounceAngle: Math.PI / 6 }, // 30°
-  [GameLevel.MEDIUM]: { MIN: 4, MAX: 10, maxBounceAngle: Math.PI / 4 }, // 45°
-  [GameLevel.HARD]: { MIN: 6, MAX: 16, maxBounceAngle: Math.PI / 3 }, // 60°
+export type BallLevelConfigValue = {
+  MIN: number;
+  MAX: number;
+  maxBounceAngle: number;
 };
+
+// TODO CONCEPT: speed increases after hits, until reaches MAX?? Or after first hit?
+// MIN/MAX: Ball starts at MIN px/sec, can reach up to MAX px/sec.
+// 200, 400 / 300, 600 / 400, 900
+export const BallLevelConfig = {
+  [GameLevel.EASY]: { MIN: 100, MAX: 300, maxBounceAngle: Math.PI / 6 }, // 30°
+  [GameLevel.MEDIUM]: { MIN: 200, MAX: 400, maxBounceAngle: Math.PI / 4 }, // 45°
+  [GameLevel.HARD]: { MIN: 300, MAX: 600, maxBounceAngle: Math.PI / 3 }, // 60°
+} as Record<GameLevel, BallLevelConfigValue>;
 
 // constant speed, pixels per frame
 export const PADDLE_SPEED = 6;

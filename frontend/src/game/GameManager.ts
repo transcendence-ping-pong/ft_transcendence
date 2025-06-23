@@ -1,7 +1,19 @@
-import { GameLevel } from '@/utils/gameUtils/types.js';
+import { GameLevel, GameScore } from '@/utils/gameUtils/types.js';
+
+/*
+  Game Manager responsabilities:
+  - manage game state (start, end, reset)
+  - manage game score for both players
+  - set and get game level
+  - add score for a player (and end game if max score reached)
+
+  Do not:
+  - orchestrate game/babylon (it is GameOrchestrator's responsibility)
+  - manage rendering/UI
+*/
 
 export class GameManager {
-  public score: [number, number] = [0, 0];
+  public score = { [GameScore.LEFT]: 0, [GameScore.RIGHT]: 0 };
   public isStarted = false;
   public isGameOver = false;
   public level: GameLevel = GameLevel.EASY;
@@ -15,6 +27,12 @@ export class GameManager {
   getLevel() {
     return this.level;
   }
-  addScore(player: number) { }
+  addScore(player: GameScore): void {
+    if (this.score[player] < GameScore.SCORE_MAX) {
+      this.score[player] += 1;
+    } else {
+      this.endGame(); // end game if score reaches max
+    }
+  }
   reset() { }
 }
