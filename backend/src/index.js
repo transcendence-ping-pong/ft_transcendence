@@ -26,17 +26,10 @@ const client = new OAuth2Client(
 
 let currentLoggedInUser = null;
 
-const db = new sqlite3.Database('./authenticator.db');
+// TODO: Change path when file is moved to correct place (might not be needed, please check)
+let db_path = path.join(path.dirname(__dirname), '/database/database.db');
 
-db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
-    secret TEXT NOT NULL,
-    google_id TEXT UNIQUE,
-    
-    email TEXT
-)`);
+const db = new sqlite3.Database(db_path, sqlite3.OPEN_READWRITE);
 
 fastify.post('/generate', (req, res) => {
     const { username } = req.body;
@@ -75,6 +68,7 @@ fastify.post('/generate', (req, res) => {
         });
     });
 });
+
 fastify.get('/current-token', (req, res) => {
     const { username } = req.query;
 

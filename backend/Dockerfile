@@ -3,24 +3,17 @@ FROM 	node:18-alpine
  
 WORKDIR /app
 
-# Installs SQLite
-
-# RUN apt-get update && apt-get install -y sqlite3
-
-# Installs fastify
-
-# RUN		npm init -y
-
-# RUN		npm install fastify @fastify/static 
-
-# OR installs fastify from package.json
-
 COPY package.json ./
 
 RUN npm install
 
 COPY src ./src
+COPY ./database ./database
+
+RUN apk add --no-cache sqlite
+
+RUN chmod +x ./database/script.sh
 
 EXPOSE 4000
 
-CMD ["node", "src/index.js"]
+CMD ["sh", "-c", "./database/script.sh && node src/index.js"]

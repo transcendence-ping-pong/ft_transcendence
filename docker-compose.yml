@@ -1,13 +1,13 @@
 services:
-  frontend:
-    build: ./frontend
-    command: npm run dev -- --host
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-    depends_on:
-      - backend
+  # frontend:
+  #   build: ./frontend
+  #   command: npm run dev -- --host
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - ./frontend:/app
+  #   depends_on:
+  #     - backend
 
   backend:
     build: ./backend
@@ -16,3 +16,9 @@ services:
       - "4000:4000"
     env_file:
       - ./backend/src/.env
+    volumes:
+      - db_data:/app/database
+
+volumes:
+  db_data:
+    driver: local
