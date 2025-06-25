@@ -16,7 +16,7 @@ export class GameManager {
   public score = { [GameScore.LEFT]: 0, [GameScore.RIGHT]: 0 };
   public isStarted = false;
   public isGameOver = false;
-  public level: GameLevel = GameLevel.EASY;
+  public level: GameLevel;
 
   startGame() { this.isStarted = true; this.isGameOver = false; this.reset(); }
   endGame() { this.isStarted = false; this.isGameOver = true; }

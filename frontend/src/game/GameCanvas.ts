@@ -2,7 +2,8 @@ import { GameManager } from '@/game/GameManager.js';
 import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
 import { Ball } from '@/game/objects/Ball.js';
 import { Paddle } from '@/game/objects/Paddle.js';
-import { BallLevelConfig, GameLevel, GameSize } from '@/utils/gameUtils/types.js';
+import { BallLevelConfig, GameLevel, GameSize, VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from '@/utils/gameUtils/types.js';
+import { state } from '@/state';
 
 /*
   Game Canvas responsabilities:
@@ -32,7 +33,7 @@ export class GameCanvas extends EventTarget {
 
   // initialise variables, create canvas, paddles, ball, event listeners(?)
   // TODO CONCEPT: where to put event listeners?
-  constructor(containerId?: string, width?: number, height?: number) {
+  constructor(level: GameLevel, containerId?: string, width?: number, height?: number) {
     super();
     // create and append canvas
     this.canvas = document.createElement('canvas');
@@ -44,16 +45,19 @@ export class GameCanvas extends EventTarget {
       document.getElementById(containerId)?.appendChild(this.canvas);
     }
 
-    this.gameManager = new GameManager;
+    this.gameManager = new GameManager();
 
-    this.courtBounds = new GameCourtBounds(width, height);
+    const initialX = VIRTUAL_WIDTH / 2;
+    const initialY = VIRTUAL_HEIGHT / 2;
 
-    const ballSize = height * GameSize.BALL_SIZE_RATIO;
-    this.ball = new Ball(width / 2, height / 2, this.gameManager.getLevel(), ballSize);
+    const ballSize = VIRTUAL_HEIGHT * GameSize.BALL_SIZE_RATIO;
+    this.ball = new Ball(initialX, initialY, ballSize, level);
+
+    this.courtBounds = new GameCourtBounds(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 
     this.paddles = [
-      new Paddle(0, width, height, this.courtBounds),
-      new Paddle(1, width, height, this.courtBounds),
+      new Paddle(0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.courtBounds, level),
+      new Paddle(1, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.courtBounds, level),
     ];
 
     this.handleKeyDown = this.onKeyDown.bind(this);
@@ -78,14 +82,14 @@ export class GameCanvas extends EventTarget {
 
   // draw stuff
   public render2DGameCanvas(runLoop: boolean = false, deltaTime: number = 1) {
-    const { isStarted } = this.gameManager;
+    // const { isStarted } = this.gameManager;
 
     // clear canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     // update position ball + paddles
     // ball constantly moves... TODO CONCEPT: add some randomness to the ball movement
-    if (isStarted) {
+    if (this.gameManager.isStarted) {
       this.ball.updatePosition(
         deltaTime,
         this.courtBounds,
@@ -103,13 +107,16 @@ export class GameCanvas extends EventTarget {
     // move paddles if direction is set
     for (let i = 0; i < this.paddles.length; i++) {
       const dir = this.paddleDirections[i];
-      if (dir === 'up') this.paddles[i].moveUp();
-      if (dir === 'down') this.paddles[i].moveDown();
+      if (dir === 'up') this.paddles[i].moveUp(deltaTime);
+      if (dir === 'down') this.paddles[i].moveDown(deltaTime);
     }
 
     // draw stuff
+    const { PADDLE_WIDTH_RATIO, PADDLE_HEIGHT_RATIO } = GameSize;
+    const paddleSizeX = VIRTUAL_WIDTH * PADDLE_WIDTH_RATIO;
+    const paddleSizeY = (VIRTUAL_HEIGHT - this.courtBounds.specs.top * 2) * PADDLE_HEIGHT_RATIO;
     this.courtBounds.draw(this.ctx);
-    this.paddles.forEach(paddle => paddle.draw(this.ctx));
+    this.paddles.forEach(paddle => paddle.draw(this.ctx, paddleSizeX, paddleSizeY));
     this.ball.draw(this.ctx);
 
     // runLoop when GameCanvas is responsible for the animation
@@ -126,8 +133,12 @@ export class GameCanvas extends EventTarget {
     return this.gameManager;
   }
 
-  public setLevel(level: GameLevel) {
+  public setLevel(level: GameLevel): void {
     this.gameManager.setLevel(level);
+  }
+
+  public getLevel(): GameLevel {
+    return this.gameManager.getLevel();
   }
 
   public startGame() {
@@ -137,6 +148,7 @@ export class GameCanvas extends EventTarget {
   }
 
   public reset() {
+    this.gameManager.getLevel();
     // Reset ball and paddles to initial positions
     this.ball.resetPosition();
     this.paddles[0].resetPosition();

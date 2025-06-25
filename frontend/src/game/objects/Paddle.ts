@@ -1,5 +1,7 @@
-import { GameSize, PADDLE_SPEED } from '@/utils/gameUtils/types.js';
+import { GameSize, GameLevel, BallLevelConfig } from '@/utils/gameUtils/types.js';
 import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
+import { t } from '@/utils/Translations';
+import { state } from '@/state';
 
 const { PADDLE_WIDTH_RATIO, PADDLE_HEIGHT_RATIO, PADDLE_MARGIN_X, PADDLE_TO_COURT_GAP } = GameSize;
 
@@ -8,6 +10,7 @@ export class Paddle {
   private height: number;
   private x: number;
   private y: number;
+  private speed: number = 0; // paddle speed in pixels per second
   private color: string;
 
   constructor(
@@ -15,45 +18,65 @@ export class Paddle {
     private canvasWidth: number,
     private canvasHeight: number,
     private courtBounds: GameCourtBounds,
+    private level: GameLevel,
     color: string = "white"
   ) {
     this.color = color;
-    this.recalculate();
+    this.setPaddleSpeed();
     this.resetPosition();
   }
 
-  // calculate width, height, and initial position
-  public recalculate() {
+  private setPaddleSpeed() {
+    const { paddleSpeed } = BallLevelConfig[this.level];
+    console.log("paddle.speed", paddleSpeed, this.level);
+    this.speed = paddleSpeed;
+  }
+
+  // calculate width, height, and initial x position
+  // public recalculate() {
+  //   this.width = this.canvasWidth * PADDLE_WIDTH_RATIO;
+  //   this.height = (this.canvasHeight - this.courtBounds.specs.top * 2) * PADDLE_HEIGHT_RATIO;
+  //   this.x = this.playerIndex === 0
+  //     ? this.canvasWidth * PADDLE_MARGIN_X
+  //     : this.canvasWidth * (1 - PADDLE_MARGIN_X) - this.width;
+  //   this.resetPosition(this.level);
+  // }
+
+  // center paddle vertically
+  // TODO CONCEPT: check score?? centralize after every point is made?
+  public resetPosition() {
+    this.setPaddleSpeed();
     this.width = this.canvasWidth * PADDLE_WIDTH_RATIO;
     this.height = (this.canvasHeight - this.courtBounds.specs.top * 2) * PADDLE_HEIGHT_RATIO;
     this.x = this.playerIndex === 0
       ? this.canvasWidth * PADDLE_MARGIN_X
       : this.canvasWidth * (1 - PADDLE_MARGIN_X) - this.width;
-    this.resetPosition();
-  }
-
-  // center paddle vertically
-  // TODO CONCEPT: check score?? centralize after every point is made?
-  public resetPosition() {
     this.y = this.canvasHeight / 2 - this.height / 2;
   }
 
-  public draw(ctx: CanvasRenderingContext2D) {
+  public draw(ctx: CanvasRenderingContext2D, sizeX: number, sizeY: number) {
+    const scaleX = ctx.canvas.width / this.canvasWidth;
+    const scaleY = ctx.canvas.height / this.canvasHeight;
     ctx.fillStyle = this.color;
-    ctx.fillRect(this.x, this.y, this.width, this.height);
+    ctx.fillRect(
+      this.x * scaleX,
+      this.y * scaleY,
+      sizeX * scaleX,
+      sizeY * scaleY
+    );
   }
 
   // move paddles using arrow keys and WASD keys (two players at the same time)
   // TODO CONCEPT: how to organise it when second player is AI?
   // does mouse movement needs to be handled too?
-  public moveUp() {
+  public moveUp(dt: number) {
     const { top } = this.courtBounds.specs;
-    this.y = Math.max(this.y - PADDLE_SPEED, top + PADDLE_TO_COURT_GAP);
+    this.y = Math.max(this.y - this.speed * dt, top + (this.width * PADDLE_TO_COURT_GAP));
   }
 
-  public moveDown() {
+  public moveDown(dt: number) {
     const { bottom } = this.courtBounds.specs;
-    this.y = Math.min(this.y + PADDLE_SPEED, (bottom - this.height) - PADDLE_TO_COURT_GAP);
+    this.y = Math.min(this.y + this.speed * dt, (bottom - this.height) - (this.width * PADDLE_TO_COURT_GAP));
   }
 
   public getX() { return this.x; }
