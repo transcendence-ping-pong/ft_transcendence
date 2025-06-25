@@ -3,8 +3,7 @@ const sqlite3 = require('sqlite3').verbose();
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
 const { OAuth2Client } = require('google-auth-library');
-require('dotenv').config();
-
+require('dotenv').config({ path: '/home/manumart/Desktop/maneleh42/ft_transcendence/backend/src/.env' });
 const app = express();
 const port = 4000;
 
@@ -27,6 +26,7 @@ db.run(`CREATE TABLE IF NOT EXISTS users (
     password TEXT NOT NULL,
     secret TEXT NOT NULL,
     google_id TEXT UNIQUE,
+    
     email TEXT
 )`);
 
@@ -224,9 +224,12 @@ app.get('/check-2fa', (req, res) => {
 });
 
 app.get('/auth/google', (req, res) => {
+    console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID);
+    console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET);
+    console.log('GOOGLE_REDIRECT_URI:', process.env.GOOGLE_REDIRECT_URI);
     const url = client.generateAuthUrl({
-        access_type: 'offline',
-        scope: ['profile', 'email'],
+    access_type: 'offline',
+    scope: ['profile', 'email'],
     });
     res.redirect(url);
 });
