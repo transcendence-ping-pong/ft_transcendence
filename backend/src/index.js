@@ -129,7 +129,7 @@ fastify.post('/verify-token', (req, res) => {
 });
 
 fastify.get('/users', (req, res) => {
-    db.all(`SELECT id, username, password, secret, google_id, email FROM users`, (err, rows) => {
+    db.all(`SELECT user_id, username, password, secret, google_id, email FROM users`, (err, rows) => {
         if (err) {
             return res.status(500).send({ error: 'Error fetching users from database' });
         }
