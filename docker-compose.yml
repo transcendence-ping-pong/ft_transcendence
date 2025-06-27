@@ -9,6 +9,8 @@ services:
     build: ./backend
     ports:
       - "4000:4000"
+    env_file:
+      - ./backend/src/.env
 
   nginx:
     image: nginx:alpine
