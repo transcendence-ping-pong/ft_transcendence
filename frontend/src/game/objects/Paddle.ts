@@ -1,7 +1,5 @@
 import { GameSize, GameLevel, BallLevelConfig } from '@/utils/gameUtils/types.js';
 import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
-import { t } from '@/utils/Translations';
-import { state } from '@/state';
 
 const { PADDLE_WIDTH_RATIO, PADDLE_HEIGHT_RATIO, PADDLE_MARGIN_X, PADDLE_TO_COURT_GAP } = GameSize;
 
@@ -32,17 +30,8 @@ export class Paddle {
     this.speed = paddleSpeed;
   }
 
-  // calculate width, height, and initial x position
-  // public recalculate() {
-  //   this.width = this.canvasWidth * PADDLE_WIDTH_RATIO;
-  //   this.height = (this.canvasHeight - this.courtBounds.specs.top * 2) * PADDLE_HEIGHT_RATIO;
-  //   this.x = this.playerIndex === 0
-  //     ? this.canvasWidth * PADDLE_MARGIN_X
-  //     : this.canvasWidth * (1 - PADDLE_MARGIN_X) - this.width;
-  //   this.resetPosition(this.level);
-  // }
-
   // center paddle vertically
+  // calculate width, height, and initial x position
   // TODO CONCEPT: check score?? centralize after every point is made?
   public resetPosition() {
     this.setPaddleSpeed();

@@ -22,14 +22,14 @@ export class Ball {
   private vy: number; // idem, but for y axis
   private virtualX: number = VIRTUAL_WIDTH;
   private virtualY: number = VIRTUAL_HEIGHT;
-  private courtBounds: GameCourtBounds;
-  public scoringPlayer: GameScore = GameScore.DRAW; // which player scored last, or DRAW if no one scored yet
+  public scoringPlayer: GameScore; // which player scored last, or DRAW if no one scored yet
 
   constructor(
     public x: number,
     public y: number,
     public size: number, // size of the ball (it is a square, as the original Pong game)
     private level: GameLevel,
+    private courtBounds: GameCourtBounds,
     public color: string = "white",
   ) {
     this.setInitialVelocity();
@@ -98,7 +98,6 @@ export class Ball {
   // https://www.virtualYoutube.com/watch?v=6i5kZV_KOCU
   updatePosition(
     dt: number,
-    courtBounds: GameCourtBounds,
     paddles: Paddle[],
     onPaddleBounce?: () => void, // callback
     onOutOfBounds?: () => void // callback
@@ -111,8 +110,7 @@ export class Ball {
     }
 
     // wall collision (top/bottom)
-    this.courtBounds = courtBounds;
-    const { top, bottom, left, right } = courtBounds.specs;
+    const { top, bottom, left, right } = this.courtBounds.specs;
     if (this.virtualY - this.size / 2 < top) {
       this.virtualY = top + this.size / 2;
       this.vy = -this.vy;

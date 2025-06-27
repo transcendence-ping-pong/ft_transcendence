@@ -50,10 +50,10 @@ export class GameCanvas extends EventTarget {
     const initialX = VIRTUAL_WIDTH / 2;
     const initialY = VIRTUAL_HEIGHT / 2;
 
-    const ballSize = VIRTUAL_HEIGHT * GameSize.BALL_SIZE_RATIO;
-    this.ball = new Ball(initialX, initialY, ballSize, level);
-
     this.courtBounds = new GameCourtBounds(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+    const ballSize = VIRTUAL_HEIGHT * GameSize.BALL_SIZE_RATIO;
+    this.ball = new Ball(initialX, initialY, ballSize, level, this.courtBounds);
 
     this.paddles = [
       new Paddle(0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.courtBounds, level),
@@ -82,7 +82,6 @@ export class GameCanvas extends EventTarget {
 
   // draw stuff
   public render2DGameCanvas(runLoop: boolean = false, deltaTime: number = 1) {
-    // const { isStarted } = this.gameManager;
 
     // clear canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -92,12 +91,10 @@ export class GameCanvas extends EventTarget {
     if (this.gameManager.isStarted) {
       this.ball.updatePosition(
         deltaTime,
-        this.courtBounds,
         this.paddles,
         () => { }, // onPaddleBounce callback, sound?? log?? messages?
         () => {
           this.gameManager.addScore(this.ball.scoringPlayer);
-          // this.emit('scoreChanged', this.gameManager.score);
           this.dispatchEvent(new CustomEvent('scoreChanged', { detail: this.gameManager.score }));
           this.ball.resetPosition();
         }

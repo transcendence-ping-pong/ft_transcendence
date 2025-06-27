@@ -27,6 +27,8 @@ export class gameOrchestrator {
     this.setupMenuFlow();
 
     this.babylonCanvas.startRenderLoop();
+    // this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => { });
+
     // reference instance of GameCanvas being created/managed by BabylonCanvas
     // this.gameCanvas = this.babylonCanvas.getGameCanvas();
   }
