@@ -17,6 +17,7 @@ export class GameManager {
   public isStarted = false;
   public isGameOver = false;
   public level: GameLevel;
+  private scoreMax: number = Number(GameScore.SCORE_MAX); // max score to win the game
 
   startGame() { this.isStarted = true; this.isGameOver = false; this.reset(); }
   endGame() { this.isStarted = false; this.isGameOver = true; }
@@ -27,12 +28,30 @@ export class GameManager {
   getLevel() {
     return this.level;
   }
-  addScore(player: GameScore): void {
-    if (this.score[player] < GameScore.SCORE_MAX) {
-      this.score[player] += 1;
-    } else {
-      this.endGame(); // end game if score reaches max
-    }
+
+  // if both players reached score (SCORE_MAX -1), add one more point to the match
+  // difference between scores should be at least 2 to end the game
+  checkTwoPointsRule(): boolean {
+    return (this.score[GameScore.LEFT] == this.scoreMax - 1 &&
+      this.score[GameScore.RIGHT] == this.scoreMax - 1);
   }
+
+  checkIsGameOver(player: GameScore): boolean {
+    Object.values(this.score).forEach((score) => {
+      if (this.checkTwoPointsRule()) this.scoreMax++;
+      if (score == this.scoreMax) {
+        // TODO: UI output for winning/losing
+        console.log(`Game Over! Player ${player} wins!`);
+        this.endGame();
+      }
+    });
+    return this.isGameOver;
+  }
+
+  addScore(player: GameScore): void {
+    this.score[player] += 1;
+    if (this.checkIsGameOver(player)) return;
+  }
+
   reset() { }
 }
