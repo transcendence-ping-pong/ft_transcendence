@@ -4,7 +4,6 @@ export enum GameLevel {
   HARD = 'HARD'
 }
 
-// TODO CONCEPT: should we use the win by two points rule?
 export enum GameScore {
   WIN = 1,
   LOSE = -1,

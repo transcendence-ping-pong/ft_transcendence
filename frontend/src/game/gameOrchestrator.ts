@@ -39,22 +39,26 @@ export class gameOrchestrator {
         this.babylonCanvas.createGameCanvas(level as GameLevel);
         this.gameCanvas = this.babylonCanvas.getGameCanvas();
 
+        this.gui.showCountdown(3, () => {
+          this.gameCanvas.startGame();
+          this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => { });
+        });
+
         this.gameCanvas.addEventListener('scoreChanged', (e: CustomEvent) => {
           console.log('Received scoreChanged', e.detail);
           this.gui.clearGUI();
           this.gui.showScoreBoard(e.detail, () => { });
         });
 
-        this.gui.showCountdown(3, () => {
-          this.gameCanvas.startGame();
-          this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => { });
+        this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
+          console.log('Received gameOver', e.detail);
+          this.gui.clearGUI();
+          this.gui.showGameOver(e.detail, () => {
+            this.babylonCanvas.cleanupGame();
+            this.setupMenuFlow(); // reset to main menu
+          });
         });
       });
     });
-  }
-
-  // TODO CONCEPT: where to call it?
-  cleanup() {
-    this.babylonCanvas.cleanupGame();
   }
 }

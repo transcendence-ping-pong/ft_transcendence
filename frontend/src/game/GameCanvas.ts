@@ -97,6 +97,11 @@ export class GameCanvas extends EventTarget {
           this.gameManager.addScore(this.ball.scoringPlayer);
           this.dispatchEvent(new CustomEvent('scoreChanged', { detail: this.gameManager.score }));
           this.ball.resetPosition();
+
+          // after updating the score, check if the game is over
+          if (this.gameManager.isGameOver) {
+            this.dispatchEvent(new CustomEvent('gameOver', { detail: this.gameManager.score }));
+          }
         }
       );
     }

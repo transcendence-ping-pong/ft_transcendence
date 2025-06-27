@@ -190,6 +190,7 @@ export class BabylonCanvas {
     if (this.engine) {
       // requestAnimationFrame is cleaned under the hood
       this.engine.stopRenderLoop();
+      this.gameCanvas.stop();
     }
 
     // remove html element?

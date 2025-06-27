@@ -116,7 +116,7 @@ export class BabylonGUI {
       } else {
         clearInterval(interval);
         this.hideCountdown();
-        this.fadeOutBackground();
+        this.fadeBackground(0.8, 0);
         onDone();
       }
     }, 1000);
@@ -129,19 +129,19 @@ export class BabylonGUI {
     }
   }
 
-  fadeOutBackground(duration = 500) {
-    let alpha = 0.8; // starting alpha (for 80% opacity)
+  fadeBackground(startAlpha: number, endAlpha: number, duration = 500) {
     const steps = 20;
     const stepTime = duration / steps;
-    const stepAlpha = alpha / steps;
+    const stepAlpha = (endAlpha - startAlpha) / steps;
+    let alpha = startAlpha;
 
     const fade = () => {
-      alpha -= stepAlpha;
-      if (alpha <= 0) {
-        this.advancedTexture.background = "transparent";
-      } else {
-        this.advancedTexture.background = `rgba(0,0,0,${alpha})`;
+      this.advancedTexture.background = `rgba(0,0,0,${alpha})`;
+      if ((stepAlpha > 0 && alpha < endAlpha) || (stepAlpha < 0 && alpha > endAlpha)) {
+        alpha += stepAlpha;
         setTimeout(fade, stepTime);
+      } else {
+        this.advancedTexture.background = `rgba(0,0,0,${endAlpha})`;
       }
     };
     fade();
@@ -167,6 +167,11 @@ export class BabylonGUI {
       this.scoreBoard.push(scoreText);
       this.advancedTexture.addControl(this.scoreBoard[index]);
     });
+  }
+
+  showGameOver(score: { [GameScore.LEFT]: number, [GameScore.RIGHT]: number }, onRestart: () => void) {
+    this.clearGUI();
+    this.fadeBackground(0, 0.8);
   }
 
   clearGUI() {
