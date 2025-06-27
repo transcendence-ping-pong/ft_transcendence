@@ -4,6 +4,7 @@ import { renderHome } from './pages/home.js';
 import { renderLogin } from '@/pages/login.js';
 import { renderGame } from '@/pages/game.js';
 import '@/styles/index.css';
+import { io } from 'socket.io-client';
 
 // import { getUsers } from './services/api.js';
 
@@ -24,4 +25,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else if (contentDiv) {
     contentDiv.innerHTML = `<h1>404 Not Found</h1`;
   }
+
+  const socket = io('http://localhost:4000');
+
+  socket.on('connect', () => {
+    console.log('Connected to backend WebSocket!');
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Disconnected from backend WebSocket');
+  });
 });

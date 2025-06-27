@@ -8,6 +8,7 @@
     "speakeasy": "^2.0.0",
     "qrcode": "^1.5.1",
     "google-auth-library": "^8.0.0",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "socket.io": "^4.7.4"
   }
 }
