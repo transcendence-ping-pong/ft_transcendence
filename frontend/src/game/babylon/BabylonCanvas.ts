@@ -4,7 +4,7 @@ import { crtFragmentShader } from '@/utils/gameUtils/CrtFragmentShader.js';
 import { GameLevel } from '@/utils/gameUtils/types.js';
 import * as BABYLON from "@babylonjs/core";
 import { Engine, Scene, Color3, StandardMaterial } from "@babylonjs/core";
-import { _AbstractAudioSubGraph } from '@babylonjs/core/AudioV2/abstractAudio/subNodes/abstractAudioSubGraph';
+import { importMeshAsync, createSpinAnimation } from "@/utils/gameUtils/Mesh.js";
 
 /*
   BabylonCanvas responsabilities:
@@ -29,6 +29,7 @@ export class BabylonCanvas {
   private scene: Scene;
   private dynamicTexture?: any;
   private lastTimestamp: number = performance.now(); // used to calculate deltaTime
+  private model: BABYLON.Mesh | null = null;
 
   constructor(containerId: string) {
     this.canvas = document.createElement('canvas');
@@ -134,6 +135,10 @@ export class BabylonCanvas {
         this.dynamicTexture.update();
       }
 
+      // if (this.model) {
+      //   this.model.rotation.y += 0.01;
+      // }
+
       this.scene.render();
     });
   }
@@ -177,6 +182,23 @@ export class BabylonCanvas {
     glowLayer.intensity = 0.25;
   }
 
+  public async endingGame() {
+    // hide the plane where dynamic texture is applied
+    const plane = this.scene.getMeshByName("gameScreen");
+    if (plane) {
+      plane.dispose();
+    }
+
+    const models = await importMeshAsync("", "./assets/models/", "rubber_duck_toy_2k.glb", this.scene);
+    this.model = models.meshes[1];
+    this.model.rotationQuaternion = null; // remove quaternion to use euler angles
+
+    // TODO: set a constant to camera position
+    this.model.position = new BABYLON.Vector3(0, -0.25, 0); // almost at the camera
+    this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
+
+    createSpinAnimation(this.model, this.scene);
+  }
 
   public getGameCanvas() {
     return this.gameCanvas;

@@ -4,6 +4,7 @@ import { renderHome } from './pages/home.js';
 import { renderLogin } from '@/pages/login.js';
 import { renderGame } from '@/pages/game.js';
 import '@/styles/index.css';
+import '@babylonjs/loaders';
 
 // import { getUsers } from './services/api.js';
 

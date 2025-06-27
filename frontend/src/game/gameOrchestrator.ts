@@ -53,12 +53,15 @@ export class gameOrchestrator {
         this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
           console.log('Received gameOver', e.detail);
           this.gui.clearGUI();
-          this.gui.showGameOver(e.detail, () => {
-            this.babylonCanvas.cleanupGame();
-            this.setupMenuFlow(); // reset to main menu
-          });
+          this.babylonCanvas.endingGame();
         });
       });
     });
   }
 }
+
+// THINK ABOUT IT
+// this.gui.showGameOver(e.detail, () => {
+//   this.babylonCanvas.cleanupGame();
+//   this.setupMenuFlow(); // reset to main menu
+// });

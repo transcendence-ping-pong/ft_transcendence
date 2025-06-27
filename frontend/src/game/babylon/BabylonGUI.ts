@@ -171,7 +171,7 @@ export class BabylonGUI {
 
   showGameOver(score: { [GameScore.LEFT]: number, [GameScore.RIGHT]: number }, onRestart: () => void) {
     this.clearGUI();
-    this.fadeBackground(0, 0.8);
+    // this.fadeBackground(0, 0.8);
   }
 
   clearGUI() {

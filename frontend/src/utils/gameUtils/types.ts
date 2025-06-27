@@ -11,7 +11,7 @@ export enum GameScore {
   POINT = 1,
   NO_POINT = 0,
   // SCORE_MAX = 11,
-  SCORE_MAX = 3, // testing purposes
+  SCORE_MAX = 1, // testing purposes
   LEFT = 'LEFT',   // Player is on the left side
   RIGHT = 'RIGHT',  // Player is on the right side
 }
