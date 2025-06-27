@@ -1,13 +1,13 @@
 services:
-  # frontend:
-  #   build: ./frontend
-  #   command: npm run dev -- --host
-  #   ports:
-  #     - "3000:3000"
-  #   volumes:
-  #     - ./frontend:/app
-  #   depends_on:
-  #     - backend
+  frontend:
+    build: ./frontend
+    command: npm run dev -- --host
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      - backend
 
   backend:
     build: ./backend
