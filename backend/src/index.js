@@ -1,10 +1,24 @@
-const express = require('express');
+// Require the framework and instantiate it, as well as needed plugins
+
+const path = require('path');
+
+const fastify = require('fastify')({ logger: true });
+const fastifyStatic = require('@fastify/static');
+
 const sqlite3 = require('sqlite3').verbose();
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
 const { OAuth2Client } = require('google-auth-library');
-require('dotenv').config({ path: '/home/manumart/Desktop/maneleh42/ft_transcendence/backend/src/.env' });
-const app = express();
+
+// TODO: Change path... definitely not /home/manumart/Desktop/maneleh42 ;)
+// Also, without info on what .env needs, this blocks all possible execution
+// require('dotenv').config({ path: '/home/manumart/Desktop/maneleh42/ft_transcendence/backend/src/.env' });
+
+fastify.register(fastifyStatic, {
+  root: path.join(__dirname, 'public'),
+  prefix: '/',
+});
+
 const port = 4000;
 
 // Initialize Google OAuth Client
@@ -15,22 +29,13 @@ const client = new OAuth2Client(
 );
 
 let currentLoggedInUser = null;
-app.use(express.json());
-app.use(express.static('src/public'));
 
-const db = new sqlite3.Database('./authenticator.db');
+// TODO: Change path when file is moved to correct place (might not be needed, please check)
+let db_path = path.join(path.dirname(__dirname), '/database/database.db');
 
-db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
-    secret TEXT NOT NULL,
-    google_id TEXT UNIQUE,
-    
-    email TEXT
-)`);
+const db = new sqlite3.Database(db_path, sqlite3.OPEN_READWRITE);
 
-app.post('/generate', (req, res) => {
+fastify.post('/generate', (req, res) => {
     const { username } = req.body;
 
     if (!username) {
@@ -67,7 +72,8 @@ app.post('/generate', (req, res) => {
         });
     });
 });
-app.get('/current-token', (req, res) => {
+
+fastify.get('/current-token', (req, res) => {
     const { username } = req.query;
 
     if (!username) {
@@ -92,7 +98,7 @@ app.get('/current-token', (req, res) => {
     });
 });
 
-app.post('/verify-token', (req, res) => {
+fastify.post('/verify-token', (req, res) => {
     const { username, token } = req.body;
 
     if (!username || !token) {
@@ -122,8 +128,8 @@ app.post('/verify-token', (req, res) => {
     });
 });
 
-app.get('/users', (req, res) => {
-    db.all(`SELECT id, username, password, secret, google_id, email FROM users`, (err, rows) => {
+fastify.get('/users', (req, res) => {
+    db.all(`SELECT user_id, username, password, secret, google_id, email FROM users`, (err, rows) => {
         if (err) {
             return res.status(500).send({ error: 'Error fetching users from database' });
         }
@@ -131,11 +137,13 @@ app.get('/users', (req, res) => {
     });
 });
 
-app.listen(port, () => {
+// TODO: check host listening ip
+
+fastify.listen({ port: port, host: '0.0.0.0' }, () => {
     console.log(`Server running at http://localhost:${port}`);
 });
 
-app.post('/signup', (req, res) => {
+fastify.post('/signup', (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -154,7 +162,7 @@ app.post('/signup', (req, res) => {
     });
 });
 
-app.post('/login', (req, res) => {
+fastify.post('/login', (req, res) => {
     const { username, password, token } = req.body;
 
     if (!username || !password) {
@@ -191,7 +199,7 @@ app.post('/login', (req, res) => {
     });
 });
 
-app.post('/logout', (req, res) => {
+fastify.post('/logout', (req, res) => {
     const { username } = req.body;
 
     // if (!currentLoggedInUser || currentLoggedInUser !== username) {
@@ -203,7 +211,7 @@ app.post('/logout', (req, res) => {
     res.send({ message: 'Logout successful' });
 });
 
-app.get('/check-2fa', (req, res) => {
+fastify.get('/check-2fa', (req, res) => {
     const { username } = req.query;
 
     if (!username) {
@@ -223,10 +231,7 @@ app.get('/check-2fa', (req, res) => {
     });
 });
 
-app.get('/auth/google', (req, res) => {
-    console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID);
-    console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET);
-    console.log('GOOGLE_REDIRECT_URI:', process.env.GOOGLE_REDIRECT_URI);
+fastify.get('/auth/google', (req, res) => {
     const url = client.generateAuthUrl({
     access_type: 'offline',
     scope: ['profile', 'email'],
@@ -234,7 +239,7 @@ app.get('/auth/google', (req, res) => {
     res.redirect(url);
 });
 
-app.get('/auth/google/callback', async (req, res) => {
+fastify.get('/auth/google/callback', async (req, res) => {
     const code = req.query.code;
 
     if (!code) {
@@ -283,7 +288,7 @@ app.get('/auth/google/callback', async (req, res) => {
 });
 
 // Add a route to handle the logged-in page update
-app.get('/logged-in', (req, res) => {
+fastify.get('/logged-in', (req, res) => {
     const username = req.query.username;
 
     // Update currentLoggedInUser
@@ -295,4 +300,4 @@ app.get('/logged-in', (req, res) => {
     </script>`);
 });
 
-app.get('/favicon.ico', (req, res) => res.status(204));
+fastify.get('/favicon.ico', (req, res) => res.status(204));

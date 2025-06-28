@@ -11,7 +11,14 @@ services:
 
   backend:
     build: ./backend
+    container_name: backend
     ports:
       - "4000:4000"
-    env_file:
-      - ./backend/src/.env
+    # env_file:
+    #   - ./backend/src/.env
+    volumes:
+      - db_data:/app/database
+
+volumes:
+  db_data:
+    driver: local
