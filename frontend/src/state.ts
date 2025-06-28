@@ -1,3 +1,4 @@
+import { GameLevel, GameScore } from '@/utils/gameUtils/types';
 // persist state in localStorage
 // keep user preferences, game state, etc (?) to be decided
 
@@ -5,6 +6,8 @@ const savedState = localStorage.getItem('appState');
 const initialState = savedState ? JSON.parse(savedState) : {
   language: 'en',
   translations: {} as any,
+  theme: 'default',
+  soundEnabled: true,
   // TODO: add other state properties that we need to persist
 };
 

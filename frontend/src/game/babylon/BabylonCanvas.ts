@@ -1,8 +1,10 @@
 import { GameCanvas } from '@/game/GameCanvas.js';
 import { hexToColor4 } from '@/utils/Colors.js';
 import { crtFragmentShader } from '@/utils/gameUtils/CrtFragmentShader.js';
+import { GameLevel } from '@/utils/gameUtils/types.js';
 import * as BABYLON from "@babylonjs/core";
 import { Engine, Scene, Color3, StandardMaterial } from "@babylonjs/core";
+import { importMeshAsync, createSpinAnimation } from "@/utils/gameUtils/Mesh.js";
 
 /*
   BabylonCanvas responsabilities:
@@ -26,6 +28,8 @@ export class BabylonCanvas {
   private engine: Engine;
   private scene: Scene;
   private dynamicTexture?: any;
+  private lastTimestamp: number = performance.now(); // used to calculate deltaTime
+  private model: BABYLON.Mesh | null = null;
 
   constructor(containerId: string) {
     this.canvas = document.createElement('canvas');
@@ -39,9 +43,11 @@ export class BabylonCanvas {
 
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
-    this.gameCanvas = new GameCanvas("", this.canvas.width, this.canvas.height);
+    // this.gameCanvas = new GameCanvas("", this.canvas.width, this.canvas.height);
 
-    this.applyDynamicTextureToMesh("gameScreen", this.gameCanvas.getCanvasElement());
+    console.log("BabylonCanvas initialized with canvas size:", this.canvas.width, this.canvas.height);
+
+    // this.applyDynamicTextureToMesh("gameScreen", this.gameCanvas.getCanvasElement());
     window.addEventListener('resize', () => this.engine.resize());
   }
 
@@ -71,6 +77,12 @@ export class BabylonCanvas {
     const planeHeight = 2;
     const planeWidth = planeHeight * aspect;
     const plane = BABYLON.MeshBuilder.CreatePlane("gameScreen", { width: planeWidth, height: planeHeight }, this.scene);
+
+    const mat = new StandardMaterial("screenMat", this.scene);
+    mat.alpha = 0; // fully transparent at the start
+    mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+
+    plane.material = mat;
     plane.position = new BABYLON.Vector3(0, 0, 1); // put plane in front of the camera
 
     BABYLON.Effect.ShadersStore["crtFragmentShader"] = crtFragmentShader;
@@ -88,15 +100,26 @@ export class BabylonCanvas {
     return scene;
   }
 
+  public createGameCanvas(level: GameLevel) {
+    this.gameCanvas = new GameCanvas(level, "", this.canvas.width, this.canvas.height);
+    this.gameCanvas.setLevel(level);
+    this.applyDynamicTextureToMesh("gameScreen", this.gameCanvas.getCanvasElement());
+  }
+
   // constantly update the scene, i.e. animations
   // SINGLE ANIMATION LOOP: in Babylon render loop, call a method to update the 2D game too
   // avoid two separate requestAnimationFrame running at the same time
   // MAIN LOOP WILL BE CALLED BY GAME ORCHESTRATOR
-  public startRenderLoop(gameCanvas: GameCanvas) {
+  public startRenderLoop() {
     this.engine.runRenderLoop(() => {
-      if (this.dynamicTexture && gameCanvas) {
+      // calculate ellapsed time (dt) in seconds between frames
+      const currentTimestamp = performance.now();
+      const deltaTime = (currentTimestamp - this.lastTimestamp) / 1000;
+      this.lastTimestamp = currentTimestamp;
+
+      if (this.dynamicTexture && this.gameCanvas) {
         // render 2D game onto offscreen canvas (buffer) managed by GameCanvas
-        gameCanvas.render2DGameCanvas();
+        this.gameCanvas.render2DGameCanvas(false, deltaTime);
 
         const texSize = this.dynamicTexture.getSize();
         const ctx = this.dynamicTexture.getContext();
@@ -105,12 +128,16 @@ export class BabylonCanvas {
         // map sorce canvas to destination texture, scaling it to fit
         // drawImage(src,0,0,sw,sh,0,0,dw,dh);
         ctx.drawImage(
-          gameCanvas.getCanvasElement(),
-          0, 0, gameCanvas.getCanvasElement().width, gameCanvas.getCanvasElement().height,
+          this.gameCanvas.getCanvasElement(),
+          0, 0, this.gameCanvas.getCanvasElement().width, this.gameCanvas.getCanvasElement().height,
           0, 0, texSize.width, texSize.height
         );
         this.dynamicTexture.update();
       }
+
+      // if (this.model) {
+      //   this.model.rotation.y += 0.01;
+      // }
 
       this.scene.render();
     });
@@ -155,6 +182,23 @@ export class BabylonCanvas {
     glowLayer.intensity = 0.25;
   }
 
+  public async endingGame() {
+    // hide the plane where dynamic texture is applied
+    const plane = this.scene.getMeshByName("gameScreen");
+    if (plane) {
+      plane.dispose();
+    }
+
+    const models = await importMeshAsync("", "./assets/models/", "rubber_duck_toy_2k.glb", this.scene);
+    this.model = models.meshes[1];
+    this.model.rotationQuaternion = null; // remove quaternion to use euler angles
+
+    // TODO: set a constant to camera position
+    this.model.position = new BABYLON.Vector3(0, -0.25, 0); // almost at the camera
+    this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
+
+    createSpinAnimation(this.model, this.scene);
+  }
 
   public getGameCanvas() {
     return this.gameCanvas;
@@ -168,6 +212,7 @@ export class BabylonCanvas {
     if (this.engine) {
       // requestAnimationFrame is cleaned under the hood
       this.engine.stopRenderLoop();
+      this.gameCanvas.stop();
     }
 
     // remove html element?

@@ -156,6 +156,8 @@ Z axis is pointing forward, babylon has different coordinate system than Blender
 | **requestAnimationFrame** | [MDN web docs](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame) | Constantly updates the scene, i.e. animations. Running two loops, one for Babylon.js and other for GameCanvas should be avoided. In Babylon render loop, call a method to update the 2D game (that acts as a dynamic texture in Babylon, applied to a plane). |
 | **Prune/remove docker** | `docker system prune -af` `docker volume prune -f` | Prune unused resources. Clean unused volumes and images/containers `docker rmi` `docker rm` `docker-compose down`. |
 | **node_modules** | `docker-compose exec backend ls node_modules` `docker-compose exec frontend ls -l /app/dist` | See backend/frontend `node_modules`, you can exec into the container. |
+| **requestAnimationFrame** | `60Hz, 120Hz, 30Hz` | It tries to match the display's refresh rate, therefore different screens will show animations differently (if moving objects by a fixed amount per frame). Best practice: use delta time. |
+| **delta time** | | Elapsed time (in seconds or milliseconds) since the last frame. Multiply all animation by delta time, so game runs at the same speed regardless of frame rate. |
 
 ### References Game History
 [Pong Game (1972)](https://www.ponggame.org/)</br>
