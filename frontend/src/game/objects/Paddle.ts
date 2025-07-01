@@ -46,14 +46,25 @@ export class Paddle {
   // move paddles using arrow keys and WASD keys (two players at the same time)
   // TODO CONCEPT: how to organise it when second player is AI?
   // does mouse movement needs to be handled too?
-  public moveUp() {
+  // public moveUp() {
+  //   const { top } = this.courtBounds.specs;
+  //   this.y = Math.max(this.y - PADDLE_SPEED, top + PADDLE_TO_COURT_GAP);
+  // }
+
+  // Agora aceita um argumento opcional de velocidade
+  public moveUp(speed: number = PADDLE_SPEED) {
     const { top } = this.courtBounds.specs;
-    this.y = Math.max(this.y - PADDLE_SPEED, top + PADDLE_TO_COURT_GAP);
+    this.y = Math.max(this.y - speed, top + PADDLE_TO_COURT_GAP);
   }
 
-  public moveDown() {
+  // public moveDown() {
+  //   const { bottom } = this.courtBounds.specs;
+  //   this.y = Math.min(this.y + PADDLE_SPEED, (bottom - this.height) - PADDLE_TO_COURT_GAP);
+  // }
+
+  public moveDown(speed: number = PADDLE_SPEED) {
     const { bottom } = this.courtBounds.specs;
-    this.y = Math.min(this.y + PADDLE_SPEED, (bottom - this.height) - PADDLE_TO_COURT_GAP);
+    this.y = Math.min(this.y + speed, (bottom - this.height) - PADDLE_TO_COURT_GAP);
   }
 
   public getX() { return this.x; }

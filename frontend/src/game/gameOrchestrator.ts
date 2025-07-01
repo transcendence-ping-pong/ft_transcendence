@@ -27,6 +27,7 @@ export class gameOrchestrator {
       this.gui.showDifficultySelector((level) => {
         this.gameCanvas.setLevel(level as GameLevel);
         this.gui.showCountdown(3, () => {
+          this.gameCanvas.enableBotMode(true);
           this.gameCanvas.startGame();
           this.gui.showScoreBoard({ [GameScore.LEFT]: 1, [GameScore.RIGHT]: 0 }, () => { });
         });

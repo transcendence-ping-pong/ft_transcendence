@@ -21,6 +21,15 @@ export class Ball {
     ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
   }
 
+  public getY(): number {
+    return this.y;
+  }
+
+  public getX(): number {
+    return this.x;
+  }
+
+
   // https://www.youtube.com/watch?v=6i5kZV_KOCU
   updatePosition(
     dt: number,

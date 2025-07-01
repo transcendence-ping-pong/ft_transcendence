@@ -15,10 +15,11 @@ import { GameLevel, GameSize } from '@/utils/gameUtils/types.js';
 
   Do not:
   - handle 3D rendering or Babylon.js specific logic
-  - handle GUI logic or BabylonGUI specific logic
+  - handle GUI logic or BabylonGUI specific logicz
 */
 
 export class GameCanvas {
+  private isBotEnable: boolean = false;
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private animationId: number | null = null;
@@ -73,6 +74,7 @@ export class GameCanvas {
       this.render2DGameCanvas = this.render2DGameCanvas.bind(this);
       this.render2DGameCanvas(true);
     }
+
   }
 
   // draw stuff
@@ -96,9 +98,13 @@ export class GameCanvas {
 
     // move paddles if direction is set
     for (let i = 0; i < this.paddles.length; i++) {
-      const dir = this.paddleDirections[i];
-      if (dir === 'up') this.paddles[i].moveUp();
-      if (dir === 'down') this.paddles[i].moveDown();
+        if (this.isBotEnable && i === 1) {
+          this.updateBot(); // player 2 controlado pelo bot
+        }else{
+        const dir = this.paddleDirections[i];
+        if (dir === 'up') this.paddles[i].moveUp();
+        if (dir === 'down') this.paddles[i].moveDown();
+      }
     }
 
     // draw stuff
@@ -174,5 +180,54 @@ export class GameCanvas {
     if (this.animationId) cancelAnimationFrame(this.animationId);
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
+  }
+
+  //Creating bot
+  public enableBotMode(enable: boolean): void {
+    this.isBotEnable = enable;
+  }
+
+  private updateBot(): void {
+    const botPaddle = this.paddles[1]; // player 2
+    const ballY = this.ball.getY(); // você pode ter que implementar getY() na Ball
+    const paddleY = botPaddle.getY(); // você pode ter que implementar getY() na Paddle
+    const paddleHeight = botPaddle.getHeight(); // idem
+
+    // Movimento simples: alinhar centro da raquete com a bola
+    const paddleCenter = paddleY + paddleHeight / 2;
+
+    const level = this.gameManager.getLevel();
+    let speed = 2; // velocidade padrão
+    let precisionOffset = 0; // erro proposital
+    let reactionThreshold = 0; // para simular atraso de resposta
+
+      // Parâmetros por nível
+    switch (level) {
+      case GameLevel.EASY:
+        speed = 2;
+        precisionOffset = 30;
+        reactionThreshold = 40;
+        break;
+      case GameLevel.MEDIUM:
+        speed = 3;
+        precisionOffset = 10;
+        reactionThreshold = 20;
+        break;
+      case GameLevel.HARD:
+        speed = 4;
+        precisionOffset = 0;
+        reactionThreshold = 0;
+        break;
+    }
+    const targetY = ballY + precisionOffset * (Math.random() - 0.5);
+
+    // Só move se estiver suficientemente longe do alvo (delay/reação simulada)
+    if (Math.abs(targetY - paddleCenter) > reactionThreshold) {
+      if (targetY < paddleCenter) {
+        botPaddle.moveUp(speed);
+      } else {
+        botPaddle.moveDown(speed);
+      }
+    }
   }
 }
