@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // TODO: translations by default will be in english. Apply switching to other languages later
   // TODO: populate state, watch for changes? (?)
   state.translations = await getTranslations(state.language);
+  // In your main entry file, after loading state:
+  document.body.classList.toggle('theme-primary', state.theme === 'primary');
+  document.body.classList.toggle('theme-secondary', state.theme === 'secondary');
   let contentDiv = document.getElementById('app');
   const render = routes[window.location.pathname];
   if (render && contentDiv) {

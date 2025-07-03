@@ -4,7 +4,8 @@ import { crtFragmentShader } from '@/utils/gameUtils/CrtFragmentShader.js';
 import { GameLevel } from '@/utils/gameUtils/types.js';
 import * as BABYLON from "@babylonjs/core";
 import { Engine, Scene, Color3, StandardMaterial } from "@babylonjs/core";
-import { importMeshAsync, createSpinAnimation } from "@/utils/gameUtils/Mesh.js";
+import { importMeshAsync } from "@/utils/gameUtils/Mesh.js";
+import { createSparkleEffect, createSpinAnimation } from "@/utils/gameUtils/Animations.js";
 
 /*
   BabylonCanvas responsabilities:
@@ -55,7 +56,8 @@ export class BabylonCanvas {
     const scene = new BABYLON.Scene(this.engine);
 
     // TODO: centralize color management
-    scene.clearColor = hexToColor4("#1a2233", 1);
+    // scene.clearColor = hexToColor4("#1a2233", 1);
+    this.createRadialGradientBackground(this.scene);
 
     // lock camera at origin, looking forward
     // Vector3(0, 1, -5) -> x, y, z coordinates, position
@@ -182,23 +184,125 @@ export class BabylonCanvas {
     glowLayer.intensity = 0.25;
   }
 
+  private createRadialGradientBackground(scene: BABYLON.Scene) {
+    // Create a fullscreen background layer
+    const background = new BABYLON.Layer("background", null, scene, true);
+
+    // Create a dynamic texture for the gradient
+    const textureSize = 1024;
+    const dynamicTexture = new BABYLON.DynamicTexture("gradientTexture", { width: textureSize, height: textureSize }, scene, false);
+    background.texture = dynamicTexture;
+
+    const ctx = dynamicTexture.getContext();
+    // Create a radial gradient from center outwards
+    const centerX = textureSize / 2;
+    const centerY = textureSize / 2;
+    const radius = textureSize / 2;
+    const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+
+    // Set your colors here
+    gradient.addColorStop(0, "#1f0f5c"); // purple default
+    // gradient.addColorStop(0, "#08021a"); // dark purple
+    gradient.addColorStop(1, "#1a2233"); // bluish default
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, textureSize, textureSize);
+
+    dynamicTexture.update();
+  }
+
+  private createGlowRampBehindModel(mesh: BABYLON.Mesh, scene: BABYLON.Scene) {
+    const boundingInfo = mesh.getBoundingInfo();
+    const center = boundingInfo.boundingBox.centerWorld;
+    const radius = boundingInfo.boundingBox.extendSizeWorld.length() * 1.3;
+
+    // Create a plane slightly behind the model
+    const glowPlane = BABYLON.MeshBuilder.CreatePlane("glowPlane", { size: radius * 2 }, scene);
+    glowPlane.position = center.clone();
+    glowPlane.position.z -= radius * 0.5; // Move behind the model
+    // glowPlane.scaling = new BABYLON.Vector3(1.5, 1.5, 1.5);
+
+    // Use the correct texture URL
+    const textureUrl = "https://playground.babylonjs.com/textures/WhiteTransarentRamp.png";
+    const glowMat = new BABYLON.StandardMaterial("glowMat", scene);
+    glowMat.diffuseTexture = new BABYLON.Texture(textureUrl, scene);
+    glowMat.diffuseTexture.hasAlpha = true;
+    glowMat.useAlphaFromDiffuseTexture = true;
+    glowMat.emissiveColor = BABYLON.Color3.FromHexString("#fcf4c5");
+    glowMat.alpha = 0.2;
+    glowMat.backFaceCulling = false;
+    glowMat.disableDepthWrite = true; // <-- This ensures the model always draws over the plane
+    glowPlane.material = glowMat;
+
+    glowPlane.isPickable = false;
+    glowPlane.receiveShadows = false;
+
+    // Render the plane before the model
+    glowPlane.renderingGroupId = 0;
+    mesh.renderingGroupId = 1;
+  }
+
   public async endingGame() {
     // hide the plane where dynamic texture is applied
     const plane = this.scene.getMeshByName("gameScreen");
-    if (plane) {
-      plane.dispose();
-    }
+    if (plane) plane.dispose();
+
+    this.createRadialGradientBackground(this.scene);
 
     const models = await importMeshAsync("", "./assets/models/", "rubber_duck_toy_2k.glb", this.scene);
+    // const models = await importMeshAsync("", "./assets/models/", "all_purpose_cleaner_2k.glb", this.scene);
+    // const models = await importMeshAsync("", "./assets/models/", "garden_gnome_2k.glb", this.scene);
     this.model = models.meshes[1];
-    this.model.rotationQuaternion = null; // remove quaternion to use euler angles
+    this.model.rotationQuaternion = null;
 
-    // TODO: set a constant to camera position
-    this.model.position = new BABYLON.Vector3(0, -0.25, 0); // almost at the camera
+    // GREEN LIGHT ?
+
+    const center = this.model.getBoundingInfo().boundingBox.center;
+    const centerWorld = this.model.getBoundingInfo().boundingBox.centerWorld;
+    this.model.position = new BABYLON.Vector3(
+      this.model.position.x - center.x * 2,
+      this.model.position.y - center.y * 2,
+      this.model.position.z - center.z * 2
+    );
     this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
 
+    createSparkleEffect(this.model, this.scene);
+    this.createGlowRampBehindModel(this.model, this.scene);
     createSpinAnimation(this.model, this.scene);
   }
+
+  // public async endingGame() {
+  //   // hide the plane where dynamic texture is applied
+  //   const plane = this.scene.getMeshByName("gameScreen");
+  //   if (plane) plane.dispose();
+
+  //   this.createRadialGradientBackground(this.scene);
+
+  //   // const models = await importMeshAsync("", "./assets/models/", "plastic_monobloc_chair_01_2k.glb", this.scene);
+  //   // const models = await importMeshAsync("", "./assets/models/", "yellow_onion_2k.glb", this.scene);
+  //   const models = await importMeshAsync("", "./assets/models/", "all_purpose_cleaner_2k.glb", this.scene);
+  //   // const models = await importMeshAsync("", "./assets/models/", "rubber_duck_toy_2k.glb", this.scene);
+  //   // const models = await importMeshAsync("", "./assets/models/", "garden_gnome_2k.glb", this.scene);
+  //   this.model = models.meshes[1];
+  //   console.log("Rubber duck model loaded:", this.model.name, this.model);
+  //   this.model.rotationQuaternion = null; // remove quaternion to use euler angles
+
+  //   const center = this.model.getBoundingInfo().boundingBox.center;
+
+  //   // TODO: set a constant to camera position
+  //   this.model.position = new BABYLON.Vector3(
+  //     this.model.position.x - center.x * 2,
+  //     this.model.position.y - center.y * 2,
+  //     this.model.position.z - center.z * 2
+  //   );
+
+  //   // this.model.rotation.x = Math.PI / 30; // tilt downward??
+  //   // this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
+  //   this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
+  //   // this.model.scaling = new BABYLON.Vector3(5, 5, 5);
+
+  //   createSpinAnimation(this.model, this.scene);
+  // }
 
   public getGameCanvas() {
     return this.gameCanvas;

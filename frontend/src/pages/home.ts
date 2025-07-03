@@ -1,10 +1,17 @@
+import '@/components/ThemeToggle.js'; // This registers <toggle-switch>
+import '@/components/DynamicDropdown.js';
+import '@/components/MenuNavigation.js';
+
 export function renderHome(containerId: string) {
   const container = document.getElementById(containerId);
   if (container) {
     container.innerHTML = `
-      <h1>Home Page</h1>
-      <a href="/login">Go to Login</a> |
-      <a href="/game">Go to Game</a>
+      <div class="flex flex-col justify-center items-center gap-4">
+        <theme-toggle></theme-toggle>
+        <dynamic-dropdown>
+          <menu-navigation></menu-navigation>
+        </dynamic-dropdown>
+      </div>
     `;
   }
 }

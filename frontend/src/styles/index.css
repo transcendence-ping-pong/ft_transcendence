@@ -1,3 +1,22 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+  font-family: 'WiredMono';
+  src: url('/path/to/WiredMono.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.theme-primary {
+  --body: #e2d7b7;
+  --accent: #b8a77a;
+  --border: #222222;
+}
+
+.theme-secondary {
+  --body: #232323;
+  --accent: #5be9b9;
+  --border: #5be9b9;
+}

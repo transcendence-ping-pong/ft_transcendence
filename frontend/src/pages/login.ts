@@ -1,10 +1,17 @@
+import '@/components/ThemeToggle.js'; // This registers <toggle-switch>
+import '@/components/DynamicDropdown.js';
+import '@/components/UserLogin.js';
+
 export function renderLogin(containerId: string) {
   const container = document.getElementById(containerId);
   if (container) {
     container.innerHTML = `
-      <h1>Login Page</h1>
-      <a href="/">Go to Home</a> |
-      <a href="/game">Go to Game</a>
+      <div class="flex flex-col justify-center items-center gap-4">
+        <theme-toggle></theme-toggle>
+        <dynamic-dropdown>
+          <user-login></user-login>
+        </dynamic-dropdown>
+      </div>
     `;
   }
 }
