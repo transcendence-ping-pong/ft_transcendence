@@ -6,7 +6,8 @@ template.innerHTML = `
       top: 32px;
       left: 50%;
       width: 100%;
-      max-width: 400px;
+      max-width: 30vw;
+      min-width: 500px;
       transform: translateX(-50%);
       z-index: 100;
     }
@@ -21,14 +22,14 @@ template.innerHTML = `
     }
     .dropdown.open {
       max-height: 600px;
-      box-shadow: 0 8px 32px #0004;
+      box-shadow: var(--shadow);
     }
     .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0.5rem 1rem;
-      background: var(--accent, #eee);
+      background: var(--accent);
       cursor: pointer;
       min-height: 56px;
     }
@@ -36,9 +37,9 @@ template.innerHTML = `
       flex: 1;
       text-align: center;
       font-weight: bold;
-      font-size: 1.1rem;
+      font-size: 1.25rem;
       letter-spacing: 2px;
-      color: var(--border, #222);
+      color: var(--border);
       user-select: none;
     }
     .icon-btn {
@@ -46,19 +47,19 @@ template.innerHTML = `
       border: none;
       cursor: pointer;
       font-size: 1.3rem;
-      color: var(--border, #222);
+      color: var(--border);
       display: flex;
       align-items: center;
       padding: 0 0.25rem;
       transition: color 0.2s;
     }
     .icon-btn:active {
-      color: var(--accent, #888);
+      color: var(--accent);
     }
     .content {
       padding: 1rem;
       display: none;
-      background: var(--body, #fff);
+      background: var(--body);
     }
     .dropdown.open .content {
       display: block;
@@ -67,8 +68,8 @@ template.innerHTML = `
 
   <div class="dropdown">
     <div class="header">
-      <button class="icon-btn" id="closeBtn" title="Close" tabindex="0" aria-label="Close">&#10005;</button>
       <span class="app-name"><slot name="app-name">AppName</slot></span>
+      <button class="icon-btn" id="closeBtn" title="Close" tabindex="0" aria-label="Close">&#10005;</button>
     </div>
     <div class="content">
       <slot></slot>

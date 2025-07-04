@@ -1,4 +1,4 @@
-import { t } from '@/utils/Translations.js';
+import { t } from '@/locales/Translations.js';
 import { GameLevel, GameScore } from '@/utils/gameUtils/types.js';
 import { AdvancedDynamicTexture, Button, Control, TextBlock } from "@babylonjs/gui";
 

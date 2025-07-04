@@ -1,4 +1,4 @@
-import { getTranslations } from './utils/Translations.js';
+import { getTranslations } from './locales/Translations.js';
 import { state } from './state.js';
 import { renderHome } from './pages/home.js';
 import { renderLogin } from '@/pages/login.js';
@@ -28,4 +28,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else if (contentDiv) {
     contentDiv.innerHTML = `<h1>404 Not Found</h1`;
   }
+
+  window.addEventListener('languagechange', async (e: Event) => {
+    const newLang = (e as CustomEvent).detail.language;
+    state.translations = await getTranslations(newLang);
+    const render = routes[window.location.pathname];
+    if (render && contentDiv) {
+      render('app');
+    }
+  })
 });

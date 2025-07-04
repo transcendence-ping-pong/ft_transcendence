@@ -6,7 +6,8 @@ module.exports = {
       colors: {},
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
-        wired: ['WiredMono', 'helvetica', 'sans-serif'], // custom WiredMono font
+        wired: ['WiredMono', 'helvetica', 'sans-serif'],
+        futura: ['Futura', 'Trebuchet MS', 'Arial', 'sans-serif'],
       },
     },
   },

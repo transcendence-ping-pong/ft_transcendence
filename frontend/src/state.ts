@@ -6,6 +6,7 @@ const savedState = localStorage.getItem('appState');
 const initialState = savedState ? JSON.parse(savedState) : {
   language: 'en',
   translations: {} as any,
+  availableLanguages: [] as string[],
   theme: 'primary',
   soundEnabled: true,
   // TODO: add other state properties that we need to persist
