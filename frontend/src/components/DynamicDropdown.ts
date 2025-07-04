@@ -3,7 +3,7 @@ template.innerHTML = `
   <style>
     :host {
       position: absolute;
-      top: 32px;
+      top: 0;
       left: 50%;
       width: 100%;
       max-width: 30vw;
@@ -13,11 +13,11 @@ template.innerHTML = `
     }
     .dropdown {
       border: 2px solid var(--border, #222);
-      background: var(--body, #fff);
+      background: var(--body);
       box-shadow: 0 2px 8px #0002;
       overflow: hidden;
       transition: max-height 0.3s cubic-bezier(.4,2,.6,1), box-shadow 0.2s;
-      max-height: 56px;
+      min-height: 38px;
       position: relative;
     }
     .dropdown.open {
@@ -31,7 +31,7 @@ template.innerHTML = `
       padding: 0.5rem 1rem;
       background: var(--accent);
       cursor: pointer;
-      min-height: 56px;
+      min-height: 38px;
     }
     .app-name {
       flex: 1;
