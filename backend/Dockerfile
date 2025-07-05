@@ -17,4 +17,4 @@ RUN chmod +x ./database/script.sh
 
 EXPOSE 4000
 
-CMD ["sh", "-c", "./database/script.sh && node src/index.js"]
+CMD ["sh", "-c", "./database/script.sh && node api/matches.js"]

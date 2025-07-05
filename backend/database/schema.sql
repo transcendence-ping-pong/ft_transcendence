@@ -17,6 +17,18 @@ CREATE TABLE IF NOT EXISTS users (
 -- 	email TEXT
 -- );
 
+CREATE TABLE IF NOT EXISTS userStats (
+	userId INTEGER NOT NULL PRIMARY KEY,
+	displayName TEXT,
+-- CREATE TABLE IF NOT EXISTS users (
+-- 	userId INTEGER PRIMARY KEY AUTOINCREMENT,
+-- 	username TEXT NOT NULL UNIQUE,
+-- 	password TEXT NOT NULL,
+-- 	secret TEXT NOT NULL,
+-- 	googleId TEXT UNIQUE,
+-- 	email TEXT
+-- );
+
 -- TODO: Check if displayname can be same as username
 
 CREATE TABLE IF NOT EXISTS userStats (
@@ -40,6 +52,12 @@ CREATE TABLE IF NOT EXISTS friendList (
 	FOREIGN KEY (friendId) REFERENCES users (userId)
 );
 
+
+CREATE TABLE IF NOT EXISTS matchHistory (
+	userId INTEGER NOT NULL,
+	matchId INTEGER NOT NULL,
+	FOREIGN KEY (userId) REFERENCES users(userId),
+	FOREIGN KEY (matchId) REFERENCES matchStats(matchId)
 CREATE TABLE IF NOT EXISTS matchHistory (
 	userId INTEGER NOT NULL,
 	matchId INTEGER NOT NULL,
