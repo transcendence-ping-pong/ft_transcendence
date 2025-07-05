@@ -1,8 +1,5 @@
 #!/bin/sh
 
-# Self-repair permission if needed (optional safety net)
-# chmod +x "$0"
-
 DB_FILE="./database/database.db"
 SCHEMA_FILE="./database/schema.sql"
 
