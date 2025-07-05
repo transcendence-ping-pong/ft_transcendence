@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Match Entry</title>
+</head>
+<body>
+  <h1>Enter Match Information</h1>
+
+  <label for="player1DisplayName">Player 1 Display Name:</label>
+  <input type="text" id="player1DisplayName" required><br><br>
+
+  <label for="player2DisplayName">Player 2 Display Name:</label>
+  <input type="text" id="player2DisplayName"><br><br>
+
+  <label for="creatorUserId">Creator User ID:</label>
+  <input type="number" id="creatorUserId" required><br><br>
+
+  <label for="scorePlayer1">Score Player 1:</label>
+  <input type="number" id="scorePlayer1" required><br><br>
+
+  <label for="scorePlayer2">Score Player 2:</label>
+  <input type="number" id="scorePlayer2" required><br><br>
+
+  <label for="forfeit">Forfeit (0 or 1):</label>
+  <input type="number" id="forfeit" min="0" max="1"><br><br>
+
+  <label for="winnerDisplayName">Winner Display Name:</label>
+  <input type="text" id="winnerDisplayName" required><br><br>
+
+  <label for="matchType">Match Type:</label>
+  <input type="text" id="matchType"><br><br>
+
+  <button onclick="submitMatch()">Submit Match</button>
+
+  <h2>All Matches</h2>
+  <div id="matches">Loading...</div>
+
+  <script>
+    async function submitMatch() {
+      const payload = {
+		player1DisplayName: document.getElementById('player1DisplayName').value,
+		player2DisplayName: document.getElementById('player2DisplayName').value,
+        creatorUserId: Number(document.getElementById('creatorUserId').value),
+        scorePlayer1: Number(document.getElementById('scorePlayer1').value),
+        scorePlayer2: Number(document.getElementById('scorePlayer2').value),
+        forfeit: Number(document.getElementById('forfeit').value),
+		winnerDisplayName: document.getElementById('winnerDisplayName').value,
+        matchType: document.getElementById('matchType').value
+      };
+
+      const res = await fetch('/matches', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        alert('Match submitted!');
+        loadMatches();
+      } else {
+        alert('Error submitting match');
+      }
+    }
+
+    async function loadMatches() {
+      const res = await fetch('/matches');
+      const data = await res.json();
+
+      const container = document.getElementById('matches');
+      container.innerHTML = '';
+
+      if (data.length === 0) {
+        container.innerText = 'No matches found.';
+        return;
+      }
+
+      const table = document.createElement('table');
+      const header = document.createElement('tr');
+      const columns = [
+        'matchId', 'creatorUserId', 'player1DisplayName', 'player2DisplayName',
+        'scorePlayer1', 'scorePlayer2', 'forfeit',
+        'winnerDisplayName', 'matchType'
+      ];
+
+      columns.forEach(col => {
+        const th = document.createElement('th');
+        th.textContent = col;
+        header.appendChild(th);
+      });
+      table.appendChild(header);
+
+      data.forEach(match => {
+        const row = document.createElement('tr');
+        columns.forEach(col => {
+          const cell = document.createElement('td');
+          cell.textContent = match[col] ?? '';
+          row.appendChild(cell);
+        });
+        table.appendChild(row);
+      });
+
+      container.appendChild(table);
+    }
+
+    window.onload = loadMatches;
+  </script>
+</body>
+</html>
