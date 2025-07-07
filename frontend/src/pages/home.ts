@@ -1,6 +1,7 @@
 import '@/components/ThemeToggle.js';
 import '@/components/DynamicDropdown.js';
 import '@/components/MenuNavigation.js';
+import '@/components/NavigationCta.js';
 
 export function renderHome(containerId: string) {
   const container = document.getElementById(containerId);
@@ -8,6 +9,7 @@ export function renderHome(containerId: string) {
     container.innerHTML = `
       <div class="w-full flex items-center justify-between px-8 py-3 border-b-2 border-[color:var(--border)] bg-[color:var(--body)] min-h-[56px]">
         <dynamic-dropdown>
+          <navigation-cta slot="nav-buttons"></navigation-cta>
           <span slot="app-name">FOUR PING TWO PONG</span>
           <menu-navigation></menu-navigation>
         </dynamic-dropdown>
@@ -17,3 +19,16 @@ export function renderHome(containerId: string) {
     `;
   }
 }
+
+/*
+<dynamic-dropdown>
+  <div slot="nav-buttons">
+    <button>Home</button>
+    <button>Game</button>
+    <button>Profile</button>
+  </div>
+  <span slot="app-name">FOUR PING TWO PONG</span>
+  <!-- Dropdown content goes here -->
+  <menu-navigation></menu-navigation>
+</dynamic-dropdown>
+*/

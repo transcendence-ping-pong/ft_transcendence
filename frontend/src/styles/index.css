@@ -15,6 +15,7 @@
   --accent: #b8a77a;
   --border: #222222;
   --warning: #ff5733;
+  --nav-hover: #e2d7b7;
   --shadow: 0 8px 32px #0004;
 }
 
@@ -31,6 +32,7 @@
   --accent: #45796d;
   --border: #93ffe6;
   --warning: #ff5733;
+  --nav-hover: #77ceba;
   --shadow: 0 8px 32px #525151;
 }
 

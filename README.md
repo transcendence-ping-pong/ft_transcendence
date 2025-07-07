@@ -193,3 +193,5 @@ Z axis is pointing forward, babylon has different coordinate system than Blender
 [Atari 2600 Model](https://sketchfab.com/3d-models/atari-2600-d02fe33dee524447b7dd00e7ca939cc4)</br>
 [Poly Haven](https://polyhaven.com/)</br>
 [Game Textures](https://gametextures.com/)</br>
+[Symbl](https://symbl.cc/)</br>
+[Pixel Art Icons](https://pixelarticons.com/)</br>
