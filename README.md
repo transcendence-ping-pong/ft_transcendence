@@ -8,6 +8,32 @@ This project was developed for 42 school. For comprehensive information regardin
 + ...
 ```
 
+## Modules
+
+### Web
+**Major module**: Use a framework to build the backend. (*Fastify* + *Node.js*)
+
+**Minor module**: Use a framework or a toolkit to build the frontend. (*Tailwind CSS*)
+
+**Minor module**: Use a database for the backend. (*SQLite*)
+
+### User Management
+**Major module**: Standard user management, authentication, users across tournaments.
+
+**Major module**: Implementing a remote authentication. (*Google Sign-in*)
+
+### Gameplay and User Experience
+**Major module**: Remote players.
+
+### Cybersecurity
+**Major module**: Implement Two-Factor Authentication (2FA) and JWT.
+
+### Graphics
+**Major module**: Use advanced 3D techniques. (*Babylon.js*)
+
+### Accessibility
+**Minor module**: Supports multiple languages.
+      
 ## High-level Overview
 
 ```
@@ -139,6 +165,7 @@ sudo docker-compose up --build frontend
 <!-- FE available at http://localhost:3000 -->
 ```
 
+
 ## Concepts
 
 | Task | Prototype | Description |
@@ -156,6 +183,12 @@ Z axis is pointing forward, babylon has different coordinate system than Blender
 | **requestAnimationFrame** | [MDN web docs](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame) | Constantly updates the scene, i.e. animations. Running two loops, one for Babylon.js and other for GameCanvas should be avoided. In Babylon render loop, call a method to update the 2D game (that acts as a dynamic texture in Babylon, applied to a plane). |
 | **Prune/remove docker** | `docker system prune -af` `docker volume prune -f` | Prune unused resources. Clean unused volumes and images/containers `docker rmi` `docker rm` `docker-compose down`. |
 | **node_modules** | `docker-compose exec backend ls node_modules` `docker-compose exec frontend ls -l /app/dist` | See backend/frontend `node_modules`, you can exec into the container. |
+
+## Tournament Organization
+
+![Qualifiers](https://github.com/user-attachments/assets/b0c453de-4333-4565-9d07-11ae357086b4)
+
+The tournament matchmaking will work on a Qualifiers-type organization. This ensures a reasonable amount of matches and a fair distribution of match types for all participating players.
 
 ### References Game History
 [Pong Game (1972)](https://www.ponggame.org/)</br>
