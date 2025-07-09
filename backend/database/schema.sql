@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS userStats (
 	matchCount INTEGER DEFAULT 0,
 	winCount INTEGER DEFAULT 0,
 	lossCount INTEGER DEFAULT 0,
-	tornamentWinCount INTEGER DEFAULT 0,
+	tournamentWinCount INTEGER DEFAULT 0,
 	FOREIGN KEY (userId) REFERENCES users(userId)
 );
 
