@@ -38,19 +38,19 @@ fastify.post('/matches', (request, reply) => {
 		scorePlayer2,
 		forfeit
 	} = request.body;
-	
+
 	// TODO: Verify if additional checks are needed
 	if (!creatorUserId) {
 		return reply.status(400).send({ error: 'Incomplete player credentials.' });
 	}
 
 	const d = new Date();
-	
+
 	function addZero(i) {
 		if (i < 10) {i = "0" + i}
 		return i;
 	}
-	
+
 	let day = addZero(d.getDate());
 	let month = addZero(d.getMonth() + 1);
 	let year = addZero(d.getFullYear());
