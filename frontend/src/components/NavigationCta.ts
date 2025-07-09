@@ -18,11 +18,9 @@ template.innerHTML = `
       color: var(--border);
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      margin: 0 0.25rem;
       transition: color 0.2s, background 0.2s, transform 0.18s cubic-bezier(.4,2,.6,1);
     }
-    .nav-btn:hover, .nav-btn:focus {
+    .nav-btn:hover, .nav-btn:focus, .active {
       transform: scale(1.5);
       background: var(--nav-hover);
       box-shadow: 0 4px 16px #0004;
@@ -30,19 +28,19 @@ template.innerHTML = `
     .logout:hover, .logout:focus {
       background: var(--warning);
     }
-    .icon {
+    .nav-buttons-wrapper {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 1.3rem;
-      height: 1.3rem;
+      gap: 2.5rem;
     }
   </style>
-  <button class="nav-btn" id="home" title="Home" aria-label="Home">${navIcons.home}</button>
-  <button class="nav-btn" id="home" title="Home" aria-label="Home">${navIcons.settings}</button>
-  <button class="nav-btn" id="game" title="Game" aria-label="Game">${navIcons.game}</button>
-  <button class="nav-btn" id="game" title="Ranking" aria-label="Game">${navIcons.ranking}</button>
-  <button class="nav-btn logout" id="profile" title="Logout" aria-label="Profile">${navIcons.logout}</button>
+
+  <div class="nav-buttons-wrapper">
+    <button class="nav-btn" id="home" title="Home" aria-label="Home">${navIcons.home}</button>
+    <button class="nav-btn" id="home" title="Home" aria-label="Home">${navIcons.settings}</button>
+    <button class="nav-btn" id="game" title="Game" aria-label="Game">${navIcons.game}</button>
+    <button class="nav-btn" id="game" title="Ranking" aria-label="Game">${navIcons.ranking}</button>
+    <button class="nav-btn logout" id="profile" title="Logout" aria-label="Profile">${navIcons.logout}</button>
+  </div>  
 `;
 
 export class NavigationCta extends HTMLElement {
@@ -69,6 +67,23 @@ export class NavigationCta extends HTMLElement {
     //   window.history.pushState({}, '', '/profile');
     //   window.dispatchEvent(new Event('popstate'));
     // });
+    this._render();
+  }
+
+  // if user is in the current page (e.g), home button shoud be set as hovered/in focus
+  _render() {
+    const currentPath = window.location.pathname;
+    const homeBtn = this.shadowRoot?.getElementById('home');
+    const gameBtn = this.shadowRoot?.getElementById('game');
+
+    switch (currentPath) {
+      case '/':
+        homeBtn?.classList.add('active');
+        break;
+      case '/game':
+        gameBtn?.classList.add('active');
+        break;
+    }
   }
 }
 

@@ -75,7 +75,6 @@ template.innerHTML = `
     <label>
       <span id="labelText"></span>
       <select id="selectLanguages"></select>
-      <img src="logo" alt="Description">
     </label>
   </nav>
 `;

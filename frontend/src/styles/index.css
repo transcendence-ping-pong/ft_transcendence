@@ -9,6 +9,33 @@
   font-weight: normal;
   font-style: normal;
 } */
+.home-bg {
+  background-image: url('/public/broken-arcade-light.png');
+  background-size: cover;
+  background-position: center;
+}
+
+.video-bg-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.video-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: 100%;
+  min-height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+}
 
 .theme-primary {
   --body: #e2d7b7;
