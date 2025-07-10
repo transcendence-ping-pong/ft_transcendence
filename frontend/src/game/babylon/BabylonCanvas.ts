@@ -1,11 +1,12 @@
 import { GameCanvas } from '@/game/GameCanvas.js';
-import { hexToColor4 } from '@/utils/Colors.js';
 import { crtFragmentShader } from '@/utils/gameUtils/CrtFragmentShader.js';
 import { GameLevel } from '@/utils/gameUtils/types.js';
+import { getThemeColors, ThemeColors } from '@/utils/Colors.js';
 import * as BABYLON from "@babylonjs/core";
 import { Engine, Scene, Color3, StandardMaterial } from "@babylonjs/core";
 import { importMeshAsync } from "@/utils/gameUtils/Mesh.js";
 import { createSparkleEffect, createSpinAnimation } from "@/utils/gameUtils/Animations.js";
+import { state } from '@/state.js';
 
 /*
   BabylonCanvas responsabilities:
@@ -56,7 +57,6 @@ export class BabylonCanvas {
     const scene = new BABYLON.Scene(this.engine);
 
     // TODO: centralize color management
-    // scene.clearColor = hexToColor4("#1a2233", 1);
     this.createRadialGradientBackground(this.scene);
 
     // lock camera at origin, looking forward
@@ -185,6 +185,7 @@ export class BabylonCanvas {
   }
 
   private createRadialGradientBackground(scene: BABYLON.Scene) {
+    const colors = getThemeColors(state.theme) as ThemeColors;
     // Create a fullscreen background layer
     const background = new BABYLON.Layer("background", null, scene, true);
 
@@ -200,10 +201,13 @@ export class BabylonCanvas {
     const radius = textureSize / 2;
     const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
 
-    // Set your colors here
-    gradient.addColorStop(0, "#1f0f5c"); // purple default
+    // set colors
+    gradient.addColorStop(0, colors.accent);
+    gradient.addColorStop(1, colors.warning);
+
+    // gradient.addColorStop(0, "#1f0f5c"); // purple default
     // gradient.addColorStop(0, "#08021a"); // dark purple
-    gradient.addColorStop(1, "#1a2233"); // bluish default
+    // gradient.addColorStop(1, "#1a2233"); // bluish default
 
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, textureSize, textureSize);
@@ -247,28 +251,28 @@ export class BabylonCanvas {
     const plane = this.scene.getMeshByName("gameScreen");
     if (plane) plane.dispose();
 
-    this.createRadialGradientBackground(this.scene);
+    // this.createRadialGradientBackground(this.scene);
 
-    const models = await importMeshAsync("", "./assets/models/", "rubber_duck_toy_2k.glb", this.scene);
-    // const models = await importMeshAsync("", "./assets/models/", "all_purpose_cleaner_2k.glb", this.scene);
-    // const models = await importMeshAsync("", "./assets/models/", "garden_gnome_2k.glb", this.scene);
-    this.model = models.meshes[1];
-    this.model.rotationQuaternion = null;
+    // const models = await importMeshAsync("", "./assets/models/", "rubber_duck_toy_2k.glb", this.scene);
+    // // const models = await importMeshAsync("", "./assets/models/", "all_purpose_cleaner_2k.glb", this.scene);
+    // // const models = await importMeshAsync("", "./assets/models/", "garden_gnome_2k.glb", this.scene);
+    // this.model = models.meshes[1];
+    // this.model.rotationQuaternion = null;
 
-    // GREEN LIGHT ?
+    // // GREEN LIGHT ?
 
-    const center = this.model.getBoundingInfo().boundingBox.center;
-    const centerWorld = this.model.getBoundingInfo().boundingBox.centerWorld;
-    this.model.position = new BABYLON.Vector3(
-      this.model.position.x - center.x * 2,
-      this.model.position.y - center.y * 2,
-      this.model.position.z - center.z * 2
-    );
-    this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
+    // const center = this.model.getBoundingInfo().boundingBox.center;
+    // const centerWorld = this.model.getBoundingInfo().boundingBox.centerWorld;
+    // this.model.position = new BABYLON.Vector3(
+    //   this.model.position.x - center.x * 2,
+    //   this.model.position.y - center.y * 2,
+    //   this.model.position.z - center.z * 2
+    // );
+    // this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
 
-    createSparkleEffect(this.model, this.scene);
-    this.createGlowRampBehindModel(this.model, this.scene);
-    createSpinAnimation(this.model, this.scene);
+    // createSparkleEffect(this.model, this.scene);
+    // this.createGlowRampBehindModel(this.model, this.scene);
+    // createSpinAnimation(this.model, this.scene);
   }
 
   // public async endingGame() {

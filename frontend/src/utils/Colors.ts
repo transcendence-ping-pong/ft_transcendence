@@ -1,9 +1,32 @@
-import { Color4 } from "@babylonjs/core";
+export type ThemeColors = {
+  body: string;
+  accent: string;
+  border: string;
+  warning: string;
+  navHover: string;
+  shadow: string;
+};
 
-export function hexToColor4(hex: string, alpha: number = 1) {
-  const hexValue = parseInt(hex.replace("#", ""), 16);
-  const r = ((hexValue >> 16) & 255) / 255;
-  const g = ((hexValue >> 8) & 255) / 255;
-  const b = (hexValue & 255) / 255;
-  return new Color4(r, g, b, alpha);
+/**
+ * Reads all CSS variables from the given element (or body by default)
+ * and returns an object with variable names (without --) as keys.
+ */
+export function getThemeColors(themeName = 'primary') {
+  // Compose the class name, e.g., 'theme-primary'
+  const themeClass = `.theme-${themeName}`;
+  const el = document.querySelector(themeClass) || document.body;
+  const styles = getComputedStyle(el);
+  const varNames = [
+    '--body',
+    '--accent',
+    '--border',
+    '--warning',
+    '--nav-hover',
+    '--shadow'
+  ];
+  const themeVars = {};
+  varNames.forEach(name => {
+    themeVars[name.replace('--', '')] = styles.getPropertyValue(name).trim();
+  });
+  return themeVars as ThemeColors;
 }
