@@ -2,10 +2,6 @@ services:
   frontend:
     build: ./frontend
     command: npm run dev -- --host
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
     depends_on:
       - backend
 
@@ -14,10 +10,21 @@ services:
     container_name: backend
     ports:
       - "4000:4000"
-    # env_file:
-    #   - ./backend/src/.env
+      - "4001:4001"
     volumes:
       - db_data:/app/database
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    # env_file:
+    #   - ./backend/src/.env
 
 volumes:
   db_data:

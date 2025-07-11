@@ -4,8 +4,8 @@ import { renderHome } from './pages/home.js';
 import { renderLogin } from '@/pages/login.js';
 import { renderGame } from '@/pages/game.js';
 import '@/styles/index.css';
-
 // import { getUsers } from './services/api.js';
+import { io } from 'socket.io-client';
 
 const routes = {
   "/": renderHome,
@@ -19,6 +19,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   state.translations = await getTranslations(state.language);
   let contentDiv = document.getElementById('app');
   const render = routes[window.location.pathname];
+
+  const socket = io(`http://${window.location.hostname}:4001`);
+  
+
+  // web console logs
+  socket.on('connect', () => {
+    console.log('✅ Connected to backend WebSocket!');
+    console.log('Socket ID:', socket.id);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('❌ Disconnected from backend WebSocket');
+  });
+  
   if (render && contentDiv) {
     render('app');
   } else if (contentDiv) {
