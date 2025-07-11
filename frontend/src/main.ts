@@ -38,4 +38,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else if (contentDiv) {
     contentDiv.innerHTML = `<h1>404 Not Found</h1`;
   }
+
+
 });
