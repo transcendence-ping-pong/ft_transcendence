@@ -7,6 +7,25 @@
     <script>
         let loggedInUser = null;
 
+        async function checkServerLoginStatus() {
+            try {
+                const response = await fetch('/current-user');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.username) {
+                        loggedInUser = data.username;
+                        localStorage.setItem('loggedInUser', data.username);
+                        updateLoginStatus(data.username);
+                        check2FAStatus();
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking server login status:', error);
+            }
+            return false;
+        }
+
         async function signup() {
             if (loggedInUser) {
                 alert('You are already logged in. Please log out before creating a new account.');
@@ -74,20 +93,6 @@
             window.location.href = '/auth/google';
         }
 
-        async function fetchLoggedInUser() {
-            const response = await fetch('/auth/google/callback');
-            const data = await response.json();
-
-            if (data.error) {
-                alert(data.error);
-            } else {
-                const user = data.user;
-                localStorage.setItem('loggedInUser', user.username);
-                updateLoginStatus(user.username);
-                addUserToList(user);
-            }
-        }
-
         async function logout() {
             if (!loggedInUser) {
                 alert('No user is logged in.');
@@ -114,7 +119,9 @@
         }
 
         async function check2FAStatus() {
-            const response = await fetch(`/check-2fa?username=${loggedInUser}`);
+            if (!loggedInUser) return;
+            
+            const response = await fetch(`/check-2fa?username=${encodeURIComponent(loggedInUser)}`);
             const data = await response.json();
 
             if (data.error) {
@@ -144,7 +151,8 @@
 
             users.forEach(user => {
                 const listItem = document.createElement('li');
-                listItem.textContent = `ID: ${user.id}, Username: ${user.username}, Password: ${user.password}, Secret: ${user.secret}, Google ID: ${user.google_id || 'N/A'}, Email: ${user.email || 'N/A'}`;
+                // Don't display passwords for security
+                listItem.textContent = `ID: ${user.user_id}, Username: ${user.username}, Has 2FA: ${user.secret ? 'Yes' : 'No'}, Google ID: ${user.google_id || 'N/A'}, Email: ${user.email || 'N/A'}`;
                 userList.appendChild(listItem);
             });
         }
@@ -214,18 +222,14 @@
             }
         }
 
-        function addUserToList(user) {
-            const userList = document.getElementById('userList');
-            const listItem = document.createElement('li');
-            listItem.textContent = `ID: ${user.id}, Username: ${user.username}, Email: ${user.email || 'N/A'}`;
-            userList.appendChild(listItem);
-        }
-
-        window.onload = () => {
-            loggedInUser = localStorage.getItem('loggedInUser');
-            if (loggedInUser) {
-                updateLoginStatus(loggedInUser);
+        window.onload = async () => {
+            const storedUser = localStorage.getItem('loggedInUser');
+            if (storedUser) {
+                loggedInUser = storedUser;
+                updateLoginStatus(storedUser);
             }
+            await checkServerLoginStatus();
+            
             fetchUsers();
         };
     </script>
