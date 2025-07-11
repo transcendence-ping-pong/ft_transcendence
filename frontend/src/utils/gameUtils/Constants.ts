@@ -118,6 +118,12 @@ type GUIConstants = {
   COUNTDOWN_FONT_SIZE: number;
   COUNTDOWN_FONT_WEIGHT: string;
   COUNTDOWN_FONT_COLOR: string;
+  SCORE_FONT_COLOR: string;
+  SCORE_FONT_SIZE: number;
+  SCORE_FONT_WEIGHT: string;
+  SCORE_MARGIN_TOP: string;
+  SCORE_MARGIN_LEFT: string;
+  SCORE_MARGIN_RIGHT: string
 };
 
 export function getGUIConstants(): GUIConstants {
@@ -125,23 +131,29 @@ export function getGUIConstants(): GUIConstants {
 
   return {
     SCENE_BACKGROUND_COLOR: colors.gameGradientEnd,
-    BUTTON_HEIGHT: '150px',
+    BUTTON_HEIGHT: '100px',
     BUTTON_WIDTH: '400px',
-    BUTTON_GAP: 32,
+    BUTTON_GAP: 24,
     BUTTON_FONT_SIZE: 42,
     BUTTON_FONT_WEIGHT: 'bold',
     BUTTON_FONT_COLOR: colors.border,
     BUTTON_BORDER_COLOR: colors.border,
-    BUTTON_CORNER_RADIUS: 20,
-    BUTTON_THICKNESS: 4,
+    BUTTON_CORNER_RADIUS: 0,
+    BUTTON_THICKNESS: 8,
     BUTTON_BACKGROUND_COLOR: colors.gameGradientStart,
-    BUTTON_SHADOW_OFFSET_X: 2,
-    BUTTON_SHADOW_OFFSET_Y: 2,
-    BUTTON_SHADOW_COLOR: colors.border,
+    BUTTON_SHADOW_OFFSET_X: 4,
+    BUTTON_SHADOW_OFFSET_Y: 4,
+    BUTTON_SHADOW_COLOR: "rgba(0,0,0,0.25)",
     BUTTON_SHADOW_BLUR: 8,
     COUNTDOWN_DURATION: 3,
     COUNTDOWN_FONT_SIZE: 250,
     COUNTDOWN_FONT_WEIGHT: 'bold',
     COUNTDOWN_FONT_COLOR: colors.border,
+    SCORE_FONT_COLOR: "rgba(0,0,0,0.25)", // semi-transparent black text
+    SCORE_FONT_SIZE: 250,
+    SCORE_FONT_WEIGHT: 'bold',
+    SCORE_MARGIN_TOP: "10%",
+    SCORE_MARGIN_LEFT: "-8%",
+    SCORE_MARGIN_RIGHT: "8%",
   };
 }

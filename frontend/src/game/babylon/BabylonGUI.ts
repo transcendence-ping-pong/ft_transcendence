@@ -163,19 +163,19 @@ export class BabylonGUI {
 
   showScoreBoard(score: { [GameScore.LEFT]: number, [GameScore.RIGHT]: number }, onDone?: () => void) {
     const positions = {
-      [GameScore.LEFT]: "-8%",
-      [GameScore.RIGHT]: "8%",
+      [GameScore.LEFT]: this.GUIConstants.SCORE_MARGIN_LEFT,
+      [GameScore.RIGHT]: this.GUIConstants.SCORE_MARGIN_RIGHT,
     };
 
     Object.entries(score).forEach(([key, value], index) => {
       const scoreText = new TextBlock();
       scoreText.text = `${value}`;
       // scoreText.color = "rgba(255,255,255,0.15)"; // semi-transparent white text
-      scoreText.color = "rgba(0,0,0,0.25)"; // semi-transparent black text
-      scoreText.fontSize = 250;
-      scoreText.fontWeight = "bold";
+      scoreText.color = this.GUIConstants.SCORE_FONT_COLOR;
+      scoreText.fontSize = this.GUIConstants.SCORE_FONT_SIZE;
+      scoreText.fontWeight = this.GUIConstants.SCORE_FONT_WEIGHT;
       scoreText.left = positions[key as GameScore];
-      scoreText.top = "10%";
+      scoreText.top = this.GUIConstants.SCORE_MARGIN_TOP;
       scoreText.textVerticalAlignment = TextBlock.VERTICAL_ALIGNMENT_TOP;
 
       this.scoreBoard.push(scoreText);
