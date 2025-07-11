@@ -183,6 +183,13 @@ Z axis is pointing forward, babylon has different coordinate system than Blender
 | **requestAnimationFrame** | [MDN web docs](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame) | Constantly updates the scene, i.e. animations. Running two loops, one for Babylon.js and other for GameCanvas should be avoided. In Babylon render loop, call a method to update the 2D game (that acts as a dynamic texture in Babylon, applied to a plane). |
 | **Prune/remove docker** | `docker system prune -af` `docker volume prune -f` | Prune unused resources. Clean unused volumes and images/containers `docker rmi` `docker rm` `docker-compose down`. |
 | **node_modules** | `docker-compose exec backend ls node_modules` `docker-compose exec frontend ls -l /app/dist` | See backend/frontend `node_modules`, you can exec into the container. |
+| **requestAnimationFrame** | `60Hz, 120Hz, 30Hz` | It tries to match the display's refresh rate, therefore different screens will show animations differently (if moving objects by a fixed amount per frame). Best practice: use delta time. |
+| **delta time** | | Elapsed time (in seconds or milliseconds) since the last frame. Multiply all animation by delta time, so game runs at the same speed regardless of frame rate. |
+| **Virtual width/height** | | |
+| **Web components** | `Custom HTML Element` [webcomponents](https://www.webcomponents.org/) | Register our own HTML tags e.g. `<my-tooltip>`. Shadow dom specification, hidden away from main DOM (manage a separate DOM node tree for HTML elements, including scoped CSS styles - not affecting other builtin elements in the rest of the page). Templates and slots, add some flexible entrypoints that enables to be populated later. |
+| **Web components lifecycle** | `constructor -> connectedCallback -> disconnectedCallback` | The moment the element is created is not the moment where it is attached to the DOM (created in memory first, initialisation = **constructor**... then it is attached to the DOM later = **connectedCallback**). Accessing DOM, DOM manipulation should be done there. Cleanup work = **disconnectedCallback**. Update data and DOM = **attributeChangedCallback**. |
+| **Web components attributes** | `<my-button text="Hello"></my-button>` | `if (this.hasAttribute('text')) this.text = this.getAttribute('text')`. Then, `textContent` can use value set via attribute, manipulation should happen when element is mounted in DOM (connectedCallback). **HTML attributes and DOM properties CAN be connected but don't have to. They're not the same.** |
+| **Light/Shadow DOM** | `this.attachShadow({ mode: 'open' })` | Styles applied to normal/light DOM shouldnt affect nested custom web component. Shadow DOM: custom element has its own DOM tree, not directly connected to real DOM (therefore, not affected by global styling). |
 
 ## Tournament Organization
 
@@ -207,12 +214,17 @@ The tournament matchmaking will work on a Qualifiers-type organization. This ens
 [Basic Scene in BabylonJS](https://www.youtube.com/watch?v=NLZuUtiL50A&list=PLym1B0rdkvqhuCNSXzxw6ofEkrpYI70P4&index=1)</br>
 [Fun with Light Textures](https://www.youtube.com/watch?v=n2DLnMa21K0)</br>
 [Babylon 2D controlers](https://www.youtube.com/watch?v=dISLIZ4SdAM)</br>
-[Retro CRT Shader — A post processing effect study](https://babylonjs.medium.com/retro-crt-shader-a-post-processing-effect-study-1cb3f783afbc)
+[Retro CRT Shader — A post processing effect study](https://babylonjs.medium.com/retro-crt-shader-a-post-processing-effect-study-1cb3f783afbc)</br>
+[Can I use](https://caniuse.com/)
 ### References Design
 [Gufram website](https://gufram.it/)</br>
+[Menu from Gufram](https://www.awwwards.com/inspiration/menu-gufram)</br>
+[The Future Font](https://klim.co.nz/retail-fonts/the-future/#information)</br>
 [Atari Super Pong](https://www.turbosquid.com/3d-models/atari-super-pong-1859697)</br>
 [Using procedural textures with Texture Space](https://www.youtube.com/watch?v=UBOZF5FPx7c)</br>
 [Modeling an Atari Game Controller, Part 1](https://www.youtube.com/watch?v=Kq_H6yO2DrA)</br>
 [Atari 2600 Model](https://sketchfab.com/3d-models/atari-2600-d02fe33dee524447b7dd00e7ca939cc4)</br>
 [Poly Haven](https://polyhaven.com/)</br>
 [Game Textures](https://gametextures.com/)</br>
+[Symbl](https://symbl.cc/)</br>
+[Pixel Art Icons](https://pixelarticons.com/)</br>
