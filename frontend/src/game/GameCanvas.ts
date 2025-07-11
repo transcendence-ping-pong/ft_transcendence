@@ -2,7 +2,8 @@ import { GameManager } from '@/game/GameManager.js';
 import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
 import { Ball } from '@/game/objects/Ball.js';
 import { Paddle } from '@/game/objects/Paddle.js';
-import { BallLevelConfig, GameLevel, GameSize, VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from '@/utils/gameUtils/types.js';
+import { BallLevelConfig, GameLevel, GameSize, VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from '@/utils/gameUtils/Constants.js';
+import { getThemeColors, ThemeColors } from '@/utils/gameUtils/BabylonColors.js';
 import { state } from '@/state';
 
 /*
@@ -26,10 +27,16 @@ export class GameCanvas extends EventTarget {
   private paddles: Paddle[];
   private paddleDirections: { [player: number]: 'up' | 'down' | null } = { 0: null, 1: null };
   private courtBounds: GameCourtBounds;
+  private _colors: ThemeColors = getThemeColors(state.theme);
   private handleKeyDown: (event: KeyboardEvent) => void;
   private handleKeyUp: (event: KeyboardEvent) => void;
   // TODO CONCEPT: public so it is possible to access it from BabylonCanvas?
   public gameManager: GameManager;
+
+  // TODO FIX: improve organisation using getters/setters
+  get colors() {
+    return this._colors;
+  }
 
   // initialise variables, create canvas, paddles, ball, event listeners(?)
   // TODO CONCEPT: where to put event listeners?
@@ -50,14 +57,14 @@ export class GameCanvas extends EventTarget {
     const initialX = VIRTUAL_WIDTH / 2;
     const initialY = VIRTUAL_HEIGHT / 2;
 
-    this.courtBounds = new GameCourtBounds(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+    this.courtBounds = new GameCourtBounds(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.colors.border);
 
     const ballSize = VIRTUAL_HEIGHT * GameSize.BALL_SIZE_RATIO;
-    this.ball = new Ball(initialX, initialY, ballSize, level, this.courtBounds);
+    this.ball = new Ball(initialX, initialY, ballSize, level, this.courtBounds, this.colors.border);
 
     this.paddles = [
-      new Paddle(0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.courtBounds, level),
-      new Paddle(1, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.courtBounds, level),
+      new Paddle(0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.courtBounds, level, this.colors.border),
+      new Paddle(1, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.courtBounds, level, this.colors.border),
     ];
 
     this.handleKeyDown = this.onKeyDown.bind(this);

@@ -1,4 +1,4 @@
-import { GameLevel, GameScore } from '@/utils/gameUtils/types.js';
+import { GameLevel, GameScore } from '@/utils/gameUtils/Constants.js';
 
 /*
   Game Manager responsabilities:

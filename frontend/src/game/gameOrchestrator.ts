@@ -2,7 +2,7 @@ import { BabylonCanvas } from '@/game/babylon/BabylonCanvas';
 import { BabylonGUI } from '@/game/babylon/BabylonGUI.js';
 // import GameCanvas for its type and to access its methods/control game state
 import { GameCanvas } from '@/game/GameCanvas.js';
-import { GameLevel, GameScore } from '@/utils/gameUtils/types.js';
+import { GameLevel, PlayerMode } from '@/utils/gameUtils/Constants.js';
 
 /*
   Game Orchestrator responsabilities:
@@ -35,25 +35,27 @@ export class gameOrchestrator {
 
   setupMenuFlow() {
     this.gui.showStartButton(() => {
-      this.gui.showDifficultySelector((level) => {
-        this.babylonCanvas.createGameCanvas(level as GameLevel);
-        this.gameCanvas = this.babylonCanvas.getGameCanvas();
+      this.gui.showPlayerSelector((mode) => {
+        this.gui.showDifficultySelector((level) => {
+          this.babylonCanvas.createGameCanvas(level as GameLevel, mode as PlayerMode);
+          this.gameCanvas = this.babylonCanvas.getGameCanvas();
 
-        this.gui.showCountdown(3, () => {
-          this.gameCanvas.startGame();
-          this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => { });
-        });
+          this.gui.showCountdown(3, () => {
+            this.gameCanvas.startGame();
+            this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => { });
+          });
 
-        this.gameCanvas.addEventListener('scoreChanged', (e: CustomEvent) => {
-          console.log('Received scoreChanged', e.detail);
-          this.gui.clearGUI();
-          this.gui.showScoreBoard(e.detail, () => { });
-        });
+          this.gameCanvas.addEventListener('scoreChanged', (e: CustomEvent) => {
+            console.log('Received scoreChanged', e.detail);
+            this.gui.clearGUI();
+            this.gui.showScoreBoard(e.detail, () => { });
+          });
 
-        this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
-          console.log('Received gameOver', e.detail);
-          this.gui.clearGUI();
-          this.babylonCanvas.endingGame();
+          this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
+            console.log('Received gameOver', e.detail);
+            this.gui.clearGUI();
+            this.babylonCanvas.endingGame();
+          });
         });
       });
     });

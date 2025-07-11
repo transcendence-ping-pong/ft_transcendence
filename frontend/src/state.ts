@@ -1,4 +1,4 @@
-import { GameLevel, GameScore } from '@/utils/gameUtils/types';
+import { GameLevel, GameScore } from '@/utils/gameUtils/Constants';
 // persist state in localStorage
 // keep user preferences, game state, etc (?) to be decided
 

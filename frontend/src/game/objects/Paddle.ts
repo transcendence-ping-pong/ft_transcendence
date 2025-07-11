@@ -1,4 +1,4 @@
-import { GameSize, GameLevel, BallLevelConfig } from '@/utils/gameUtils/types.js';
+import { GameSize, GameLevel, BallLevelConfig } from '@/utils/gameUtils/Constants.js';
 import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
 
 const { PADDLE_WIDTH_RATIO, PADDLE_HEIGHT_RATIO, PADDLE_MARGIN_X, PADDLE_TO_COURT_GAP } = GameSize;

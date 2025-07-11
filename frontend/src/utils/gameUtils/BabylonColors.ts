@@ -5,11 +5,20 @@ export type ThemeColors = {
   warning: string;
   navHover: string;
   shadow: string;
+  gameGradientStart: string;
+  gameGradientEnd: string;
 };
+
+function toCamelCase(str: string): string {
+  return str
+    .replace(/^--/, '') // Remove leading --
+    .replace(/-([a-z])/g, (_, char) => char.toUpperCase());
+}
 
 /**
  * Reads all CSS variables from the given element (or body by default)
- * and returns an object with variable names (without --) as keys.
+ * and returns an object with variable names (without --) as keys
+ * because Babylon doesn't have access to CSS variables directly.
  */
 export function getThemeColors(themeName = 'primary') {
   // Compose the class name, e.g., 'theme-primary'
@@ -22,11 +31,13 @@ export function getThemeColors(themeName = 'primary') {
     '--border',
     '--warning',
     '--nav-hover',
-    '--shadow'
+    '--shadow',
+    '--game-gradient-start',
+    '--game-gradient-end',
   ];
   const themeVars = {};
   varNames.forEach(name => {
-    themeVars[name.replace('--', '')] = styles.getPropertyValue(name).trim();
+    themeVars[toCamelCase(name)] = styles.getPropertyValue(name).trim();
   });
   return themeVars as ThemeColors;
 }

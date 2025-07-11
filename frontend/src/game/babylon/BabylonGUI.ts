@@ -1,5 +1,5 @@
 import { t } from '@/locales/Translations.js';
-import { GameLevel, GameScore } from '@/utils/gameUtils/types.js';
+import { GameLevel, GameScore, PlayerMode, getGUIConstants } from '@/utils/gameUtils/Constants.js';
 import { AdvancedDynamicTexture, Button, Control, TextBlock } from "@babylonjs/gui";
 
 // TODO: centralize constants for button styles, colors, etc.
@@ -9,34 +9,48 @@ export class BabylonGUI {
   private advancedTexture: AdvancedDynamicTexture;
   private startButton: Button | null = null;
   private difficultyButtons: Button[] = [];
+  private playerSelectorButtons: Button[] = [];
   private countdownText: TextBlock | null = null;
   private scoreBoard: TextBlock[] = [];
+  private GUIConstants = getGUIConstants();
 
   constructor(scene: any) {
     this.advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
-    this.advancedTexture.background = "#000000cc"; // semi-transparent black
+    this.advancedTexture.background = `${this.GUIConstants.SCENE_BACKGROUND_COLOR}cc`; // 'cc' = ~80% opacity
+  }
+
+  setButtonStyle(button: Button, idx: number, arrayLength: number) {
+    button.width = this.GUIConstants.BUTTON_WIDTH;
+    button.height = this.GUIConstants.BUTTON_HEIGHT;
+    button.fontSize = this.GUIConstants.BUTTON_FONT_SIZE;
+    button.color = this.GUIConstants.BUTTON_FONT_COLOR;
+    button.background = this.GUIConstants.BUTTON_BACKGROUND_COLOR;
+    button.thickness = this.GUIConstants.BUTTON_THICKNESS;
+    button.cornerRadius = this.GUIConstants.BUTTON_CORNER_RADIUS;
+    button.fontWeight = this.GUIConstants.BUTTON_FONT_WEIGHT;
+    // @ts-ignore
+    button.borderColor = this.GUIConstants.BUTTON_BORDER_COLOR;
+    button.shadowOffsetX = this.GUIConstants.BUTTON_SHADOW_OFFSET_X;
+    button.shadowOffsetY = this.GUIConstants.BUTTON_SHADOW_OFFSET_Y;
+    button.shadowColor = this.GUIConstants.BUTTON_SHADOW_COLOR;
+    button.shadowBlur = this.GUIConstants.BUTTON_SHADOW_BLUR;
+    button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+    button.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+    // set top position based on number of buttons, i.e. how they are distributed vertically
+    const offset = ((+this.GUIConstants.BUTTON_HEIGHT.replace('px', '') + this.GUIConstants.BUTTON_GAP) * (idx - (arrayLength - 1) / 2));
+    button.top = offset;
+  }
+
+  hideSelectorButtons(arrayButtons: Button[]) {
+    arrayButtons.forEach(btn => this.advancedTexture.removeControl(btn));
+    arrayButtons = [];
   }
 
   showStartButton(onStart: () => void) {
     this.clearGUI();
 
     this.startButton = Button.CreateSimpleButton("startButton", t("game.start"));
-    this.startButton.width = "400px";
-    this.startButton.height = "200px";
-    this.startButton.fontSize = 48;
-    this.startButton.color = "#fff";
-    this.startButton.background = "#1a2233";
-    this.startButton.thickness = 4;
-    this.startButton.cornerRadius = 20;
-    this.startButton.fontWeight = "bold";
-    // @ts-ignore
-    this.startButton.borderColor = "#fff";
-    this.startButton.shadowOffsetX = 2;
-    this.startButton.shadowOffsetY = 2;
-    this.startButton.shadowColor = "#000";
-    this.startButton.shadowBlur = 8;
-    this.startButton.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-    this.startButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+    this.setButtonStyle(this.startButton, 0, 1); // only one button, so idx = 0, arrayLength = 1
 
     this.startButton.onPointerUpObservable.add(() => {
       onStart();
@@ -53,6 +67,27 @@ export class BabylonGUI {
     }
   }
 
+  showPlayerSelector(onPlayerSelected: (playerCount: string) => void) {
+    this.clearGUI();
+
+    const playersKeys = [PlayerMode.ONE_PLAYER, PlayerMode.TWO_PLAYER];
+    this.playerSelectorButtons = [];
+
+    playersKeys.forEach((mode, idx) => {
+      const label = t(`game.player${idx + 1}`);
+      const button = Button.CreateSimpleButton(mode + "Button", label);
+      this.setButtonStyle(button, idx, playersKeys.length);
+
+      button.onPointerUpObservable.add(() => {
+        onPlayerSelected(mode);
+        this.hideSelectorButtons(this.playerSelectorButtons);
+      });
+
+      this.advancedTexture.addControl(button);
+      this.playerSelectorButtons.push(button);
+    });
+  }
+
   showDifficultySelector(onDifficultySelected: (difficulty: string) => void) {
     this.clearGUI();
 
@@ -62,27 +97,11 @@ export class BabylonGUI {
     levelKeys.forEach((level, idx) => {
       const label = t(`game.level${idx + 1}`);
       const button = Button.CreateSimpleButton(level + "Button", label);
-      button.width = "400px";
-      button.height = "150px";
-      button.fontSize = 42;
-      button.color = "#fff";
-      button.background = "#1a2233";
-      button.thickness = 4;
-      button.cornerRadius = 20;
-      button.fontWeight = "bold";
-      // @ts-ignore
-      button.borderColor = "#fff";
-      button.shadowOffsetX = 2;
-      button.shadowOffsetY = 2;
-      button.shadowColor = "#000";
-      button.shadowBlur = 8;
-      button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-      button.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-      button.top = (idx - 1) * 200; // 160px vertical spacing (centered, above, below)
+      this.setButtonStyle(button, idx, levelKeys.length);
 
       button.onPointerUpObservable.add(() => {
         onDifficultySelected(level);
-        this.hideDifficultySelector();
+        this.hideSelectorButtons(this.difficultyButtons);
       });
 
       this.advancedTexture.addControl(button);
@@ -90,19 +109,14 @@ export class BabylonGUI {
     });
   }
 
-  hideDifficultySelector() {
-    this.difficultyButtons.forEach(btn => this.advancedTexture.removeControl(btn));
-    this.difficultyButtons = [];
-  }
-
   showCountdown(seconds: number, onDone: () => void) {
     this.clearGUI();
 
     this.countdownText = new TextBlock();
     this.countdownText.text = seconds.toString();
-    this.countdownText.color = "#fff";
-    this.countdownText.fontSize = 250;
-    this.countdownText.fontWeight = "bold";
+    this.countdownText.color = this.GUIConstants.COUNTDOWN_FONT_COLOR;
+    this.countdownText.fontSize = this.GUIConstants.COUNTDOWN_FONT_SIZE;
+    this.countdownText.fontWeight = this.GUIConstants.COUNTDOWN_FONT_WEIGHT;
     this.countdownText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
     this.countdownText.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
 

@@ -1,7 +1,15 @@
+import { getThemeColors, ThemeColors } from '@/utils/gameUtils/BabylonColors.js';
+import { state } from '@/state';
+
 export enum GameLevel {
   EASY = 'EASY',
   MEDIUM = 'MEDIUM',
   HARD = 'HARD'
+}
+
+export enum PlayerMode {
+  ONE_PLAYER = 'ONE PLAYER',
+  TWO_PLAYER = 'TWO PLAYERS'
 }
 
 export enum GameScore {
@@ -88,4 +96,52 @@ export interface CourtBoundsSpecs {
   right: number;
   top: number;
   bottom: number;
+}
+
+type GUIConstants = {
+  SCENE_BACKGROUND_COLOR: string;
+  BUTTON_HEIGHT: string;
+  BUTTON_WIDTH: string;
+  BUTTON_GAP: number;
+  BUTTON_FONT_SIZE: number;
+  BUTTON_FONT_WEIGHT: string;
+  BUTTON_FONT_COLOR: string;
+  BUTTON_BORDER_COLOR: string;
+  BUTTON_CORNER_RADIUS: number;
+  BUTTON_THICKNESS: number;
+  BUTTON_BACKGROUND_COLOR: string;
+  BUTTON_SHADOW_OFFSET_X: number;
+  BUTTON_SHADOW_OFFSET_Y: number;
+  BUTTON_SHADOW_COLOR: string;
+  BUTTON_SHADOW_BLUR: number;
+  COUNTDOWN_DURATION: number;
+  COUNTDOWN_FONT_SIZE: number;
+  COUNTDOWN_FONT_WEIGHT: string;
+  COUNTDOWN_FONT_COLOR: string;
+};
+
+export function getGUIConstants(): GUIConstants {
+  const colors: ThemeColors = getThemeColors(state.theme);
+
+  return {
+    SCENE_BACKGROUND_COLOR: colors.gameGradientEnd,
+    BUTTON_HEIGHT: '150px',
+    BUTTON_WIDTH: '400px',
+    BUTTON_GAP: 32,
+    BUTTON_FONT_SIZE: 42,
+    BUTTON_FONT_WEIGHT: 'bold',
+    BUTTON_FONT_COLOR: colors.border,
+    BUTTON_BORDER_COLOR: colors.border,
+    BUTTON_CORNER_RADIUS: 20,
+    BUTTON_THICKNESS: 4,
+    BUTTON_BACKGROUND_COLOR: colors.gameGradientStart,
+    BUTTON_SHADOW_OFFSET_X: 2,
+    BUTTON_SHADOW_OFFSET_Y: 2,
+    BUTTON_SHADOW_COLOR: colors.border,
+    BUTTON_SHADOW_BLUR: 8,
+    COUNTDOWN_DURATION: 3,
+    COUNTDOWN_FONT_SIZE: 250,
+    COUNTDOWN_FONT_WEIGHT: 'bold',
+    COUNTDOWN_FONT_COLOR: colors.border,
+  };
 }

@@ -40,28 +40,39 @@
 .theme-primary {
   --body: #e2d7b7;
   --accent: #b8a77a;
-  --border: #222222;
+  --border: #433030;
   --warning: #ff5733;
-  --nav-hover: #e2d7b7;
+  --nav-hover: #fbd877;
   --shadow: 0 8px 32px #0004;
+  --game-gradient-start: #f8c434;
+  /* #f8c434; */
+  --game-gradient-end: #b8a77a;
+  --game-gui: #f8c434;
+}
+
+
+.theme-secondary {
+  --body: #070238;
+  --accent: #1f0f5c;
+  --border: #ecebed;
+  --warning: #ff5733;
+  --nav-hover: #00ff1a;
+  --shadow: 0 8px 32px #525151;
+  --game-gradient-start: #1f0f5c;
+  --game-gradient-end: #1a2233;
+  --game-gui: #1f0f5c;
 }
 
 /* .theme-secondary {
-  --body: #070238;
-  --accent: #4b0899;
-  --border: #ecebed;
-  --warning: #ff5733;
-  --shadow: 0 8px 32px #525151;
-} */
-
-.theme-secondary {
   --body: #101c19;
   --accent: #45796d;
   --border: #93ffe6;
   --warning: #ff5733;
   --nav-hover: #77ceba;
   --shadow: 0 8px 32px #525151;
-}
+  --game-gradient-start: #101c19;
+  --game-gradient-end: #203832;
+} */
 
 /* --primaryColorRef: #93ffe6;
     --mixedColor1Ref: #84e6cf;

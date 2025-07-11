@@ -19,6 +19,8 @@
       "start": "START GAME",
       "pause": "PAUSE",
       "over": "GAME OVER",
+      "player1": "ONE PLAYER",
+      "player2": "TWO PLAYERS",
       "level1": "EASY",
       "level2": "MEDIUM",
       "level3": "HARD"
@@ -44,6 +46,8 @@
       "start": "COMMENCER LE JEU",
       "pause": "PAUSE",
       "over": "FIN DE PARTIE",
+      "player1": "UN JOUEUR",
+      "player2": "DEUX JOUEURS",
       "level1": "FACILE",
       "level2": "MOYEN",
       "level3": "DIFFICILE"
@@ -69,6 +73,8 @@
       "start": "INICIAR JOGO",
       "pause": "PAUSA",
       "over": "FIM DE JOGO",
+      "player1": "UM JOGADOR",
+      "player2": "DOIS JOGADORES",
       "level1": "FÁCIL",
       "level2": "MÉDIO",
       "level3": "DIFÍCIL"
@@ -94,34 +100,11 @@
       "start": "ゲーム開始",
       "pause": "一時停止",
       "over": "ゲームオーバー",
+      "player1": "１人プレイヤー",
+      "player2": "２人プレイヤー",
       "level1": "簡単",
       "level2": "普通",
       "level3": "難しい"
-    }
-  },
-  "DE": {
-    "auth": {
-      "login": "Anmelden",
-      "logout": "Abmelden",
-      "username": "Benutzername",
-      "password": "Passwort"
-    },
-    "nav": {
-      "home": "STARTSEITE",
-      "game": "SPIEL",
-      "languages": "Sprachen"
-    },
-    "error": {
-      "network": "Netzwerkfehler. Bitte versuchen Sie es erneut.",
-      "notFound": "Seite nicht gefunden."
-    },
-    "game": {
-      "start": "SPIEL STARTEN",
-      "pause": "PAUSE",
-      "over": "SPIEL VORBEI",
-      "level1": "EINFACH",
-      "level2": "MITTEL",
-      "level3": "SCHWER"
     }
   }
 }

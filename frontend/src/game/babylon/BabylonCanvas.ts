@@ -1,7 +1,7 @@
 import { GameCanvas } from '@/game/GameCanvas.js';
 import { crtFragmentShader } from '@/utils/gameUtils/CrtFragmentShader.js';
-import { GameLevel } from '@/utils/gameUtils/types.js';
-import { getThemeColors, ThemeColors } from '@/utils/Colors.js';
+import { GameLevel, PlayerMode } from '@/utils/gameUtils/Constants.js';
+import { getThemeColors, ThemeColors } from '@/utils/gameUtils/BabylonColors.js';
 import * as BABYLON from "@babylonjs/core";
 import { Engine, Scene, Color3, StandardMaterial } from "@babylonjs/core";
 import { importMeshAsync } from "@/utils/gameUtils/Mesh.js";
@@ -102,7 +102,7 @@ export class BabylonCanvas {
     return scene;
   }
 
-  public createGameCanvas(level: GameLevel) {
+  public createGameCanvas(level: GameLevel, mode: PlayerMode) {
     this.gameCanvas = new GameCanvas(level, "", this.canvas.width, this.canvas.height);
     this.gameCanvas.setLevel(level);
     this.applyDynamicTextureToMesh("gameScreen", this.gameCanvas.getCanvasElement());
@@ -136,10 +136,6 @@ export class BabylonCanvas {
         );
         this.dynamicTexture.update();
       }
-
-      // if (this.model) {
-      //   this.model.rotation.y += 0.01;
-      // }
 
       this.scene.render();
     });
@@ -202,12 +198,8 @@ export class BabylonCanvas {
     const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
 
     // set colors
-    gradient.addColorStop(0, colors.accent);
-    gradient.addColorStop(1, colors.warning);
-
-    // gradient.addColorStop(0, "#1f0f5c"); // purple default
-    // gradient.addColorStop(0, "#08021a"); // dark purple
-    // gradient.addColorStop(1, "#1a2233"); // bluish default
+    gradient.addColorStop(0, colors.gameGradientStart);
+    gradient.addColorStop(1, colors.gameGradientEnd);
 
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, textureSize, textureSize);

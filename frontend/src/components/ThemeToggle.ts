@@ -50,6 +50,7 @@ template.innerHTML = `
       transition: background 0.2s;
     }
   </style>
+
   <button id="toggle" aria-pressed="false" title="Toggle theme">
     <span class="track"></span>
     <span class="knob"></span>
