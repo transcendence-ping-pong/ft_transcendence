@@ -8,6 +8,32 @@ This project was developed for 42 school. For comprehensive information regardin
 + ...
 ```
 
+## Modules
+
+### Web
+**Major module**: Use a framework to build the backend. (*Fastify* + *Node.js*)
+
+**Minor module**: Use a framework or a toolkit to build the frontend. (*Tailwind CSS*)
+
+**Minor module**: Use a database for the backend. (*SQLite*)
+
+### User Management
+**Major module**: Standard user management, authentication, users across tournaments.
+
+**Major module**: Implementing a remote authentication. (*Google Sign-in*)
+
+### Gameplay and User Experience
+**Major module**: Remote players.
+
+### Cybersecurity
+**Major module**: Implement Two-Factor Authentication (2FA) and JWT.
+
+### Graphics
+**Major module**: Use advanced 3D techniques. (*Babylon.js*)
+
+### Accessibility
+**Minor module**: Supports multiple languages.
+      
 ## High-level Overview
 
 ```
@@ -139,6 +165,7 @@ sudo docker-compose up --build frontend
 <!-- FE available at http://localhost:3000 -->
 ```
 
+
 ## Concepts
 
 | Task | Prototype | Description |
@@ -163,6 +190,12 @@ Z axis is pointing forward, babylon has different coordinate system than Blender
 | **Web components lifecycle** | `constructor -> connectedCallback -> disconnectedCallback` | The moment the element is created is not the moment where it is attached to the DOM (created in memory first, initialisation = **constructor**... then it is attached to the DOM later = **connectedCallback**). Accessing DOM, DOM manipulation should be done there. Cleanup work = **disconnectedCallback**. Update data and DOM = **attributeChangedCallback**. |
 | **Web components attributes** | `<my-button text="Hello"></my-button>` | `if (this.hasAttribute('text')) this.text = this.getAttribute('text')`. Then, `textContent` can use value set via attribute, manipulation should happen when element is mounted in DOM (connectedCallback). **HTML attributes and DOM properties CAN be connected but don't have to. They're not the same.** |
 | **Light/Shadow DOM** | `this.attachShadow({ mode: 'open' })` | Styles applied to normal/light DOM shouldnt affect nested custom web component. Shadow DOM: custom element has its own DOM tree, not directly connected to real DOM (therefore, not affected by global styling). |
+
+## Tournament Organization
+
+![Qualifiers](https://github.com/user-attachments/assets/b0c453de-4333-4565-9d07-11ae357086b4)
+
+The tournament matchmaking will work on a Qualifiers-type organization. This ensures a reasonable amount of matches and a fair distribution of match types for all participating players.
 
 ### References Game History
 [Pong Game (1972)](https://www.ponggame.org/)</br>
