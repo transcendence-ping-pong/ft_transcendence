@@ -8,8 +8,7 @@
     },
     "nav": {
       "home": "HOME",
-      "game": "GAME",
-      "languages": "Languages"
+      "game": "GAME"
     },
     "error": {
       "network": "Network error. Please try again.",
@@ -35,8 +34,7 @@
     },
     "nav": {
       "home": "ACCUEIL",
-      "game": "JEU",
-      "languages": "Langues"
+      "game": "JEU"
     },
     "error": {
       "network": "Erreur réseau. Veuillez réessayer.",
@@ -62,8 +60,7 @@
     },
     "nav": {
       "home": "INÍCIO",
-      "game": "JOGO",
-      "languages": "Idiomas"
+      "game": "JOGO"
     },
     "error": {
       "network": "Erro de rede. Por favor, tente novamente.",
@@ -89,8 +86,7 @@
     },
     "nav": {
       "home": "ホーム",
-      "game": "ゲーム",
-      "languages": "言語"
+      "game": "ゲーム"
     },
     "error": {
       "network": "ネットワークエラー。もう一度お試しください。",

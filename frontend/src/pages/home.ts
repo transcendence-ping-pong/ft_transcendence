@@ -2,6 +2,7 @@ import '@/components/ThemeToggle.js';
 import '@/components/DynamicDropdown.js';
 import '@/components/MenuNavigation.js';
 import '@/components/NavigationCta.js';
+import '@/components/LanguagesDropdown.js';
 
 export function renderHome(containerId: string) {
   const container = document.getElementById(containerId);
@@ -12,14 +13,14 @@ export function renderHome(containerId: string) {
           <source src="/public/pong_video_1080.mp4" type="video/mp4" />
         </video>
         <div class="content">
-          <!-- Your content here -->
-          <div class="w-full flex items-center justify-between px-8 py-3 border-b-2 border-[color:var(--border)] bg-[color:var(--body)] min-h-[56px]">
+          <div class="w-full flex items-center justify-between px-8 py-3 min-h-[56px] backdrop-blur-md bg-black/10">
             <dynamic-dropdown>
               <navigation-cta slot="nav-buttons"></navigation-cta>
               <span slot="app-name">FOUR PING TWO PONG</span>
               <menu-navigation></menu-navigation>
             </dynamic-dropdown>
             <theme-toggle class="ml-6"></theme-toggle>
+            <languages-dropdown></languages-dropdown>
           </div>
           // HOME CONTENT >>>
         </div>

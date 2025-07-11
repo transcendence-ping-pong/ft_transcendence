@@ -149,7 +149,7 @@ export function getGUIConstants(): GUIConstants {
     COUNTDOWN_FONT_SIZE: 250,
     COUNTDOWN_FONT_WEIGHT: 'bold',
     COUNTDOWN_FONT_COLOR: colors.border,
-    SCORE_FONT_COLOR: "rgba(0,0,0,0.25)", // semi-transparent black text
+    SCORE_FONT_COLOR: "rgba(0,0,0,0.25)", // semi-transparent black
     SCORE_FONT_SIZE: 250,
     SCORE_FONT_WEIGHT: 'bold',
     SCORE_MARGIN_TOP: "10%",

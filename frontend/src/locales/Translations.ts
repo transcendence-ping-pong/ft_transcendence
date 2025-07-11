@@ -7,6 +7,7 @@ import { state } from '../state.js';
 export async function getTranslations(lang: string | undefined) {
   const res = await fetch('../locales/locales.json');
   const allTranslations = await res.json();
+  state.language = lang;
   state.availableLanguages = Object.keys(allTranslations);
   return allTranslations[lang] || allTranslations["GB"];
 }
