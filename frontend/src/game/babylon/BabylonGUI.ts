@@ -1,6 +1,8 @@
 import { t } from '@/locales/Translations.js';
-import { GameLevel, GameScore, PlayerMode, getGUIConstants } from '@/utils/gameUtils/Constants.js';
+import { GameLevel, GameScore, PlayerMode, getGUIConstants, VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from '@/utils/gameUtils/Constants.js';
 import { AdvancedDynamicTexture, Button, Control, TextBlock } from "@babylonjs/gui";
+import { state } from '@/state';
+import { ScaleBlock } from '@babylonjs/core';
 
 // TODO: centralize constants for button styles, colors, etc.
 
@@ -20,9 +22,9 @@ export class BabylonGUI {
   }
 
   setButtonStyle(button: Button, idx: number, arrayLength: number) {
-    button.width = this.GUIConstants.BUTTON_WIDTH;
-    button.height = this.GUIConstants.BUTTON_HEIGHT;
-    button.fontSize = this.GUIConstants.BUTTON_FONT_SIZE;
+    button.width = this.GUIConstants.BUTTON_WIDTH * state.scaleFactor.scaleX + 'px';
+    button.height = this.GUIConstants.BUTTON_HEIGHT * state.scaleFactor.scaleY + 'px';
+    button.fontSize = this.GUIConstants.BUTTON_FONT_SIZE * state.scaleFactor.scaleY + 'px';
     button.color = this.GUIConstants.BUTTON_FONT_COLOR;
     button.background = this.GUIConstants.BUTTON_BACKGROUND_COLOR;
     button.thickness = this.GUIConstants.BUTTON_THICKNESS;
@@ -37,7 +39,7 @@ export class BabylonGUI {
     button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
     button.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
     // set top position based on number of buttons, i.e. how they are distributed vertically
-    const offset = ((+this.GUIConstants.BUTTON_HEIGHT.replace('px', '') + this.GUIConstants.BUTTON_GAP) * (idx - (arrayLength - 1) / 2));
+    const offset = (((+this.GUIConstants.BUTTON_HEIGHT + this.GUIConstants.BUTTON_GAP) * state.scaleFactor.scaleY) * (idx - (arrayLength - 1) / 2));
     button.top = offset;
   }
 
@@ -115,7 +117,7 @@ export class BabylonGUI {
     this.countdownText = new TextBlock();
     this.countdownText.text = seconds.toString();
     this.countdownText.color = this.GUIConstants.COUNTDOWN_FONT_COLOR;
-    this.countdownText.fontSize = this.GUIConstants.COUNTDOWN_FONT_SIZE;
+    this.countdownText.fontSize = this.GUIConstants.COUNTDOWN_FONT_SIZE * state.scaleFactor.scaleY + 'px';
     this.countdownText.fontWeight = this.GUIConstants.COUNTDOWN_FONT_WEIGHT;
     this.countdownText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
     this.countdownText.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
@@ -172,7 +174,7 @@ export class BabylonGUI {
       scoreText.text = `${value}`;
       // scoreText.color = "rgba(255,255,255,0.15)"; // semi-transparent white text
       scoreText.color = this.GUIConstants.SCORE_FONT_COLOR;
-      scoreText.fontSize = this.GUIConstants.SCORE_FONT_SIZE;
+      scoreText.fontSize = this.GUIConstants.SCORE_FONT_SIZE * state.scaleFactor.scaleY + 'px';
       scoreText.fontWeight = this.GUIConstants.SCORE_FONT_WEIGHT;
       scoreText.left = positions[key as GameScore];
       scoreText.top = this.GUIConstants.SCORE_MARGIN_TOP;

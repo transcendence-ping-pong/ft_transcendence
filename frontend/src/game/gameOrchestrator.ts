@@ -2,7 +2,8 @@ import { BabylonCanvas } from '@/game/babylon/BabylonCanvas';
 import { BabylonGUI } from '@/game/babylon/BabylonGUI.js';
 // import GameCanvas for its type and to access its methods/control game state
 import { GameCanvas } from '@/game/GameCanvas.js';
-import { GameLevel, PlayerMode } from '@/utils/gameUtils/Constants.js';
+import { GameLevel, PlayerMode, VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from '@/utils/gameUtils/Constants.js';
+import { state } from '@/state';
 
 /*
   Game Orchestrator responsabilities:
@@ -22,6 +23,8 @@ export class gameOrchestrator {
   // instead of instantiating it in GameCanvas?
 
   constructor(containerId: string) {
+    const { scaleX, scaleY } = this.getScaleFactor();
+    state.scaleFactor = { scaleX, scaleY };
     this.babylonCanvas = new BabylonCanvas(containerId);
     this.gui = new BabylonGUI(this.babylonCanvas.getScene());
     this.setupMenuFlow();
@@ -31,6 +34,17 @@ export class gameOrchestrator {
 
     // reference instance of GameCanvas being created/managed by BabylonCanvas
     // this.gameCanvas = this.babylonCanvas.getGameCanvas();
+
+    window.addEventListener('resize', () => {
+      const { scaleX, scaleY } = this.getScaleFactor();
+      state.scaleFactor = { scaleX, scaleY };
+    });
+  }
+
+  getScaleFactor() {
+    const scaleX = window.innerWidth / VIRTUAL_WIDTH;
+    const scaleY = window.innerHeight / VIRTUAL_HEIGHT;
+    return { scaleX, scaleY };
   }
 
   setupMenuFlow() {

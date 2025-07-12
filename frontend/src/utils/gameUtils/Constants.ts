@@ -100,8 +100,8 @@ export interface CourtBoundsSpecs {
 
 type GUIConstants = {
   SCENE_BACKGROUND_COLOR: string;
-  BUTTON_HEIGHT: string;
-  BUTTON_WIDTH: string;
+  BUTTON_HEIGHT: number;
+  BUTTON_WIDTH: number;
   BUTTON_GAP: number;
   BUTTON_FONT_SIZE: number;
   BUTTON_FONT_WEIGHT: string;
@@ -131,10 +131,10 @@ export function getGUIConstants(): GUIConstants {
 
   return {
     SCENE_BACKGROUND_COLOR: colors.gameGradientEnd,
-    BUTTON_HEIGHT: '100px',
-    BUTTON_WIDTH: '400px',
-    BUTTON_GAP: 24,
-    BUTTON_FONT_SIZE: 42,
+    BUTTON_HEIGHT: VIRTUAL_HEIGHT / 10,
+    BUTTON_WIDTH: VIRTUAL_WIDTH / 4,
+    BUTTON_GAP: VIRTUAL_HEIGHT / 20,
+    BUTTON_FONT_SIZE: VIRTUAL_HEIGHT / 20,
     BUTTON_FONT_WEIGHT: 'bold',
     BUTTON_FONT_COLOR: colors.border,
     BUTTON_BORDER_COLOR: colors.border,
@@ -146,11 +146,11 @@ export function getGUIConstants(): GUIConstants {
     BUTTON_SHADOW_COLOR: "rgba(0,0,0,0.25)",
     BUTTON_SHADOW_BLUR: 8,
     COUNTDOWN_DURATION: 3,
-    COUNTDOWN_FONT_SIZE: 250,
+    COUNTDOWN_FONT_SIZE: VIRTUAL_HEIGHT / 5,
     COUNTDOWN_FONT_WEIGHT: 'bold',
     COUNTDOWN_FONT_COLOR: colors.border,
     SCORE_FONT_COLOR: "rgba(0,0,0,0.25)", // semi-transparent black
-    SCORE_FONT_SIZE: 250,
+    SCORE_FONT_SIZE: VIRTUAL_HEIGHT / 5,
     SCORE_FONT_WEIGHT: 'bold',
     SCORE_MARGIN_TOP: "10%",
     SCORE_MARGIN_LEFT: "-8%",
