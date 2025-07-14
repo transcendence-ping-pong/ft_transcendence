@@ -7,8 +7,8 @@ const sqlite3 = require('sqlite3').verbose();
 let html_path = path.join(path.dirname(__dirname), 'temp');
 
 fastify.register(fastifyStatic, {
-  root: html_path,
-  prefix: '/',
+	root: html_path,
+	prefix: '/',
 });
 
 const port = 4000;
@@ -16,6 +16,12 @@ const port = 4000;
 let db_path = path.join(path.dirname(__dirname), '/database/database.db');
 
 const db = new sqlite3.Database(db_path, sqlite3.OPEN_READWRITE);
+
+fastify.listen({ port: port, host: '0.0.0.0' }, () => {
+	console.log(`Server running at http://localhost:${port}`);
+});
+
+fastify.get('/favicon.ico', (req, res) => res.status(204));
 
 fastify.get('/matches', (request, reply) => {
 	db.all(`SELECT * FROM matchStats`, (err, rows) => {
@@ -101,9 +107,3 @@ fastify.get('/matches/history/:userId', (request, reply) => {
 		reply.send(rows);
 	});
 });
-
-fastify.listen({ port: port, host: '0.0.0.0' }, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
-
-fastify.get('/favicon.ico', (req, res) => res.status(204));

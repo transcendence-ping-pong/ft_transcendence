@@ -32,3 +32,4 @@ docker-compose.override.yml
 
 # temporary files (backend)
 backend/api/auth.js
+backend/api/users.js
