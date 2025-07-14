@@ -6,8 +6,6 @@ import { renderGame } from '@/pages/game.js';
 import '@/styles/index.css';
 import '@babylonjs/loaders';
 
-// import { getUsers } from './services/api.js';
-
 const routes = {
   "/": renderHome,
   "/login": renderLogin,
@@ -37,4 +35,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       render('app');
     }
   })
+
+  // Handle back/forward navigation - history API
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') window.history.back();
+    if (e.key === 'ArrowRight') window.history.forward();
+  });
 });
