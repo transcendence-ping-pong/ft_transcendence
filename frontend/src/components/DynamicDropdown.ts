@@ -28,7 +28,7 @@ template.innerHTML = `
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0.45rem 1rem;
+      padding: 0.15rem 0.5rem;
       background: var(--accent);
       cursor: pointer;
       min-height: 38px;
@@ -49,15 +49,16 @@ template.innerHTML = `
       border: none;
       cursor: pointer;
       font-size: 1.3rem;
-      width: 2.5rem;
-      height: 2.5rem;
+      width: 2rem;
+      height: 2rem;
       display: flex;
       align-items: center;
       padding: 0 0.25rem;
       transition: color 0.2s, background 0.2s, transform 0.18s cubic-bezier(.4,2,.6,1);
+      filter: invert(var(--invert));
     }
     .arrow-btn:hover, .arrow-btn:focus {
-      transform: scale(1.5);
+      transform: scale(1.1);
     }
     .content {
       padding: 1rem;

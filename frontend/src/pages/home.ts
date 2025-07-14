@@ -13,7 +13,7 @@ export function renderHome(containerId: string) {
           <source src="/public/pong_video_1080.mp4" type="video/mp4" />
         </video>
         <div class="content">
-          <div class="w-full flex items-center justify-between px-8 py-3 min-h-[56px] backdrop-blur-md bg-black/10">
+          <div class="w-full flex items-center justify-between px-8 py-3 min-h-[48px] backdrop-blur-md bg-black/10">
             <dynamic-dropdown>
               <navigation-cta slot="nav-buttons"></navigation-cta>
               <span slot="app-name">FOUR PING TWO PONG</span>

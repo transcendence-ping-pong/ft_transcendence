@@ -6,6 +6,19 @@ import { renderGame } from '@/pages/game.js';
 import '@/styles/index.css';
 import '@babylonjs/loaders';
 
+/*
+  Main responsabilities:
+  - initialize the application
+  - set up global event listeners (e.g. for language changes)
+  - manage routing and rendering of pages
+  - handle global state management (e.g. theme, language)
+
+  Do not:
+  - handle low-level game logic, GUI logic, or user input directly
+  - manage specific game scenes or components directly
+  - handle user authentication or session management directly
+*/
+
 const routes = {
   "/": renderHome,
   "/login": renderLogin,
@@ -36,7 +49,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   })
 
-  // Handle back/forward navigation - history API
+  // handle back/forward navigation - history API
+  // https://developer.mozilla.org/en-US/docs/Web/API/History_API
   window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft') window.history.back();
     if (e.key === 'ArrowRight') window.history.forward();

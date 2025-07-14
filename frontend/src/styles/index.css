@@ -41,6 +41,7 @@
   --body: #e2d7b7;
   --accent: #b8a77a;
   --border: #2e2121;
+  --invert: 0;
   --warning: #ff5733;
   --nav-hover: #fbd877;
   --shadow: 0 8px 32px #0004;
@@ -55,6 +56,7 @@
   --body: #070238;
   --accent: #1f0f5c;
   --border: #ecebed;
+  --invert: 1;
   --warning: #ff5733;
   --nav-hover: #00ff1a;
   --shadow: 0 8px 32px #525151;
