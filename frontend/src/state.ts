@@ -9,7 +9,7 @@ const initialState = savedState ? JSON.parse(savedState) : {
   availableLanguages: [] as string[],
   theme: 'primary',
   soundEnabled: true,
-  scaleFactor: { scaleX: 1, scaleY: 1 },
+  scaleFactor: {},
   // TODO: add other state properties that we need to persist
 };
 

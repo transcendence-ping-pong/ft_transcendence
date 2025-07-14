@@ -11,8 +11,8 @@ export function renderGame(containerId: string) {
   const container = document.getElementById(containerId);
   if (container) {
     container.innerHTML = `
-      <div class="game-area">
-        <div id="game-screen" class="absolute inset-0 mt-[100px] mb-[120px] mx-[100px]  z-10"></div>
+      <div class="game-area relative w-screen h-screen">
+        <div id="game-screen" class="absolute z-10" ></div>
         <img 
           src="/public/game-border.png" 
           alt="TV Frame"

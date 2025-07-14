@@ -18,7 +18,6 @@ export class BabylonGUI {
 
   constructor(scene: any) {
     this.advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
-    this.advancedTexture.background = `${this.GUIConstants.SCENE_BACKGROUND_COLOR}cc`; // 'cc' = ~80% opacity
   }
 
   setButtonStyle(button: Button, idx: number, arrayLength: number) {
@@ -113,6 +112,7 @@ export class BabylonGUI {
 
   showCountdown(seconds: number, onDone: () => void) {
     this.clearGUI();
+    this.advancedTexture.background = `${this.GUIConstants.SCENE_BACKGROUND_COLOR}cc`; // 'cc' = ~80% opacity
 
     this.countdownText = new TextBlock();
     this.countdownText.text = seconds.toString();

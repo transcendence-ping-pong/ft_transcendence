@@ -18,8 +18,8 @@ export enum GameScore {
   DRAW = 0,
   POINT = 1,
   NO_POINT = 0,
-  // SCORE_MAX = 11,
-  SCORE_MAX = 1, // testing purposes
+  SCORE_MAX = 11,
+  // SCORE_MAX = 1, // testing purposes
   LEFT = 'LEFT',   // Player is on the left side
   RIGHT = 'RIGHT',  // Player is on the right side
 }
@@ -31,8 +31,15 @@ export type BallLevelConfigValue = {
   paddleSpeed: number;
 };
 
-export const VIRTUAL_WIDTH = 1000;
-export const VIRTUAL_HEIGHT = 500;
+// natural measurements of the game border image
+// scale factor is calculated based on the screen size, all game objects are scaled accordingly
+export const VIRTUAL_WIDTH = 1456;
+export const VIRTUAL_HEIGHT = 816;
+export const VIRTUAL_BORDER_TOP = 110;
+export const VIRTUAL_BORDER_BOTTOM = 130;
+export const VIRTUAL_BORDER_X = 120;
+export const GAME_AREA_HEIGHT = VIRTUAL_HEIGHT - VIRTUAL_BORDER_TOP - VIRTUAL_BORDER_BOTTOM;
+export const GAME_AREA_WIDTH = VIRTUAL_WIDTH - (VIRTUAL_BORDER_X * 2);
 
 // TODO CONCEPT: speed increases after hits, until reaches MAX?? Or after first hit?
 // MIN/MAX: Ball starts at MIN px/sec, can reach up to MAX px/sec.
@@ -131,15 +138,15 @@ export function getGUIConstants(): GUIConstants {
 
   return {
     SCENE_BACKGROUND_COLOR: colors.gameGradientEnd,
-    BUTTON_HEIGHT: VIRTUAL_HEIGHT / 10,
-    BUTTON_WIDTH: VIRTUAL_WIDTH / 4,
-    BUTTON_GAP: VIRTUAL_HEIGHT / 20,
-    BUTTON_FONT_SIZE: VIRTUAL_HEIGHT / 20,
-    BUTTON_FONT_WEIGHT: 'bold',
+    BUTTON_HEIGHT: VIRTUAL_HEIGHT / 12,
+    BUTTON_WIDTH: VIRTUAL_WIDTH / 5,
+    BUTTON_GAP: VIRTUAL_HEIGHT / 40,
+    BUTTON_FONT_SIZE: VIRTUAL_HEIGHT / 25,
+    BUTTON_FONT_WEIGHT: 'normal',
     BUTTON_FONT_COLOR: colors.border,
     BUTTON_BORDER_COLOR: colors.border,
     BUTTON_CORNER_RADIUS: 0,
-    BUTTON_THICKNESS: 8,
+    BUTTON_THICKNESS: 4,
     BUTTON_BACKGROUND_COLOR: colors.gameGradientStart,
     BUTTON_SHADOW_OFFSET_X: 4,
     BUTTON_SHADOW_OFFSET_Y: 4,
@@ -150,7 +157,7 @@ export function getGUIConstants(): GUIConstants {
     COUNTDOWN_FONT_WEIGHT: 'bold',
     COUNTDOWN_FONT_COLOR: colors.border,
     SCORE_FONT_COLOR: "rgba(0,0,0,0.25)", // semi-transparent black
-    SCORE_FONT_SIZE: VIRTUAL_HEIGHT / 5,
+    SCORE_FONT_SIZE: VIRTUAL_HEIGHT / 6,
     SCORE_FONT_WEIGHT: 'bold',
     SCORE_MARGIN_TOP: "10%",
     SCORE_MARGIN_LEFT: "-8%",
