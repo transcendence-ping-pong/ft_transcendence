@@ -5,6 +5,7 @@ import { Paddle } from '@/game/objects/Paddle.js';
 import { BallLevelConfig, GameLevel, GameSize, VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from '@/utils/gameUtils/Constants.js';
 import { getThemeColors, ThemeColors } from '@/utils/gameUtils/BabylonColors.js';
 import { state } from '@/state';
+import { BotPlayer } from './BotPlayer';
 
 /*
   Game Canvas responsabilities:
@@ -20,6 +21,8 @@ import { state } from '@/state';
 */
 
 export class GameCanvas extends EventTarget {
+  private bots: (BotPlayer | null)[] = [null, null];
+  private isBotEnable: boolean = false; //bot
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private animationId: number | null = null;
@@ -114,11 +117,17 @@ export class GameCanvas extends EventTarget {
     }
 
     // move paddles if direction is set
-    for (let i = 0; i < this.paddles.length; i++) {
-      const dir = this.paddleDirections[i];
-      if (dir === 'up') this.paddles[i].moveUp(deltaTime);
-      if (dir === 'down') this.paddles[i].moveDown(deltaTime);
+     // move paddles if direction is set
+    for (let i = 0; i < 2; i++) {
+      if (this.bots[i]) {
+        this.bots[i]!.update(deltaTime);
+      } else {
+        const dir = this.paddleDirections[i];
+        if (dir === 'up') this.paddles[i].moveUp(deltaTime);
+        else if (dir === 'down') this.paddles[i].moveDown(deltaTime);
+      }
     }
+
 
     // draw stuff
     const { PADDLE_WIDTH_RATIO, PADDLE_HEIGHT_RATIO } = GameSize;
@@ -203,4 +212,15 @@ export class GameCanvas extends EventTarget {
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
   }
+
+  //Creating bot
+  public enableBotMode(enable: boolean): void {
+    this.isBotEnable = enable;
+  }
+
+  public enableBotForPlayer(playerIndex: 0 | 1): void {
+    this.bots[playerIndex] = new BotPlayer(this.paddles[playerIndex], this.ball, this.canvas.height, this.getLevel());
+  }
+
+
 }

@@ -61,6 +61,14 @@ export class Ball {
     );
   };
 
+  public getY(): number {
+    return this.virtualY;
+  }
+
+  public getX(): number {
+    return this.virtualX;
+  }
+
   isOutOfBounds = (left: number, right: number) => {
     return (
       this.virtualX - this.size / 2 < left || // left side wall courtBounds
@@ -145,5 +153,13 @@ export class Ball {
     this.vx *= direction * Math.cos(angle);
     this.vy *= Math.sin(angle);
     this.scoringPlayer = GameScore.DRAW;
+  }
+
+  public getState() {
+    return {
+      x: this.virtualX,
+      y: this.virtualY,
+      size: this.size, // ou radius: this.size / 2, se preferir
+    };
   }
 }

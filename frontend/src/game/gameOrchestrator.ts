@@ -3,6 +3,8 @@ import { BabylonGUI } from '@/game/babylon/BabylonGUI.js';
 // import GameCanvas for its type and to access its methods/control game state
 import { GameCanvas } from '@/game/GameCanvas.js';
 import { GameLevel, PlayerMode } from '@/utils/gameUtils/Constants.js';
+import { MockAuth } from '@/utils/MockAuth';
+import { WebSocketClient } from '@/game/WebSocketClient';
 
 /*
   Game Orchestrator responsabilities:
@@ -35,24 +37,45 @@ export class gameOrchestrator {
 
   setupMenuFlow() {
     this.gui.showStartButton(() => {
+      const username = prompt("Digite seu nome:");
+      if (!MockAuth.login(username!)) return alert("Nome inválido!");
+
       this.gui.showPlayerSelector((mode) => {
         this.gui.showDifficultySelector((level) => {
-          this.babylonCanvas.createGameCanvas(level as GameLevel, mode as PlayerMode);
+          this.babylonCanvas.createGameCanvas(level, mode);
           this.gameCanvas = this.babylonCanvas.getGameCanvas();
+
+          if (mode === PlayerMode.ONE_PLAYER) {
+            this.gameCanvas.enableBotForPlayer(1);
+          } else if (mode === PlayerMode.MULTI_PLAYER) {
+            const user = MockAuth.getUser();
+            const socket = new WebSocketClient("partida42", user!);
+
+            socket.onMessage((msg) => {
+              if (msg.type === "opponent_input") {
+                this.gameCanvas.updateOpponentDirection(msg.direction);
+              }
+              if (msg.type === "opponent_disconnected") {
+                this.gameCanvas.enableBotForPlayer(1); // fallback para bot
+              }
+            });
+
+            this.gameCanvas.onLocalInput((dir) => {
+              socket.send({ type: "input", direction: dir });
+            });
+          }
 
           this.gui.showCountdown(3, () => {
             this.gameCanvas.startGame();
-            this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => { });
+            this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => {});
           });
 
           this.gameCanvas.addEventListener('scoreChanged', (e: CustomEvent) => {
-            console.log('Received scoreChanged', e.detail);
             this.gui.clearGUI();
-            this.gui.showScoreBoard(e.detail, () => { });
+            this.gui.showScoreBoard(e.detail, () => {});
           });
 
           this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
-            console.log('Received gameOver', e.detail);
             this.gui.clearGUI();
             this.babylonCanvas.endingGame();
           });
@@ -60,6 +83,39 @@ export class gameOrchestrator {
       });
     });
   }
+  
+  // setupMenuFlow() {
+  //   this.gui.showStartButton(() => {
+  //     this.gui.showPlayerSelector((mode) => {
+  //       this.gui.showDifficultySelector((level) => {
+  //         this.babylonCanvas.createGameCanvas(level as GameLevel, mode as PlayerMode);
+  //         this.gameCanvas = this.babylonCanvas.getGameCanvas();
+
+  //         if (mode === PlayerMode.ONE_PLAYER) {
+  //           this.gameCanvas.enableBotForPlayer(1); // jogador 2 vira bot
+  //         }
+
+
+  //         this.gui.showCountdown(3, () => {
+  //           this.gameCanvas.startGame();
+  //           this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => { });
+  //         });
+
+  //         this.gameCanvas.addEventListener('scoreChanged', (e: CustomEvent) => {
+  //           console.log('Received scoreChanged', e.detail);
+  //           this.gui.clearGUI();
+  //           this.gui.showScoreBoard(e.detail, () => { });
+  //         });
+
+  //         this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
+  //           console.log('Received gameOver', e.detail);
+  //           this.gui.clearGUI();
+  //           this.babylonCanvas.endingGame();
+  //         });
+  //       });
+  //     });
+  //   });
+  //}
 }
 
 // THINK ABOUT IT

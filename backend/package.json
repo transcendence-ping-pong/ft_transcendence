@@ -1,14 +1,8 @@
 {
-  "name": "testingauthenticator",
+  "name": "mock-backend",
   "version": "1.0.0",
-  "main": "./src/index.js",
+  "main": "mock-ws-server.js",
   "dependencies": {
-    "fastify": "^5.4.0",
-	"@fastify/static": "^8.2.0",
-    "sqlite3": "^5.1.6",
-    "speakeasy": "^2.0.0",
-    "qrcode": "^1.5.1",
-    "google-auth-library": "^8.0.0",
-    "dotenv": "^16.0.3"
+    "ws": "^8.13.0"
   }
 }

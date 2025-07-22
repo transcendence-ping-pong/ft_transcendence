@@ -1,1 +1,8 @@
-{}
+{
+  "devDependencies": {
+    "vite": "^7.0.4"
+  },
+  "scripts": {
+    "dev": "vite"
+  }
+}
