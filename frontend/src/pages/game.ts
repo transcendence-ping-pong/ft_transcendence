@@ -25,12 +25,6 @@ export function renderGame(containerId: string) {
           <img slot="logo" src="/logo.png" alt="Logo" />
         </radial-nav>
 
-        <dynamic-dropdown>
-          <navigation-cta slot="nav-buttons"></navigation-cta>
-          <span slot="app-name">FOUR PING TWO PONG</span>
-          <menu-navigation slot="default"></menu-navigation>
-          <play-summary slot="summary"></play-summary>
-        </dynamic-dropdown>
         <div id="game-screen" class="absolute z-10" ></div>
         <img 
           src="/public/game-border.png" 
@@ -63,3 +57,13 @@ export function renderGame(containerId: string) {
     });
   }
 }
+
+/*
+OBSOLETE NAVIGATION BAR VERSION
+<dynamic-dropdown>
+  <navigation-cta slot="nav-buttons"></navigation-cta>
+  <span slot="app-name">FOUR PING TWO PONG</span>
+  <menu-navigation slot="default"></menu-navigation>
+  <play-summary slot="summary"></play-summary>
+</dynamic-dropdown>
+*/

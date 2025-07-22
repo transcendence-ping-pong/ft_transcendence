@@ -13,11 +13,14 @@ template.innerHTML = `
   <style>
     :host {
       position: fixed;
-      top: 10rem;
       left: 50%;
-      z-index: 2000;
-      user-select: none;
+      bottom: 0;
       transform: translateX(-50%);
+      z-index: 2000;
+      transition: bottom 0.35s cubic-bezier(.4,2,.6,1);
+    }
+    :host(:hover) {
+      bottom: 5rem;
     }
     .radial-nav__container {
       position: relative;
