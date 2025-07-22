@@ -6,9 +6,18 @@ template.innerHTML = `
       top: 0;
       left: 50%;
       width: 100%;
-      max-width: 30vw;
+      max-width: 20vw;
       min-width: 500px;
       transform: translateX(-50%);
+      z-index: 100;
+    }
+    :host([centered]) {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      max-width: 50vw;
+      transform: translate(-50%, -50%);
+      margin: 0;
       z-index: 100;
     }
     .dropdown {
@@ -82,13 +91,33 @@ template.innerHTML = `
       <button class="arrow-btn" id="arrowBtn" title="Toggle" tabindex="0" aria-label="Toggle"></button>
     </div>
     <div class="content">
-      <slot></slot>
+      <slot name="default"></slot>
+      <slot name="summary"></slot>
     </div>
   </div>
 `;
 
 export class DynamicDropdown extends HTMLElement {
   private open = false;
+
+  public setOpen(value: boolean) {
+    this.open = value;
+    this._render();
+  }
+
+  public setDefaultSlotContent(value: boolean) {
+    const defaultSlot = this.shadowRoot?.querySelector('slot[name="default"]') as HTMLSlotElement;
+    const summarySlot = this.shadowRoot?.querySelector('slot[name="summary"]') as HTMLSlotElement;
+    if (value) {
+      defaultSlot.classList.remove('hidden');
+      summarySlot.classList.add('hidden');
+      this.removeAttribute('centered');
+    } else {
+      defaultSlot.classList.add('hidden');
+      summarySlot.classList.remove('hidden');
+      this.setAttribute('centered', '');
+    }
+  }
 
   constructor() {
     super();
@@ -106,6 +135,7 @@ export class DynamicDropdown extends HTMLElement {
       e.stopPropagation();
       this.toggle();
     });
+
     this._render();
   }
 

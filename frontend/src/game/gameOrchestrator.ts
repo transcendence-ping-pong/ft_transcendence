@@ -90,17 +90,18 @@ export class gameOrchestrator {
 
           this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
             console.log('Received gameOver', e.detail);
-            this.gui.clearGUI();
-            this.babylonCanvas.endingGame();
+            this.gui.showGameOver();
+            setTimeout(() => {
+              this.gui.clearGUI();
+              this.babylonCanvas.initPlaneMaterial();
+
+              window.dispatchEvent(new CustomEvent('openSummary', {
+                detail: { summary: true, match: e.detail }
+              }));
+            }, 2000);
           });
         });
       });
     });
   }
 }
-
-// THINK ABOUT IT
-// this.gui.showGameOver(e.detail, () => {
-//   this.babylonCanvas.cleanupGame();
-//   this.setupMenuFlow(); // reset to main menu
-// });

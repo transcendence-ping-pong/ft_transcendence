@@ -37,18 +37,56 @@
   z-index: 1;
 }
 
+.game-area.with-overlay::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 99;
+  pointer-events: auto;
+  transition: opacity 0.3s;
+}
+
+/* .theme-primary {
+  --body: #181818;
+  --accent: #222;
+  --border: #fff;
+  --invert: 1;
+  --success: #4caf50;
+  --warning: #ff5733;
+  --nav-hover: #333;
+  --shadow: 0 8px 32px #000a;
+  --game-gradient-start: #1f0f5c;
+  --game-gradient-end: #1a2233;
+  --game-gui: #222;
+}
+
+.theme-secondary {
+  --body: #fff;
+  --accent: #f4f4f4;
+  --border: #181818;
+  --invert: 0;
+  --success: #4caf50;
+  --warning: #ff5733;
+  --nav-hover: #e0e0e0;
+  --shadow: 0 8px 32px #0002;
+  --game-gradient-start: #eaf1ff;
+  --game-gradient-end: #b8d1ff;
+  --game-gui: #f4f4f4;
+} */
+
 .theme-primary {
   --body: #e2d7b7;
   --accent: #b8a77a;
   --border: #2e2121;
   --invert: 0;
+  --success: #45796d;
   --warning: #ff5733;
   --nav-hover: #fbd877;
   --shadow: 0 8px 32px #0004;
   --game-gradient-start: #f8c434;
-  /* #f8c434; */
   --game-gradient-end: #b8a77a;
-  --game-gui: #f8c434;
+  --game-transition-bg: rgb(255, 255, 255);
 }
 
 
@@ -57,12 +95,14 @@
   --accent: #1f0f5c;
   --border: #ecebed;
   --invert: 1;
+  --success: #00ff1a;
   --warning: #ff5733;
-  --nav-hover: #00ff1a;
+  --text: #ecebed;
+  --nav-hover: #4e26eb;
   --shadow: 0 8px 32px #525151;
   --game-gradient-start: #1f0f5c;
   --game-gradient-end: #1a2233;
-  --game-gui: #1f0f5c;
+  --game-transition-bg: rgb(0, 0, 0);
 }
 
 /* .theme-secondary {

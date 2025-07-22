@@ -37,7 +37,7 @@ export class BabylonCanvas {
     this.canvas.id = 'babylon-render-canvas';
     this.canvas.style.width = '100%';
     this.canvas.style.height = '100%';
-    const el = document.getElementById(containerId)?.appendChild(this.canvas);
+    document.getElementById(containerId)?.appendChild(this.canvas);
 
     this.engine = new BABYLON.Engine(this.canvas, true);
     this.scene = this.createScene();
@@ -101,6 +101,21 @@ export class BabylonCanvas {
     };
 
     return scene;
+  }
+
+  get plane() {
+    return this.scene.getMeshByName("gameScreen");
+  }
+
+  get transparentMaterial() {
+    const mat = new StandardMaterial("screenMat", this.scene);
+    mat.alpha = 0; // fully transparent at the start
+    mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+    return mat;
+  }
+
+  initPlaneMaterial() {
+    this.plane.material = this.transparentMaterial;
   }
 
   public createGameCanvas(level: GameLevel, mode: PlayerMode) {
@@ -314,11 +329,12 @@ export class BabylonCanvas {
       this.engine.stopRenderLoop();
       this.engine.dispose();
       this.engine = null;
+      this.gameCanvas = null;
     }
 
-    if (this.gameCanvas) {
-      this.gameCanvas.stop();
-      this.gameCanvas = null;
+    if (this.canvas && this.canvas.parentNode) {
+      this.canvas.parentNode.removeChild(this.canvas);
+      this.canvas = null;
     }
 
     window.removeEventListener('resize', () => this.engine?.resize());

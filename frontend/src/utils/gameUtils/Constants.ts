@@ -18,8 +18,8 @@ export enum GameScore {
   DRAW = 0,
   POINT = 1,
   NO_POINT = 0,
-  SCORE_MAX = 11,
-  // SCORE_MAX = 1, // testing purposes
+  // SCORE_MAX = 11,
+  SCORE_MAX = 1, // testing purposes
   LEFT = 'LEFT',   // Player is on the left side
   RIGHT = 'RIGHT',  // Player is on the right side
 }
@@ -137,7 +137,7 @@ export function getGUIConstants(): GUIConstants {
   const colors: ThemeColors = getThemeColors(state.theme);
 
   return {
-    SCENE_BACKGROUND_COLOR: colors.gameGradientEnd,
+    SCENE_BACKGROUND_COLOR: colors.body, // #000000
     BUTTON_HEIGHT: VIRTUAL_HEIGHT / 12,
     BUTTON_WIDTH: VIRTUAL_WIDTH / 5,
     BUTTON_GAP: VIRTUAL_HEIGHT / 40,
@@ -153,9 +153,9 @@ export function getGUIConstants(): GUIConstants {
     BUTTON_SHADOW_COLOR: "rgba(0,0,0,0.25)",
     BUTTON_SHADOW_BLUR: 8,
     COUNTDOWN_DURATION: 3,
-    COUNTDOWN_FONT_SIZE: VIRTUAL_HEIGHT / 5,
+    COUNTDOWN_FONT_SIZE: VIRTUAL_HEIGHT / 8,
     COUNTDOWN_FONT_WEIGHT: 'bold',
-    COUNTDOWN_FONT_COLOR: colors.border,
+    COUNTDOWN_FONT_COLOR: colors.border, // semi-transparent white
     SCORE_FONT_COLOR: "rgba(0,0,0,0.25)", // semi-transparent black
     SCORE_FONT_SIZE: VIRTUAL_HEIGHT / 6,
     SCORE_FONT_WEIGHT: 'bold',

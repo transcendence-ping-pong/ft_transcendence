@@ -56,7 +56,7 @@ export class NavigationCta extends HTMLElement {
   connectedCallback() {
     this.shadowRoot?.getElementById('home')?.addEventListener('click', () => {
       window.history.pushState({}, '', '/');
-      window.dispatchEvent(new Event('popstate')); // trigger SPA re-render if needed
+      window.dispatchEvent(new Event('popstate'));
     });
     this.shadowRoot?.getElementById('game')?.addEventListener('click', () => {
       window.history.pushState({}, '', '/game');
