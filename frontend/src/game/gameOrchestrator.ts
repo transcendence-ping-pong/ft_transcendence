@@ -2,41 +2,124 @@ import { BabylonCanvas } from '@/game/babylon/BabylonCanvas';
 import { BabylonGUI } from '@/game/babylon/BabylonGUI.js';
 // import GameCanvas for its type and to access its methods/control game state
 import { GameCanvas } from '@/game/GameCanvas.js';
-// import { GameManager } from '@/game/GameManager';
-import { GameLevel, GameScore } from '@/utils/gameUtils/types.js';
+import { GameLevel, PlayerMode } from '@/utils/gameUtils/Constants.js';
+import { MockAuth } from '@/utils/MockAuth';
+import { WebSocketClient } from '@/game/WebSocketClient';
+
+/*
+  Game Orchestrator responsabilities:
+  - orchestrate the game flow (2D canvas game, Babylon.js scene, GUI)
+  - start/stop/reset the game, switch scenes, etc. (?)
+
+  Do not:
+  - handle low-level game logic, GUI logic, or user input directly
+*/
 
 export class gameOrchestrator {
   private babylonCanvas: BabylonCanvas;
   private gui: BabylonGUI;
   private gameCanvas: GameCanvas;
+  // private gameManager: GameManager;
   // TODO CONCEPT: should we have a GameManager here?
   // instead of instantiating it in GameCanvas?
-  // private gameManager: GameManager;
 
   constructor(containerId: string) {
     this.babylonCanvas = new BabylonCanvas(containerId);
     this.gui = new BabylonGUI(this.babylonCanvas.getScene());
-    // reference instance of GameCanvas being created/managed by BabylonCanvas
-    this.gameCanvas = this.babylonCanvas.getGameCanvas();
     this.setupMenuFlow();
-    this.babylonCanvas.startRenderLoop(this.gameCanvas);
+
+    this.babylonCanvas.startRenderLoop();
+    // this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => { });
+
+    // reference instance of GameCanvas being created/managed by BabylonCanvas
+    // this.gameCanvas = this.babylonCanvas.getGameCanvas();
   }
 
   setupMenuFlow() {
     this.gui.showStartButton(() => {
-      this.gui.showDifficultySelector((level) => {
-        this.gameCanvas.setLevel(level as GameLevel);
-        this.gui.showCountdown(3, () => {
-          this.gameCanvas.enableBotMode(true);
-          this.gameCanvas.startGame();
-          this.gui.showScoreBoard({ [GameScore.LEFT]: 1, [GameScore.RIGHT]: 0 }, () => { });
+      const username = prompt("Digite seu nome:");
+      if (!MockAuth.login(username!)) return alert("Nome inválido!");
+
+      this.gui.showPlayerSelector((mode) => {
+        this.gui.showDifficultySelector((level) => {
+          this.babylonCanvas.createGameCanvas(level, mode);
+          this.gameCanvas = this.babylonCanvas.getGameCanvas();
+
+          if (mode === PlayerMode.ONE_PLAYER) {
+            this.gameCanvas.enableBotForPlayer(1);
+          } else if (mode === PlayerMode.MULTI_PLAYER) {
+            const user = MockAuth.getUser();
+            const socket = new WebSocketClient("partida42", user!);
+
+            socket.onMessage((msg) => {
+              if (msg.type === "opponent_input") {
+                this.gameCanvas.updateOpponentDirection(msg.direction);
+              }
+              if (msg.type === "opponent_disconnected") {
+                this.gameCanvas.enableBotForPlayer(1); // fallback para bot
+              }
+            });
+
+            this.gameCanvas.onLocalInput((dir) => {
+              socket.send({ type: "input", direction: dir });
+            });
+          }
+
+          this.gui.showCountdown(3, () => {
+            this.gameCanvas.startGame();
+            this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => {});
+          });
+
+          this.gameCanvas.addEventListener('scoreChanged', (e: CustomEvent) => {
+            this.gui.clearGUI();
+            this.gui.showScoreBoard(e.detail, () => {});
+          });
+
+          this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
+            this.gui.clearGUI();
+            this.babylonCanvas.endingGame();
+          });
         });
       });
     });
   }
+  
+  // setupMenuFlow() {
+  //   this.gui.showStartButton(() => {
+  //     this.gui.showPlayerSelector((mode) => {
+  //       this.gui.showDifficultySelector((level) => {
+  //         this.babylonCanvas.createGameCanvas(level as GameLevel, mode as PlayerMode);
+  //         this.gameCanvas = this.babylonCanvas.getGameCanvas();
 
-  // TODO CONCEPT: where to call it?
-  cleanup() {
-    this.babylonCanvas.cleanupGame();
-  }
+  //         if (mode === PlayerMode.ONE_PLAYER) {
+  //           this.gameCanvas.enableBotForPlayer(1); // jogador 2 vira bot
+  //         }
+
+
+  //         this.gui.showCountdown(3, () => {
+  //           this.gameCanvas.startGame();
+  //           this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => { });
+  //         });
+
+  //         this.gameCanvas.addEventListener('scoreChanged', (e: CustomEvent) => {
+  //           console.log('Received scoreChanged', e.detail);
+  //           this.gui.clearGUI();
+  //           this.gui.showScoreBoard(e.detail, () => { });
+  //         });
+
+  //         this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
+  //           console.log('Received gameOver', e.detail);
+  //           this.gui.clearGUI();
+  //           this.babylonCanvas.endingGame();
+  //         });
+  //       });
+  //     });
+  //   });
+  //}
 }
+
+// THINK ABOUT IT
+// this.gui.showGameOver(e.detail, () => {
+//   this.babylonCanvas.cleanupGame();
+//   this.setupMenuFlow(); // reset to main menu
+// });

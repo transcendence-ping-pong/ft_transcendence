@@ -4,22 +4,34 @@ services:
     command: npm run dev -- --host
     ports:
       - "3000:3000"
-    #volumes:
-     # - ./frontend:/app
-     # - /app/node_modules
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # <- isso mantém os node_modules do container
     depends_on:
-      - backend
+      - mock-backend
+  
+  # backend:
+  #   build: ./backend
+  #   container_name: backend
+  #   ports:
+  #     - "4000:4000"
+  #   # env_file:
+  #   #   - ./backend/src/.env
+  #   volumes:
+  #     - db_data:/app/database
 
-  backend:
+  mock-backend:
     build: ./backend
-    container_name: backend
+    #command: node mock-ws-server.js
     ports:
       - "4000:4000"
-    # env_file:
-    #   - ./backend/src/.env
-    #volumes:
-      #- db_data:/app/database
+    # volumes:
+    #   - ./backend:/app
 
 volumes:
   db_data:
     driver: local
+
+
+
+    

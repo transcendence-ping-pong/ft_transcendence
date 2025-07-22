@@ -2,14 +2,16 @@ import { GameManager } from '@/game/GameManager.js';
 import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
 import { Ball } from '@/game/objects/Ball.js';
 import { Paddle } from '@/game/objects/Paddle.js';
-import { GameLevel, GameSize } from '@/utils/gameUtils/types.js';
+import { BallLevelConfig, GameLevel, GameSize, VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from '@/utils/gameUtils/Constants.js';
+import { getThemeColors, ThemeColors } from '@/utils/gameUtils/BabylonColors.js';
+import { state } from '@/state';
+import { BotPlayer } from './BotPlayer';
 
 /*
   Game Canvas responsabilities:
   - initialize and manage the 2D game canvas
   - create the game court, paddles, and ball
   - handle user input for paddle movement
-  - provide methods to start, reset, and stop the game
   - manage the game loop for updating the game state and rendering
   - delegate game logic to GameManager
 
@@ -18,8 +20,9 @@ import { GameLevel, GameSize } from '@/utils/gameUtils/types.js';
   - handle GUI logic or BabylonGUI specific logicz
 */
 
-export class GameCanvas {
-  private isBotEnable: boolean = false;
+export class GameCanvas extends EventTarget {
+  private bots: (BotPlayer | null)[] = [null, null];
+  private isBotEnable: boolean = false; //bot
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private animationId: number | null = null;
@@ -27,14 +30,21 @@ export class GameCanvas {
   private paddles: Paddle[];
   private paddleDirections: { [player: number]: 'up' | 'down' | null } = { 0: null, 1: null };
   private courtBounds: GameCourtBounds;
+  private _colors: ThemeColors = getThemeColors(state.theme);
   private handleKeyDown: (event: KeyboardEvent) => void;
   private handleKeyUp: (event: KeyboardEvent) => void;
   // TODO CONCEPT: public so it is possible to access it from BabylonCanvas?
   public gameManager: GameManager;
 
+  // TODO FIX: improve organisation using getters/setters
+  get colors() {
+    return this._colors;
+  }
+
   // initialise variables, create canvas, paddles, ball, event listeners(?)
   // TODO CONCEPT: where to put event listeners?
-  constructor(containerId?: string, width?: number, height?: number) {
+  constructor(level: GameLevel, containerId?: string, width?: number, height?: number) {
+    super();
     // create and append canvas
     this.canvas = document.createElement('canvas');
     this.canvas.height = height;
@@ -46,14 +56,18 @@ export class GameCanvas {
     }
 
     this.gameManager = new GameManager();
-    this.courtBounds = new GameCourtBounds(width, height);
 
-    const ballSize = height * GameSize.BALL_SIZE_RATIO;
-    this.ball = new Ball(width / 2, height / 2, 4, -2, ballSize);
+    const initialX = VIRTUAL_WIDTH / 2;
+    const initialY = VIRTUAL_HEIGHT / 2;
+
+    this.courtBounds = new GameCourtBounds(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.colors.border);
+
+    const ballSize = VIRTUAL_HEIGHT * GameSize.BALL_SIZE_RATIO;
+    this.ball = new Ball(initialX, initialY, ballSize, level, this.courtBounds, this.colors.border);
 
     this.paddles = [
-      new Paddle(0, width, height, this.courtBounds),
-      new Paddle(1, width, height, this.courtBounds),
+      new Paddle(0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.courtBounds, level, this.colors.border),
+      new Paddle(1, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.courtBounds, level, this.colors.border),
     ];
 
     this.handleKeyDown = this.onKeyDown.bind(this);
@@ -78,7 +92,8 @@ export class GameCanvas {
   }
 
   // draw stuff
-  public render2DGameCanvas(runLoop: boolean = false) {
+  public render2DGameCanvas(runLoop: boolean = false, deltaTime: number = 1) {
+
     // clear canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -86,30 +101,41 @@ export class GameCanvas {
     // ball constantly moves... TODO CONCEPT: add some randomness to the ball movement
     if (this.gameManager.isStarted) {
       this.ball.updatePosition(
-        1, // or your delta time... delta time???
-        this.courtBounds,
+        deltaTime,
         this.paddles,
-        this.gameManager.getLevel(),
+        () => { }, // onPaddleBounce callback, sound?? log?? messages?
         () => {
-          // sound?? log?? messages?
+          this.gameManager.addScore(this.ball.scoringPlayer);
+          this.dispatchEvent(new CustomEvent('scoreChanged', { detail: this.gameManager.score }));
+          this.ball.resetPosition();
+
+          // after updating the score, check if the game is over
+          if (this.gameManager.isGameOver) {
+            this.dispatchEvent(new CustomEvent('gameOver', { detail: this.gameManager.score }));
+          }
         }
       );
     }
 
     // move paddles if direction is set
-    for (let i = 0; i < this.paddles.length; i++) {
-        if (this.isBotEnable && i === 1) {
-          this.updateBot(); // player 2 controlado pelo bot
-        }else{
+     // move paddles if direction is set
+    for (let i = 0; i < 2; i++) {
+      if (this.bots[i]) {
+        this.bots[i]!.update(deltaTime);
+      } else {
         const dir = this.paddleDirections[i];
-        if (dir === 'up') this.paddles[i].moveUp();
-        if (dir === 'down') this.paddles[i].moveDown();
+        if (dir === 'up') this.paddles[i].moveUp(deltaTime);
+        else if (dir === 'down') this.paddles[i].moveDown(deltaTime);
       }
     }
 
+
     // draw stuff
+    const { PADDLE_WIDTH_RATIO, PADDLE_HEIGHT_RATIO } = GameSize;
+    const paddleSizeX = VIRTUAL_WIDTH * PADDLE_WIDTH_RATIO;
+    const paddleSizeY = (VIRTUAL_HEIGHT - this.courtBounds.specs.top * 2) * PADDLE_HEIGHT_RATIO;
     this.courtBounds.draw(this.ctx);
-    this.paddles.forEach(paddle => paddle.draw(this.ctx));
+    this.paddles.forEach(paddle => paddle.draw(this.ctx, paddleSizeX, paddleSizeY));
     this.ball.draw(this.ctx);
 
     // runLoop when GameCanvas is responsible for the animation
@@ -122,8 +148,16 @@ export class GameCanvas {
     return this.canvas;
   }
 
-  public setLevel(level: GameLevel) {
+  public getGameManager(): GameManager {
+    return this.gameManager;
+  }
+
+  public setLevel(level: GameLevel): void {
     this.gameManager.setLevel(level);
+  }
+
+  public getLevel(): GameLevel {
+    return this.gameManager.getLevel();
   }
 
   public startGame() {
@@ -133,11 +167,9 @@ export class GameCanvas {
   }
 
   public reset() {
+    this.gameManager.getLevel();
     // Reset ball and paddles to initial positions
-    const width = this.canvas.width;
-    const height = this.canvas.height;
-    const ballSize = height * GameSize.BALL_SIZE_RATIO;
-    this.ball = new Ball(width / 2, height / 2, 4, -2, ballSize);
+    this.ball.resetPosition();
     this.paddles[0].resetPosition();
     this.paddles[1].resetPosition();
   }
@@ -187,47 +219,9 @@ export class GameCanvas {
     this.isBotEnable = enable;
   }
 
-  private updateBot(): void {
-    const botPaddle = this.paddles[1]; // player 2
-    const ballY = this.ball.getY(); // você pode ter que implementar getY() na Ball
-    const paddleY = botPaddle.getY(); // você pode ter que implementar getY() na Paddle
-    const paddleHeight = botPaddle.getHeight(); // idem
-
-    // Movimento simples: alinhar centro da raquete com a bola
-    const paddleCenter = paddleY + paddleHeight / 2;
-
-    const level = this.gameManager.getLevel();
-    let speed = 2; // velocidade padrão
-    let precisionOffset = 0; // erro proposital
-    let reactionThreshold = 0; // para simular atraso de resposta
-
-      // Parâmetros por nível
-    switch (level) {
-      case GameLevel.EASY:
-        speed = 2;
-        precisionOffset = 30;
-        reactionThreshold = 40;
-        break;
-      case GameLevel.MEDIUM:
-        speed = 3;
-        precisionOffset = 10;
-        reactionThreshold = 20;
-        break;
-      case GameLevel.HARD:
-        speed = 4;
-        precisionOffset = 0;
-        reactionThreshold = 0;
-        break;
-    }
-    const targetY = ballY + precisionOffset * (Math.random() - 0.5);
-
-    // Só move se estiver suficientemente longe do alvo (delay/reação simulada)
-    if (Math.abs(targetY - paddleCenter) > reactionThreshold) {
-      if (targetY < paddleCenter) {
-        botPaddle.moveUp(speed);
-      } else {
-        botPaddle.moveDown(speed);
-      }
-    }
+  public enableBotForPlayer(playerIndex: 0 | 1): void {
+    this.bots[playerIndex] = new BotPlayer(this.paddles[playerIndex], this.ball, this.canvas.height, this.getLevel());
   }
+
+
 }
