@@ -8,8 +8,13 @@
         let loggedInUser = null;
 
         async function checkServerLoginStatus() {
+            const token = localStorage.getItem('accessToken');
             try {
-                const response = await fetch('/current-user');
+                const response = await fetch('/current-user', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
                 if (response.ok) {
                     const data = await response.json();
                     if (data.username) {
@@ -82,10 +87,14 @@
             } else {
                 loggedInUser = username;
                 localStorage.setItem('loggedInUser', username);
+                // Store tokens!
+                localStorage.setItem('accessToken', data.accessToken);
+                localStorage.setItem('refreshToken', data.refreshToken);
                 updateLoginStatus(loggedInUser);
                 document.getElementById('tokenSection').style.display = 'none';
                 alert('Login successful!');
                 check2FAStatus();
+                fetchUsers(); // Refresh user list
             }
         }
 
@@ -119,44 +128,82 @@
         }
 
         async function check2FAStatus() {
-            if (!loggedInUser) return;
-            
-            const response = await fetch(`/check-2fa?username=${encodeURIComponent(loggedInUser)}`);
-            const data = await response.json();
+    if (!loggedInUser) return;
 
-            if (data.error) {
-                alert(data.error);
-                return;
-            }
-
-            if (data.has2FA) {
-                document.getElementById('tokenSection').style.display = 'none';
-                document.getElementById('verifyTokenSection').style.display = 'none';
-                document.getElementById('generateSecretSection').style.display = 'none';
-                document.getElementById('authenticatorSection').style.display = 'none';
-            } else {
-                document.getElementById('tokenSection').style.display = 'none';
-                document.getElementById('generateSecretSection').style.display = 'block';
-                document.getElementById('verifyTokenSection').style.display = 'block';
-                document.getElementById('authenticatorSection').style.display = 'block';
-            }
+    const token = localStorage.getItem('accessToken');
+    const usersResponse = await fetch('/users', {
+        headers: {
+            'Authorization': `Bearer ${token}`
         }
+    });
 
+    let users = [];
+    try {
+        users = await usersResponse.json();
+    } catch (e) {
+        users = [];
+    }
+
+    if (!Array.isArray(users)) {
+        users = [];
+    }
+
+    const currentUser = users.find(user => user.username === loggedInUser);
+
+    // If user has a Google ID, don't show 2FA options
+    if (currentUser && currentUser.google_id) {
+        document.getElementById('tokenSection').style.display = 'none';
+        document.getElementById('verifyTokenSection').style.display = 'none';
+        document.getElementById('generateSecretSection').style.display = 'none';
+        document.getElementById('authenticatorSection').style.display = 'none';
+        return;
+    }
+    
+    const response = await fetch(`/check-2fa?username=${encodeURIComponent(loggedInUser)}`);
+    const data = await response.json();
+
+    if (data.error) {
+        alert(data.error);
+        return;
+    }
+
+    if (data.has2FA) {
+        document.getElementById('tokenSection').style.display = 'none';
+        document.getElementById('verifyTokenSection').style.display = 'none';
+        document.getElementById('generateSecretSection').style.display = 'none';
+        document.getElementById('authenticatorSection').style.display = 'none';
+    } else {
+        document.getElementById('tokenSection').style.display = 'none';
+        document.getElementById('generateSecretSection').style.display = 'block';
+        document.getElementById('verifyTokenSection').style.display = 'block';
+        document.getElementById('authenticatorSection').style.display = 'block';
+    }
+}
         async function fetchUsers() {
-            const response = await fetch('/users');
-            const users = await response.json();
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch('/users', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            let users = [];
+            try {
+                users = await response.json();
+            } catch (e) {
+                users = [];
+            }
 
             const userList = document.getElementById('userList');
             userList.innerHTML = '';
 
-            users.forEach(user => {
-                const listItem = document.createElement('li');
-                // Don't display passwords for security
-                listItem.textContent = `ID: ${user.user_id}, Username: ${user.username}, Has 2FA: ${user.secret ? 'Yes' : 'No'}, Google ID: ${user.google_id || 'N/A'}, Email: ${user.email || 'N/A'}`;
-                userList.appendChild(listItem);
-            });
-        }
-
+            if (Array.isArray(users) && users.length > 0) {
+                users.forEach(user => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `ID: ${user.user_id}, Username: ${user.username}, Has 2FA: ${user.secret ? 'Yes' : 'No'}, Google ID: ${user.google_id || 'N/A'}, Email: ${user.email || 'N/A'}`;
+                    userList.appendChild(listItem);
+                });
+            }
+}
         async function verifyToken() {
             const token = document.getElementById('verifyToken').value;
 
@@ -197,9 +244,18 @@
                 return;
             }
 
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                alert('No access token found. Please log in again.');
+                return;
+            }
+
             const response = await fetch('/generate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}` // <-- Add this line
+                },
                 body: JSON.stringify({ username: loggedInUser })
             });
 
