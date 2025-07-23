@@ -1,6 +1,6 @@
 import { GameCanvas } from '@/game/GameCanvas.js';
 import { crtFragmentShader } from '@/utils/gameUtils/CrtFragmentShader.js';
-import { GameLevel, PlayerMode, VIRTUAL_BORDER_TOP, VIRTUAL_BORDER_X, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, VIRTUAL_BORDER_BOTTOM } from '@/utils/gameUtils/Constants.js';
+import { GameLevel, PlayerMode, VIRTUAL_BORDER_TOP, VIRTUAL_BORDER_X, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, VIRTUAL_BORDER_BOTTOM } from '@/utils/gameUtils/GameConstants.js';
 import { getThemeColors, ThemeColors } from '@/utils/gameUtils/BabylonColors.js';
 import * as BABYLON from "@babylonjs/core";
 import { Engine, Scene, Color3, StandardMaterial } from "@babylonjs/core";

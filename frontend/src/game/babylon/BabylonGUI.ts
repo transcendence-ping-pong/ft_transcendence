@@ -1,5 +1,5 @@
 import { t } from '@/locales/Translations.js';
-import { GameLevel, GameScore, PlayerMode, getGUIConstants } from '@/utils/gameUtils/Constants.js';
+import { GameLevel, GameScore, PlayerMode, getGUIConstants } from '@/utils/gameUtils/GameConstants.js';
 import { AdvancedDynamicTexture, Button, Control, TextBlock, Rectangle } from "@babylonjs/gui";
 import { state } from '@/state';
 

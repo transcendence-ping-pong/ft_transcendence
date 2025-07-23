@@ -12,7 +12,13 @@ export async function getTranslations(lang: string | undefined) {
   return allTranslations[lang] || allTranslations["GB"];
 }
 
+// deal with {{param}} in translations
+function formatTranslation(template: string, params: Record<string, any>) {
+  return template.replace(/{{\s*(\w+)\s*}}/g, (_, key) => params[key] ?? "");
+}
+
 // get translation by key
-export function t(key: string): string {
-  return key.split('.').reduce((obj, k) => obj?.[k], state.translations) ?? key;
+export function t(key: string, params?: Record<string, any>): string {
+  const translation = key.split('.').reduce((obj, k) => obj?.[k], state.translations) ?? key;
+  return params ? formatTranslation(translation, params) : translation;
 }

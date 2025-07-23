@@ -7,8 +7,14 @@
       "password": "Password"
     },
     "nav": {
-      "home": "HOME",
-      "game": "GAME"
+      "home": "Home",
+      "game": "Game",
+      "logout": "Logout",
+      "notifications": "All Notifications",
+      "settings": "Settings",
+      "profile": "Profile",
+      "friends": "Friends",
+      "online": "Online"
     },
     "error": {
       "network": "Network error. Please try again.",
@@ -23,6 +29,28 @@
       "level1": "EASY",
       "level2": "MEDIUM",
       "level3": "HARD"
+    },
+    "notification": {
+      "title": {
+        "welcome": "Welcome",
+        "warning": "Warning",
+        "newMessage": "New Message",
+        "matchFound": "Match Found",
+        "friendRequest": "New Friend Request",
+        "gameInvite": "New Game Invite",
+        "newPlayerOnline": "New Player Online",
+        "newTournament": "New Tournament"
+      },
+      "msg": {
+        "welcome": "Happy playtime, {{user}}.",
+        "warning": "Are you sure you want to logout? All unsaved progress will be lost.",
+        "newMessage": "You have a new message.",
+        "matchFound": "You have a new opponent!",
+        "friendRequest": "{{name}} sent you a friend request.",
+        "gameInvite": "{{name}} invited you to a game.",
+        "newPlayerOnline": "{{name}} is online now.",
+        "newTournament": "A new tournament is starting soon."
+      }
     }
   },
   "FR": {
@@ -33,8 +61,14 @@
       "password": "Mot de passe"
     },
     "nav": {
-      "home": "ACCUEIL",
-      "game": "JEU"
+      "home": "Accueil",
+      "game": "Jeu",
+      "logout": "Se déconnecter",
+      "notifications": "Toutes les notifications",
+      "settings": "Paramètres",
+      "profile": "Profil",
+      "friends": "Amis",
+      "online": "En ligne"
     },
     "error": {
       "network": "Erreur réseau. Veuillez réessayer.",
@@ -49,6 +83,28 @@
       "level1": "FACILE",
       "level2": "MOYEN",
       "level3": "DIFFICILE"
+    },
+    "notification": {
+      "title": {
+        "welcome": "Bienvenue",
+        "warning": "Avertissement",
+        "newMessage": "Nouveau message",
+        "matchFound": "Adversaire trouvé",
+        "friendRequest": "Nouvelle demande d'ami",
+        "gameInvite": "Nouvelle invitation de jeu",
+        "newPlayerOnline": "Nouveau joueur en ligne",
+        "newTournament": "Nouveau tournoi"
+      },
+      "msg": {
+        "welcome": "Bon jeu, {{user}}.",
+        "warning": "Êtes-vous sûr de vouloir vous déconnecter ? Tout progrès non sauvegardé sera perdu.",
+        "newMessage": "Vous avez un nouveau message.",
+        "matchFound": "Vous avez un nouvel adversaire !",
+        "friendRequest": "{{name}} vous a envoyé une demande d'ami.",
+        "gameInvite": "{{name}} vous a invité à une partie.",
+        "newPlayerOnline": "{{name}} est maintenant en ligne.",
+        "newTournament": "Un nouveau tournoi va bientôt commencer."
+      }
     }
   },
   "PT": {
@@ -59,8 +115,14 @@
       "password": "Senha"
     },
     "nav": {
-      "home": "INÍCIO",
-      "game": "JOGO"
+      "home": "Início",
+      "game": "Jogo",
+      "logout": "Sair",
+      "notifications": "Todas as notificações",
+      "settings": "Configurações",
+      "profile": "Perfil",
+      "friends": "Amigos",
+      "online": "Online"
     },
     "error": {
       "network": "Erro de rede. Por favor, tente novamente.",
@@ -75,6 +137,28 @@
       "level1": "FÁCIL",
       "level2": "MÉDIO",
       "level3": "DIFÍCIL"
+    },
+    "notification": {
+      "title": {
+        "welcome": "Bem-vindo",
+        "warning": "Aviso",
+        "newMessage": "Nova Mensagem",
+        "matchFound": "Partida Encontrada",
+        "friendRequest": "Novo Pedido de Amizade",
+        "gameInvite": "Novo Convite para Jogo",
+        "newPlayerOnline": "Novo Jogador Online",
+        "newTournament": "Novo Torneio"
+      },
+      "msg": {
+        "welcome": "Boa diversão, {{user}}.",
+        "warning": "Tem certeza de que deseja sair? Todo progresso não salvo será perdido.",
+        "newMessage": "Você tem uma nova mensagem.",
+        "matchFound": "Você tem um novo oponente!",
+        "friendRequest": "{{name}} lhe enviou um pedido de amizade.",
+        "gameInvite": "{{name}} convidou você para um jogo.",
+        "newPlayerOnline": "{{name}} está online agora.",
+        "newTournament": "Um novo torneio começará em breve."
+      }
     }
   },
   "JP": {
@@ -86,7 +170,13 @@
     },
     "nav": {
       "home": "ホーム",
-      "game": "ゲーム"
+      "game": "ゲーム",
+      "logout": "ログアウト",
+      "notifications": "すべての通知",
+      "settings": "設定",
+      "profile": "プロフィール",
+      "friends": "フレンド",
+      "online": "オンライン"
     },
     "error": {
       "network": "ネットワークエラー。もう一度お試しください。",
@@ -101,6 +191,28 @@
       "level1": "簡単",
       "level2": "普通",
       "level3": "難しい"
+    },
+    "notification": {
+      "title": {
+        "welcome": "ようこそ",
+        "warning": "警告",
+        "newMessage": "新しいメッセージ",
+        "matchFound": "対戦相手が見つかりました",
+        "friendRequest": "新しいフレンドリクエスト",
+        "gameInvite": "新しいゲーム招待",
+        "newPlayerOnline": "新しいプレイヤーがオンライン",
+        "newTournament": "新しいトーナメント"
+      },
+      "msg": {
+        "welcome": "楽しいプレイタイムを、{{user}}。",
+        "warning": "ログアウトしてもよろしいですか？保存されていない進行状況は失われます。",
+        "newMessage": "新しいメッセージがあります。",
+        "matchFound": "新しい対戦相手が見つかりました！",
+        "friendRequest": "{{name}}さんからフレンドリクエストが届きました。",
+        "gameInvite": "{{name}}さんがゲームに招待しました。",
+        "newPlayerOnline": "{{name}}さんが今オンラインです。",
+        "newTournament": "新しいトーナメントがまもなく始まります。"
+      }
     }
   }
 }

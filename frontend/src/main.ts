@@ -4,6 +4,8 @@ import { renderHome } from './pages/home.js';
 import { renderLogin } from '@/pages/login.js';
 import { renderGame } from '@/pages/game.js';
 import { initRouter } from '@/utils/Router.js';
+import { notificationService } from "@/services/notificationService";
+import { startMockNotifications } from "@/services/mockNotifications.js";
 import '@/styles/index.css';
 import '@babylonjs/loaders';
 
@@ -28,6 +30,14 @@ const routes = {
 
 type NavigateFn = (path: string) => void;
 export let navigate: NavigateFn;
+
+// listen for notifications and show them in UI
+notificationService.listen((notif) => {
+  window.dispatchEvent(new CustomEvent("new-notification", { detail: notif }));
+});
+
+// TODO SOCKET: REMOVE MOCK
+startMockNotifications();
 
 document.addEventListener('DOMContentLoaded', async () => {
   // TODO: translations by default will be in english. Apply switching to other languages later
