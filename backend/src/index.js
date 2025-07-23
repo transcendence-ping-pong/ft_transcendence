@@ -86,7 +86,6 @@ function deleteAllUserRefreshTokens(userId) {
     });
 }
 
-// NEW: JWT middleware for protecting routes
 function authenticateToken(request, reply, done) {
     const authHeader = request.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -106,7 +105,6 @@ function authenticateToken(request, reply, done) {
     });
 }
 
-// NEW: Clean up expired tokens periodically
 function cleanupExpiredTokens() {
     // Removes expired refresh tokens from database
     db.run(`DELETE FROM refresh_tokens WHERE expires_at <= datetime('now')`, function(err) {
@@ -118,10 +116,8 @@ function cleanupExpiredTokens() {
     });
 }
 
-// NEW: Run cleanup every hour to keep database clean
 setInterval(cleanupExpiredTokens, 60 * 60 * 1000);
 
-// ...existing validation functions...
 function isAlphaNumeric(str) {
     return str.split('').every(char => {
         const isLetter = (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z');
@@ -153,26 +149,21 @@ function isValidPassword(password) {
     return isSafePassword(password);
 }
 
-// NEW: JWT token refresh endpoint
 fastify.post('/token', async (req, res) => {
-    // Endpoint to get new access token using refresh token
     const refreshToken = req.body.token;
     if (!refreshToken) {
         return res.status(401).send({ error: 'Refresh token required' });
     }
     
     try {
-        // Check if refresh token exists and is valid
         const tokenData = await findRefreshToken(refreshToken);
         if (!tokenData) {
             return res.status(403).send({ error: 'Invalid or expired refresh token' });
         }
         
-        // Verify the refresh token signature
         jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
             if (err) return res.status(403).send({ error: 'Invalid refresh token' });
             
-            // Generate new access token
             const accessToken = generateAccessToken({ 
                 username: tokenData.username, 
                 user_id: tokenData.user_id 
@@ -185,7 +176,6 @@ fastify.post('/token', async (req, res) => {
     }
 });
 
-// MODIFIED: Now requires authentication (JWT token)
 fastify.post('/generate', { preHandler: authenticateToken }, (request, reply) => {
     const { username } = request.body;
 
@@ -276,7 +266,6 @@ fastify.get('/current-token', { preHandler: authenticateToken }, (req, res) => {
         return res.status(400).send({ error: 'Username is required' });
     }
 
-    // NEW: Security check - users can only get their own tokens
     if (req.user.username !== username) {
         return res.status(403).send({ error: 'You can only get tokens for your own account' });
     }
@@ -393,20 +382,17 @@ fastify.post('/login', (req, res) => {
             currentLoggedInUser = username;
             
             try {
-                // NEW: Generate JWT tokens for the authenticated user
                 const user = { username: username, user_id: row.user_id };
                 const accessToken = generateAccessToken(user);
                 const refreshToken = generateRefreshToken(user);
                 
-                // NEW: Save refresh token to database for later use
                 await saveRefreshToken(refreshToken, row.user_id);
                 
-                // NEW: Return tokens along with success message
                 res.send({ 
                     message: 'Login successful', 
                     username: row.username,
-                    accessToken: accessToken,    // Short-lived token for API calls
-                    refreshToken: refreshToken   // Long-lived token for getting new access tokens
+                    accessToken: accessToken,    
+                    refreshToken: refreshToken
                 });
             } catch (tokenError) {
                 console.error('Error saving refresh token:', tokenError);
@@ -417,11 +403,10 @@ fastify.post('/login', (req, res) => {
 });
 
 fastify.post('/logout', async (req, res) => {
-    const { token } = req.body; // NEW: Expecting refresh token in request body
+    const { token } = req.body; 
     currentLoggedInUser = null;
     req.session = null;
     
-    // NEW: Remove refresh token from database
     if (token) {
         try {
             await deleteRefreshToken(token);
@@ -433,9 +418,7 @@ fastify.post('/logout', async (req, res) => {
     res.send({ message: 'Logout successful' });
 });
 
-// NEW: Logout from all devices endpoint
 fastify.post('/logout-all', { preHandler: authenticateToken }, async (req, res) => {
-    // Removes all refresh tokens for the authenticated user
     try {
         await deleteAllUserRefreshTokens(req.user.user_id);
         res.send({ message: 'Logged out from all devices' });
@@ -556,9 +539,7 @@ fastify.get('/auth/google/callback', async (req, res) => {
     }
 });
 
-// Add these routes before fastify.get('/favicon.ico', (req, res) => res.status(204));
 
-// Add the current-user endpoint that your frontend is looking for
 fastify.get('/current-user', { preHandler: authenticateToken }, (req, res) => {
     // Returns user info from JWT token instead of session
     res.send({ username: req.user.username, user_id: req.user.user_id });
