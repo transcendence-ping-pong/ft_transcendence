@@ -1,6 +1,6 @@
-import { NotificationPayload, notificationService } from "@/services/notificationService";
+import { NotificationPayload, NotificationAction, notificationService } from "@/services/notificationService";
+import { mapNotification, getWelcomeNotification } from "@/utils/Notifications.js";
 import { t } from "@/locales/Translations.js";
-import { actionIcons } from "@/utils/Constants.js";
 import "./NotificationCard.js";
 
 const TOPBAR_HEIGHT = 64; // px
@@ -152,17 +152,6 @@ template.innerHTML = `
   </div>
 `;
 
-const WELCOME_NOTIFICATION = (username) => ({
-  title: t("notification.title.welcome"),
-  message: t("notification.msg.welcome", { user: username }),
-  action: {
-    icon: actionIcons.avatar,
-    label: "Avatar",
-    actionFn: () => { },
-  },
-  welcome: true
-});
-
 export class NotificationsBar extends HTMLElement {
   #all = [];
   #visible = [];
@@ -171,6 +160,12 @@ export class NotificationsBar extends HTMLElement {
   #detailsOpen = false;
   #filterType = null;
   _notifListener;
+
+  stack: HTMLElement;
+  detailsPanel: HTMLElement;
+  detailsList: HTMLElement;
+  detailsClose: HTMLElement;
+  detailsTitle: HTMLElement;
 
   // TODO: get username, this value is mocked for now
   username = "SHINCKEL";
@@ -191,28 +186,26 @@ export class NotificationsBar extends HTMLElement {
     }
     this.detailsClose.addEventListener('click', () => this.hideDetails());
 
-    // show details on notification click
+    // show side bar details on notification click
     this.stack.addEventListener('click', (e) => {
-      const notif = e.target.closest('notification-card');
+      const target = e.target as Element;
+      const notif = target.closest('notification-card');
       if (notif) this.showDetails();
     });
 
     // TODO: get username dynamically, here is a mock:
-    const welcomeNotif = WELCOME_NOTIFICATION(this.username);
+    const welcomeNotif = getWelcomeNotification(this.username);
     this.#all = [welcomeNotif];
     this.#visible = [welcomeNotif];
     this.renderDetails();
     this._showInitial();
 
-    // Listen for real-time notifications from notificationService
-    this._notifListener = (notif: NotificationPayload) => {
-      this.pushNotification({
-        title: t(`notification.title.${notif.type}`) || notif.type,
-        message: t(`notification.msg.${notif.type}`, notif) || "",
-        type: notif.type,
-        action: notif.action || []
-      });
-    };
+    // listen for real-time notifications from notificationService
+    this._notifListener = (payload) => {
+      const notif = mapNotification(payload);
+      if (notif) this.pushNotification(notif);
+    }
+
     notificationService.listen(this._notifListener);
   }
 
@@ -236,7 +229,7 @@ export class NotificationsBar extends HTMLElement {
   _showInitial() {
     // only show welcome at start
     // TODO: get username, this value is mocked for now
-    this.#visible = [WELCOME_NOTIFICATION(this.username)];
+    this.#visible = [getWelcomeNotification(this.username)];
     this.renderNotifications();
     this._scheduleFade();
   }
@@ -281,10 +274,17 @@ export class NotificationsBar extends HTMLElement {
       if (notif.welcome) card.setAttribute('welcome', '');
       if (notif.action) card.setAttribute('action', JSON.stringify(notif.action));
       card.classList.add('notification');
+
       card.addEventListener('dismiss', (e) => {
         e.stopPropagation();
         this.removeNotificationWithStackAnimation(this.stack, card, notif, this.#visible, this.renderNotifications);
       });
+
+      card.addEventListener('action', (e) => {
+        e.stopPropagation();
+        if (notif.actionFn) notif.actionFn();
+      });
+
       this.stack.appendChild(card);
       if (!notif.welcome) setTimeout(() => card.classList.add('show'), 10 + i * 80);
       else card.classList.add('show');
@@ -304,8 +304,8 @@ export class NotificationsBar extends HTMLElement {
     this._scheduleFade();
   }
 
-  removeNotificationWithStackAnimation(container, el, notif, arr, rerenderFn) {
-    const cards = Array.from(container.children);
+  removeNotificationWithStackAnimation(container: HTMLElement, el: HTMLElement, notif: NotificationPayload, arr: NotificationPayload[], rerenderFn: Function) {
+    const cards = Array.from(container.children) as HTMLElement[];
     const idx = cards.indexOf(el);
     el.classList.add('removing');
     for (let i = idx + 1; i < cards.length; ++i) {
@@ -336,9 +336,12 @@ export class NotificationsBar extends HTMLElement {
     const tagsDiv = document.createElement('div');
     tagsDiv.className = 'notif-tags';
     Object.entries(typeCounts).forEach(([type, count]) => {
+      // Use already mapped title for the tag
       const tag = document.createElement('button');
       tag.className = 'notif-tag' + (this.#filterType === type ? ' selected' : '');
-      tag.textContent = `${t(`notification.title.${type}`)} ${count}`;
+      // Find a notification of this type to get its title
+      const sampleNotif = this.#all.find(n => n.type === type);
+      tag.textContent = `${sampleNotif?.title || type} ${count}`;
       tag.addEventListener('click', () => {
         this.#filterType = this.#filterType === type ? null : type;
         this.renderDetails();
@@ -370,6 +373,10 @@ export class NotificationsBar extends HTMLElement {
       card.addEventListener('dismiss', (e) => {
         e.stopPropagation();
         this.removeNotificationWithStackAnimation(this.detailsList, card, notif, this.#all, this.renderDetails);
+      });
+      card.addEventListener('action', (e) => {
+        e.stopPropagation();
+        if (notif.actionFn) notif.actionFn();
       });
       this.detailsList.appendChild(card);
     });

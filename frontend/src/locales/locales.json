@@ -50,6 +50,16 @@
         "gameInvite": "{{name}} invited you to a game.",
         "newPlayerOnline": "{{name}} is online now.",
         "newTournament": "A new tournament is starting soon."
+      },
+      "action": {
+        "welcome": "Open Profile",
+        "Warning": "Confirm Logout",
+        "newMessage": "View Message",
+        "matchFound": "Join Match",
+        "friendRequest": "Accept Request",
+        "gameInvite": "Join Game",
+        "newPlayerOnline": "View Profile",
+        "newTournament": "Join Tournament"
       }
     }
   },
@@ -104,6 +114,16 @@
         "gameInvite": "{{name}} vous a invité à une partie.",
         "newPlayerOnline": "{{name}} est maintenant en ligne.",
         "newTournament": "Un nouveau tournoi va bientôt commencer."
+      },
+      "action": {
+        "welcome": "Ouvrir le profil",
+        "Warning": "Confirmer la déconnexion",
+        "newMessage": "Voir le message",
+        "matchFound": "Rejoindre la partie",
+        "friendRequest": "Accepter la demande",
+        "gameInvite": "Rejoindre le jeu",
+        "newPlayerOnline": "Voir le profil",
+        "newTournament": "Rejoindre le tournoi"
       }
     }
   },
@@ -158,6 +178,16 @@
         "gameInvite": "{{name}} convidou você para um jogo.",
         "newPlayerOnline": "{{name}} está online agora.",
         "newTournament": "Um novo torneio começará em breve."
+      },
+      "action": {
+        "welcome": "Abrir Perfil",
+        "Warning": "Confirmar Logout",
+        "newMessage": "Ver Mensagem",
+        "matchFound": "Entrar na Partida",
+        "friendRequest": "Aceitar Pedido",
+        "gameInvite": "Entrar no Jogo",
+        "newPlayerOnline": "Ver Perfil",
+        "newTournament": "Participar do Torneio"
       }
     }
   },
@@ -212,6 +242,16 @@
         "gameInvite": "{{name}}さんがゲームに招待しました。",
         "newPlayerOnline": "{{name}}さんが今オンラインです。",
         "newTournament": "新しいトーナメントがまもなく始まります。"
+      },
+      "action": {
+        "welcome": "プロフィールを開く",
+        "Warning": "ログアウトを確認",
+        "newMessage": "メッセージを見る",
+        "matchFound": "試合に参加",
+        "friendRequest": "リクエストを承認",
+        "gameInvite": "ゲームに参加",
+        "newPlayerOnline": "プロフィールを見る",
+        "newTournament": "トーナメントに参加"
       }
     }
   }

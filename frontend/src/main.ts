@@ -3,6 +3,7 @@ import { state } from './state.js';
 import { renderHome } from './pages/home.js';
 import { renderLogin } from '@/pages/login.js';
 import { renderGame } from '@/pages/game.js';
+import { renderProfile } from '@/pages/profile.js';
 import { initRouter } from '@/utils/Router.js';
 import { notificationService } from "@/services/notificationService";
 import { startMockNotifications } from "@/services/mockNotifications.js";
@@ -26,6 +27,7 @@ const routes = {
   "/": renderHome,
   "/login": renderLogin,
   "/game": renderGame,
+  "/profile/:username": renderProfile,
 };
 
 type NavigateFn = (path: string) => void;

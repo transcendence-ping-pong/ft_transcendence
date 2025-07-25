@@ -1,3 +1,154 @@
+import { actionIcons } from '@/utils/Constants';
+
+const template = document.createElement('template');
+template.innerHTML = `
+  <style>
+    :host {
+      display: block;
+      position: relative;
+      background: var(--body);
+      color: var(--text);
+      box-shadow: 0 1px 4px #0001;
+      padding: 0.4rem 1rem;
+      font-size: 0.98rem;
+      margin-bottom: 0.2em;
+      width: 100%;
+      border: 2px solid var(--border);
+      box-sizing: border-box;
+      position: relative;
+      transition: background 0.2s, color 0.2s;
+    }
+    :host(:hover) {
+      background: var(--hover);
+    }
+    :host([welcome]) {
+      background: var(--accent);
+      color: var(--text);
+      font-weight: bold;
+    }
+    .notif-content {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 1em;
+      min-height: 80px;
+    }
+    .notif-action {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.5rem;
+    }
+    .notif-action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.3em;
+      color: #b8a77a;
+      padding: 0.1em 0.3em;
+      transition: color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .notif-action-btn:hover {
+      color: #7a6a2f;
+    }
+    .icon-circle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent, #f0e9d2);
+      border-radius: 50%;
+      width: 2.25rem;
+      height: 2.25rem;
+      box-shadow: 0 1px 2px #0002;
+    }
+    .icon-circle img {
+      width: 1.5rem;
+      height: 1.5rem;
+      display: block;
+      filter: invert(var(--invert));
+    }
+    .notif-text {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .notif-text__title {
+      font-weight: 600;
+      font-size: 1em;
+      margin-bottom: 0.1em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .notif-text__message {
+      font-size: 0.97em;
+      color: var(--text);
+      white-space: wrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 90%;
+    }
+    .notif-meta__time {
+      position: absolute;
+      bottom: 0.5em;
+      right: 1em;
+      font-size: 0.85em;
+      color: var(--border);
+      white-space: nowrap;
+    }
+    .notif-meta__dismiss {
+      position: absolute;
+      top: 0.5em;
+      right: 1em;
+      cursor: pointer;
+      border: none;
+      background: none;
+      width: 2rem;
+      height: 2rem;
+      margin-left: 0.2em;
+      transition: color 0.2s, background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      
+    }
+
+    .notif-meta__dismiss span {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.2rem;
+      height: 1.2rem;
+      text-align: center;
+      filter: invert(var(--invert));
+      font-size: 1.5em;
+    }
+
+    .notif-meta__dismiss:hover {
+      background: rgba(0, 0, 0, 0.20);
+      cursor: pointer;
+    }
+  </style>
+
+  <div class="notif-content">
+    <div class="notif-action"></div>
+    <div class="notif-text">
+      <div class="notif-text__title"></div>
+      <div class="notif-text__message"></div>
+    </div>
+    <div class="notif-meta__time"></div>
+    <button class="notif-meta__dismiss" title="Dismiss" style="display:none;">
+      <span>${actionIcons.close}</span>
+    </button>
+  </div>
+`;
+
 class NotificationCard extends HTMLElement {
   static get observedAttributes() {
     return ['title', 'message', 'type', 'time', 'action', 'welcome'];
@@ -5,143 +156,7 @@ class NotificationCard extends HTMLElement {
 
   constructor() {
     super();
-    this.attachShadow({ mode: 'open' });
-    this.shadowRoot.innerHTML = `
-      <style>
-        :host {
-          display: block;
-          background: var(--body);
-          color: var(--text);
-          box-shadow: 0 1px 4px #0001;
-          padding: 0.4rem 1rem;
-          font-size: 0.98rem;
-          min-height: 40px;
-          margin-bottom: 0.2em;
-          width: 100%;
-          border: 2px solid var(--border);
-          box-sizing: border-box;
-          position: relative;
-          transition: background 0.2s, color 0.2s;
-        }
-        :host(:hover) {
-          background: var(--hover);
-        }
-        :host([welcome]) {
-          background: var(--accent);
-          color: var(--text);
-          font-weight: bold;
-        }
-        .notif-content {
-          display: flex;
-          flex-direction: row;
-          align-items: stretch;
-          gap: 1em;
-        }
-        .notif-action {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-width: 2.5rem;
-        }
-        .notif-action-btn {
-          background: none;
-          border: none;
-          cursor: pointer;
-          font-size: 1.3em;
-          color: #b8a77a;
-          padding: 0.1em 0.3em;
-          transition: color 0.2s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .notif-action-btn:hover {
-          color: #7a6a2f;
-        }
-        .icon-circle {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          background: var(--accent, #f0e9d2);
-          border-radius: 50%;
-          width: 2.25rem;
-          height: 2.25rem;
-          box-shadow: 0 1px 2px #0002;
-        }
-        .icon-circle img {
-          width: 1.5rem;
-          height: 1.5rem;
-          display: block;
-          filter: invert(var(--invert));
-        }
-        .notif-text {
-          flex: 1 1 0;
-          min-width: 0;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-        }
-        .notif-text__title {
-          font-weight: 600;
-          font-size: 1em;
-          margin-bottom: 0.1em;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .notif-text__message {
-          font-size: 0.97em;
-          color: var(--text);
-          white-space: wrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .notif-meta {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          justify-content: space-between;
-          min-width: 70px;
-          gap: 0.2em;
-        }
-        .notif-meta__top {
-          display: flex;
-          align-items: center;
-          gap: 0.3em;
-        }
-        .notif-meta__top-time {
-          font-size: 0.85em;
-          color: #888;
-          white-space: nowrap;
-        }
-        .notif-meta__top-dismiss {
-          background: none;
-          border: none;
-          color: #888;
-          font-size: 1.1em;
-          cursor: pointer;
-          margin-left: 0.2em;
-          transition: color 0.2s;
-        }
-        .notif-meta__top-dismiss:hover {
-          color: #c00;
-        }
-      </style>
-
-      <div class="notif-content">
-        <div class="notif-action"></div>
-        <div class="notif-text">
-          <div class="notif-text__title"></div>
-          <div class="notif-text__message"></div>
-        </div>
-        <div class="notif-meta">
-          <div class="notif-meta__top">
-            <button class="notif-meta__top-dismiss" title="Dismiss" style="display:none;">&times;</button>
-            <div class="notif-meta__top-time"></div>
-          </div>
-        </div>
-      </div>
-    `;
+    this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -152,7 +167,7 @@ class NotificationCard extends HTMLElement {
       this.shadowRoot.querySelector('.notif-text__message').textContent = newValue || '';
     }
     if (name === 'time') {
-      this.shadowRoot.querySelector('.notif-meta__top-time').textContent = newValue || '';
+      this.shadowRoot.querySelector('.notif-meta__time').textContent = newValue || '';
     }
     if (name === 'action') {
       this.renderAction(newValue);
@@ -163,9 +178,9 @@ class NotificationCard extends HTMLElement {
   }
 
   connectedCallback() {
-    // Show dismiss button unless explicitly hidden
-    const dismissBtn = this.shadowRoot.querySelector('.notif-meta__top-dismiss');
-    if (!this.hasAttribute('hide-dismiss')) {
+    // show dismiss button if not a welcome notification
+    const dismissBtn = this.shadowRoot.querySelector('.notif-meta__dismiss') as HTMLButtonElement;
+    if (!this.hasAttribute('welcome')) {
       dismissBtn.style.display = '';
       dismissBtn.onclick = (e) => {
         e.stopPropagation();
@@ -174,14 +189,15 @@ class NotificationCard extends HTMLElement {
     } else {
       dismissBtn.style.display = 'none';
     }
-    // Initial render
+
+    // initial render
     this.attributeChangedCallback('title', null, this.getAttribute('title'));
     this.attributeChangedCallback('message', null, this.getAttribute('message'));
     this.attributeChangedCallback('time', null, this.getAttribute('time'));
     this.attributeChangedCallback('action', null, this.getAttribute('action'));
   }
 
-  renderAction(actionAttr) {
+  renderAction(actionAttr: string | null) {
     const actionDiv = this.shadowRoot.querySelector('.notif-action');
     actionDiv.innerHTML = '';
     if (!actionAttr) return;
@@ -195,15 +211,8 @@ class NotificationCard extends HTMLElement {
     const btn = document.createElement('button');
     btn.className = 'notif-action-btn';
     btn.title = action.label;
-    if (action.icon && (action.icon.startsWith('http') || action.icon.startsWith('/'))) {
-      btn.innerHTML = `<span class="icon-circle"><img src="${action.icon}" alt="${action.label}" /></span>`;
-    } else if (action.icon && action.icon.startsWith('<svg')) {
-      btn.innerHTML = `<span class="icon-circle">${action.icon}</span>`;
-    } else if (action.icon) {
-      btn.innerHTML = `<span class="icon-circle">${action.icon}</span>`;
-    } else {
-      btn.textContent = action.label;
-    }
+    btn.innerHTML = `<span class="icon-circle">${action.icon}</span>` || action.label;
+
     btn.onclick = (e) => {
       e.stopPropagation();
       this.dispatchEvent(new CustomEvent('action', { detail: action, bubbles: true }));
