@@ -1,17 +1,22 @@
 import '@/components/ThemeToggle.js'; // This registers <toggle-switch>
-import '@/components/DynamicDropdown.js';
+import '@/components/GenericModal.js';
 import '@/components/UserLogin.js';
 
 export function renderLogin(containerId: string) {
   const container = document.getElementById(containerId);
   if (container) {
     container.innerHTML = `
-      <div class="w-full flex items-center justify-between px-8 py-3 border-b-2 border-[color:var(--border)] bg-[color:var(--body)] min-h-[48px]">
-        <theme-toggle></theme-toggle>
-        <dynamic-dropdown>
-        <span slot="app-name">FOUR PING TWO PONG</span>
-          <user-login></user-login>
-        </dynamic-dropdown>
+       <div class="relative w-screen h-screen">
+        <img 
+          src="/public/login.png" 
+          alt="Login Background"
+          class="absolute top-0 left-0 w-full h-full z-20 pointer-events-none"
+        />
+        <generic-modal dismissible="false">
+          <div slot="body" class="p-4">
+            <user-login></user-login>
+          </div>
+        </generic-modal>
       </div>
     `;
   }

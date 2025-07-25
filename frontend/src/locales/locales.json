@@ -4,7 +4,13 @@
       "login": "Login",
       "logout": "Logout",
       "username": "Username",
-      "password": "Password"
+      "email": "Email",
+      "password": "Password",
+      "createAccount": "Create Account",
+      "forgotPassword": "Forgot Password?",
+      "resetPassword": "Reset Password",
+      "continueWithGoogle": "Continue with Google",
+      "alreadyHaveAccount": "Already have an account"
     },
     "nav": {
       "home": "Home",
@@ -65,10 +71,16 @@
   },
   "FR": {
     "auth": {
-      "login": "Se connecter",
-      "logout": "Se déconnecter",
+      "login": "Connexion",
+      "logout": "Déconnexion",
       "username": "Nom d'utilisateur",
-      "password": "Mot de passe"
+      "email": "Email",
+      "password": "Mot de passe",
+      "createAccount": "Créer un compte",
+      "forgotPassword": "Mot de passe oublié ?",
+      "resetPassword": "Réinitialiser le mot de passe",
+      "continueWithGoogle": "Continuer avec Google",
+      "alreadyHaveAccount": "Vous avez déjà un compte"
     },
     "nav": {
       "home": "Accueil",
@@ -132,7 +144,13 @@
       "login": "Entrar",
       "logout": "Sair",
       "username": "Nome de usuário",
-      "password": "Senha"
+      "email": "Email",
+      "password": "Senha",
+      "createAccount": "Criar Conta",
+      "forgotPassword": "Esqueceu a Senha?",
+      "resetPassword": "Redefinir Senha",
+      "continueWithGoogle": "Continuar com o Google",
+      "alreadyHaveAccount": "Já tem uma conta"
     },
     "nav": {
       "home": "Início",
@@ -196,7 +214,13 @@
       "login": "ログイン",
       "logout": "ログアウト",
       "username": "ユーザー名",
-      "password": "パスワード"
+      "email": "メールアドレス",
+      "password": "パスワード",
+      "createAccount": "アカウント作成",
+      "forgotPassword": "パスワードをお忘れですか？",
+      "resetPassword": "パスワードをリセット",
+      "continueWithGoogle": "Googleで続行",
+      "alreadyHaveAccount": "すでにアカウントをお持ちですか"
     },
     "nav": {
       "home": "ホーム",
