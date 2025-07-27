@@ -20,6 +20,7 @@ const initialState = savedState ? JSON.parse(savedState) : {
   theme: 'primary',
   soundEnabled: true,
   scaleFactor: {},
+  loggedInUser: null as { id: string; username: string; email?: string } | null,
   // TODO: add other state properties that we need to persist
 };
 

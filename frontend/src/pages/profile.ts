@@ -1,5 +1,4 @@
 import '@/components/ThemeToggle.js'; // This registers <toggle-switch>
-import '@/components/DynamicDropdown.js';
 import '@/components/UserLogin.js';
 
 export function renderProfile(containerId: string, params = {}) {

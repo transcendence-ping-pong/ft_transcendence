@@ -100,3 +100,4 @@ export class GenericModal extends HTMLElement {
 }
 
 customElements.define('generic-modal', GenericModal);
+

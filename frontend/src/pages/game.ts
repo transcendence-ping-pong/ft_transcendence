@@ -1,5 +1,4 @@
 import { gameOrchestrator } from '@/game/gameOrchestrator.js';
-import '@/components/DynamicDropdown.js';
 import '@/components/PlaySummary.js';
 
 // TODO FIX: use scale-100 if want to scale down border image
