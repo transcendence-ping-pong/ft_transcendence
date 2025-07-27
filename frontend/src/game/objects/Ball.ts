@@ -1,5 +1,5 @@
 import { Paddle } from '@/game/objects/Paddle.js';
-import { GameLevel, GameScore, BallLevelConfig, VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from '@/utils/gameUtils/Constants.js';
+import { GameLevel, GameScore, BallLevelConfig, VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from '@/utils/gameUtils/GameConstants.js';
 import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
 import { state } from '@/state';
 

@@ -2,7 +2,7 @@ import { GameManager } from '@/game/GameManager.js';
 import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
 import { Ball } from '@/game/objects/Ball.js';
 import { Paddle } from '@/game/objects/Paddle.js';
-import { BallLevelConfig, GameLevel, GameSize, VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from '@/utils/gameUtils/Constants.js';
+import { BallLevelConfig, GameLevel, GameSize, VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from '@/utils/gameUtils/GameConstants.js';
 import { getThemeColors, ThemeColors } from '@/utils/gameUtils/BabylonColors.js';
 import { state } from '@/state';
 

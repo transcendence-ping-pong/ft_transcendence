@@ -4,19 +4,26 @@ const path = require('path');
 
 const fastify = require('fastify')({ logger: true });
 const fastifyStatic = require('@fastify/static');
+const fastifyCors = require('@fastify/cors');
 
 const sqlite3 = require('sqlite3').verbose();
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
 const { OAuth2Client } = require('google-auth-library');
 
+// Register CORS
+fastify.register(fastifyCors, {
+    origin: true, // Allow all origins (for development)
+    credentials: true
+});
+
 // TODO: Change path... definitely not /home/manumart/Desktop/maneleh42 ;)
 // Also, without info on what .env needs, this blocks all possible execution
 // require('dotenv').config({ path: '/home/manumart/Desktop/maneleh42/ft_transcendence/backend/src/.env' });
 
 fastify.register(fastifyStatic, {
-  root: path.join(__dirname, 'public'),
-  prefix: '/',
+    root: path.join(__dirname, 'public'),
+    prefix: '/',
 });
 
 const port = 4000;
@@ -233,8 +240,8 @@ fastify.get('/check-2fa', (req, res) => {
 
 fastify.get('/auth/google', (req, res) => {
     const url = client.generateAuthUrl({
-    access_type: 'offline',
-    scope: ['profile', 'email'],
+        access_type: 'offline',
+        scope: ['profile', 'email'],
     });
     res.redirect(url);
 });
