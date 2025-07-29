@@ -1,6 +1,7 @@
 const path = require('path');
 const fastify = require('fastify')({ logger: true });
 const fastifyStatic = require('@fastify/static');
+const fastifyCors = require('@fastify/cors');
 
 const sqlite3 = require('sqlite3').verbose();
 const speakeasy = require('speakeasy');
@@ -12,8 +13,8 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config({ path: './backend/src/.env' });
 
 fastify.register(fastifyStatic, {
-  root: path.join(__dirname, 'public'),
-  prefix: '/',
+    root: path.join(__dirname, 'public'),
+    prefix: '/',
 });
 
 const port = 4000;
@@ -442,8 +443,8 @@ fastify.get('/check-2fa', (req, res) => {
 
 fastify.get('/auth/google', (req, res) => {
     const url = client.generateAuthUrl({
-    access_type: 'offline',
-    scope: ['profile', 'email'],
+        access_type: 'offline',
+        scope: ['profile', 'email'],
     });
     res.redirect(url);
 });

@@ -3,7 +3,7 @@ export type ThemeColors = {
   accent: string;
   border: string;
   warning: string;
-  navHover: string;
+  hover: string;
   shadow: string;
   gameGradientStart: string;
   gameGradientEnd: string;
@@ -30,7 +30,7 @@ export function getThemeColors(themeName = 'primary') {
     '--accent',
     '--border',
     '--warning',
-    '--nav-hover',
+    '--hover',
     '--shadow',
     '--game-gradient-start',
     '--game-gradient-end',

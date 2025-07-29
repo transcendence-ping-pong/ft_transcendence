@@ -190,6 +190,7 @@ Z axis is pointing forward, babylon has different coordinate system than Blender
 | **Web components lifecycle** | `constructor -> connectedCallback -> disconnectedCallback` | The moment the element is created is not the moment where it is attached to the DOM (created in memory first, initialisation = **constructor**... then it is attached to the DOM later = **connectedCallback**). Accessing DOM, DOM manipulation should be done there. Cleanup work = **disconnectedCallback**. Update data and DOM = **attributeChangedCallback**. |
 | **Web components attributes** | `<my-button text="Hello"></my-button>` | `if (this.hasAttribute('text')) this.text = this.getAttribute('text')`. Then, `textContent` can use value set via attribute, manipulation should happen when element is mounted in DOM (connectedCallback). **HTML attributes and DOM properties CAN be connected but don't have to. They're not the same.** |
 | **Light/Shadow DOM** | `this.attachShadow({ mode: 'open' })` | Styles applied to normal/light DOM shouldnt affect nested custom web component. Shadow DOM: custom element has its own DOM tree, not directly connected to real DOM (therefore, not affected by global styling). |
+| **CORS support** | `npm install @fastify/cors` | Add CORS support to Fastify backend for frontend to communicate with it from a different origin (e.g. localhost:3000 to localhost:4000). |
 
 ## Tournament Organization
 

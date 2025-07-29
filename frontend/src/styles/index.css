@@ -2,19 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* TODO: reference check */
-/* @font-face {
-  font-family: 'WiredMono';
-  src: url('/path/to/WiredMono.woff2') format('woff2');
-  font-weight: normal;
-  font-style: normal;
-} */
-.home-bg {
-  background-image: url('/public/broken-arcade-light.png');
-  background-size: cover;
-  background-position: center;
-}
-
 .video-bg-container {
   position: relative;
   width: 100%;
@@ -32,35 +19,99 @@
   z-index: 0;
 }
 
-.content {
-  position: relative;
-  z-index: 1;
+.fade-bottom {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 30%;
+  background: var(--fade);
+  z-index: 2;
 }
+
+.screen-1 {
+  background-image: var(--gradient) !important;
+}
+
+.game-area.with-overlay::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 99;
+  pointer-events: auto;
+  transition: opacity 0.3s;
+}
+
+/* .theme-primary {
+  --body: #181818;
+  --accent: #222;
+  --border: #fff;
+  --invert: 1;
+  --success: #4caf50;
+  --warning: #ff5733;
+  --nav-hover: #333;
+  --shadow: 0 8px 32px #000a;
+  --game-gradient-start: #1f0f5c;
+  --game-gradient-end: #1a2233;
+  --game-gui: #222;
+}
+
+.theme-secondary {
+  --body: #fff;
+  --accent: #f4f4f4;
+  --border: #181818;
+  --invert: 0;
+  --success: #4caf50;
+  --warning: #ff5733;
+  --nav-hover: #e0e0e0;
+  --shadow: 0 8px 32px #0002;
+  --game-gradient-start: #eaf1ff;
+  --game-gradient-end: #b8d1ff;
+  --game-gui: #f4f4f4;
+} */
 
 .theme-primary {
   --body: #e2d7b7;
+  --gradient: linear-gradient(178.7deg, rgb(184, 167, 122) 1.7%, rgba(226, 215, 183, 1) 63%);
+  --fade: linear-gradient(to bottom,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(255, 255, 255, 0.01) 80%,
+      rgba(184, 167, 122, 1) 100%);
   --accent: #b8a77a;
-  --border: #433030;
+  --border: #8a7676;
+  --invert: 0;
+  --success: #45796d;
   --warning: #ff5733;
-  --nav-hover: #fbd877;
+  --text: #000000;
+  --hover: #f0e9d2;
   --shadow: 0 8px 32px #0004;
   --game-gradient-start: #f8c434;
-  /* #f8c434; */
   --game-gradient-end: #b8a77a;
-  --game-gui: #f8c434;
+  --game-transition-bg: rgb(255, 255, 255);
+  --video-transition-bg: rgba(0, 0, 0, 0.1);
 }
-
 
 .theme-secondary {
   --body: #070238;
+  --gradient: linear-gradient(178.7deg, rgb(2, 0, 20) 1.7%, rgba(31, 15, 92, 1) 63%);
+  --fade: linear-gradient(to bottom,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(255, 255, 255, 0.01) 60%,
+      rgb(2, 0, 20) 100%);
   --accent: #1f0f5c;
-  --border: #ecebed;
+  --border: #8982ac;
+  --invert: 1;
+  --success: #00ff1a;
   --warning: #ff5733;
-  --nav-hover: #00ff1a;
+  --text: #ecebed;
+  --hover: #2a1484;
   --shadow: 0 8px 32px #525151;
   --game-gradient-start: #1f0f5c;
   --game-gradient-end: #1a2233;
-  --game-gui: #1f0f5c;
+  --game-transition-bg: rgb(0, 0, 0);
+  --video-transition-bg: rgba(255, 255, 255, 0.1);
 }
 
 /* .theme-secondary {

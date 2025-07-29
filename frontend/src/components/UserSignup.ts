@@ -77,21 +77,21 @@ template.innerHTML = `
     }
   </style>
 
-  <div class="form-title">${t('auth.login')}</div>
-  <form id="loginForm" autocomplete="off">
+  <div class="form-title">${t('auth.createAccount')}</div>
+  <form id="signupForm" autocomplete="off">
     <input id="email" name="email" type="email" required autocomplete="email" placeholder="${t('auth.email')}" />
-    <input id="password" name="password" type="password" minlength=7 required autocomplete="current-password" placeholder="${t('auth.password')}" />
-    <button id="login" type="submit">${t('auth.login')}</button>
+    <input id="password" name="password" type="password" minlength=7 required autocomplete="new-password" placeholder="${t('auth.password')}" />
+    <button id="signup" type="submit">${t('auth.createAccount')}</button>
     <button id="google" type="button" class="google-btn">${t('auth.continueWithGoogle')}</button>
     <div id="error" class="error"></div>
   </form>
   <div class="footer">
-    ${t('auth.createAccount')}
-    <button id="signupBtn" type="button">${t('auth.createAccount')}</button>
+    ${t('auth.alreadyHaveAccount')}
+    <button id="loginBtn" type="button">${t('auth.login')}</button>
   </div>
 `;
 
-export class UserLogin extends HTMLElement {
+export class UserSignup extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
@@ -99,12 +99,12 @@ export class UserLogin extends HTMLElement {
 
   connectedCallback() {
     const shadow = this.shadowRoot;
-    shadow.getElementById('loginForm').onsubmit = this._onLogin.bind(this);
+    shadow.getElementById('signupForm').onsubmit = this._onSignup.bind(this);
     shadow.getElementById('google').onclick = this._onGoogleLogin.bind(this);
-    shadow.getElementById('signupBtn').onclick = this._onSignupClick.bind(this);
+    shadow.getElementById('loginBtn').onclick = this._onLoginClick.bind(this);
   }
 
-  async _onLogin(e) {
+  async _onSignup(e) {
     e.preventDefault();
     const email = this.shadowRoot.getElementById('email').value.trim();
     const password = this.shadowRoot.getElementById('password').value;
@@ -112,15 +112,13 @@ export class UserLogin extends HTMLElement {
       this._setError('Please enter both email and password');
       return;
     }
-    const res = await authService.login(email, password);
+    const res = await authService.signup(email, password);
     if (res.error) {
       this._setError(res.error);
     } else {
       this._setError('');
-      alert('Login successful!');
-      // TODO: dispatch a custom event here for successful login? add logged in user to state?
-      // TODO: then check in main if is authenticated function isAuthenticated() {
-      // return !!localStorage.getItem('loggedInUser');... otherwise, always redirect to login
+      alert('Signup successful! Please log in.');
+      this.dispatchEvent(new CustomEvent('switch-to-login', { bubbles: true, composed: true }));
     }
   }
 
@@ -129,9 +127,9 @@ export class UserLogin extends HTMLElement {
     await authService.googleLogin();
   }
 
-  _onSignupClick(e) {
+  _onLoginClick(e) {
     e.preventDefault();
-    this.dispatchEvent(new CustomEvent('switch-to-signup', { bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent('switch-to-login', { bubbles: true, composed: true }));
   }
 
   _setError(msg) {
@@ -139,4 +137,4 @@ export class UserLogin extends HTMLElement {
   }
 }
 
-customElements.define('user-login', UserLogin);
+customElements.define('user-signup', UserSignup);
