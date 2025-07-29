@@ -1,6 +1,6 @@
 import { GameCanvas } from '@/game/GameCanvas.js';
 import { crtFragmentShader } from '@/utils/gameUtils/CrtFragmentShader.js';
-import { GameLevel, PlayerMode } from '@/utils/gameUtils/Constants.js';
+import { GameLevel, PlayerMode, VIRTUAL_BORDER_TOP, VIRTUAL_BORDER_X, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, VIRTUAL_BORDER_BOTTOM } from '@/utils/gameUtils/GameConstants.js';
 import { getThemeColors, ThemeColors } from '@/utils/gameUtils/BabylonColors.js';
 import * as BABYLON from "@babylonjs/core";
 import { Engine, Scene, Color3, StandardMaterial } from "@babylonjs/core";
@@ -31,7 +31,6 @@ export class BabylonCanvas {
   private scene: Scene;
   private dynamicTexture?: any;
   private lastTimestamp: number = performance.now(); // used to calculate deltaTime
-  private model: BABYLON.Mesh | null = null;
 
   constructor(containerId: string) {
     this.canvas = document.createElement('canvas');
@@ -43,13 +42,15 @@ export class BabylonCanvas {
     this.engine = new BABYLON.Engine(this.canvas, true);
     this.scene = this.createScene();
 
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
-    // this.gameCanvas = new GameCanvas("", this.canvas.width, this.canvas.height);
+    this.canvas.width = state.scaleFactor.gameAreaWidth;
+    this.canvas.height = state.scaleFactor.gameAreaHeight;
+    this.canvas.style.position = 'absolute';
+    this.canvas.style.left = `${state.scaleFactor.gameAreaLeft}px`;
+    this.canvas.style.top = `${state.scaleFactor.gameAreaTop}px`;
+    this.canvas.style.width = `${state.scaleFactor.gameAreaWidth}px`;
+    this.canvas.style.height = `${state.scaleFactor.gameAreaHeight}px`;
 
-    console.log("BabylonCanvas initialized with canvas size:", this.canvas.width, this.canvas.height);
-
-    // this.applyDynamicTextureToMesh("gameScreen", this.gameCanvas.getCanvasElement());
+    // when browser window is resized, resize the canvas and engine
     window.addEventListener('resize', () => this.engine.resize());
   }
 
@@ -100,6 +101,21 @@ export class BabylonCanvas {
     };
 
     return scene;
+  }
+
+  get plane() {
+    return this.scene.getMeshByName("gameScreen");
+  }
+
+  get transparentMaterial() {
+    const mat = new StandardMaterial("screenMat", this.scene);
+    mat.alpha = 0; // fully transparent at the start
+    mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+    return mat;
+  }
+
+  initPlaneMaterial() {
+    this.plane.material = this.transparentMaterial;
   }
 
   public createGameCanvas(level: GameLevel, mode: PlayerMode) {
@@ -310,13 +326,17 @@ export class BabylonCanvas {
 
   public cleanupGame() {
     if (this.engine) {
-      // requestAnimationFrame is cleaned under the hood
       this.engine.stopRenderLoop();
-      this.gameCanvas.stop();
+      this.engine.dispose();
+      this.engine = null;
+      this.gameCanvas = null;
     }
 
-    // remove html element?
+    if (this.canvas && this.canvas.parentNode) {
+      this.canvas.parentNode.removeChild(this.canvas);
+      this.canvas = null;
+    }
 
-    window.removeEventListener('resize', () => this.engine.resize());
+    window.removeEventListener('resize', () => this.engine?.resize());
   }
 }

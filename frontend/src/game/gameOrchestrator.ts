@@ -2,9 +2,9 @@ import { BabylonCanvas } from '@/game/babylon/BabylonCanvas';
 import { BabylonGUI } from '@/game/babylon/BabylonGUI.js';
 // import GameCanvas for its type and to access its methods/control game state
 import { GameCanvas } from '@/game/GameCanvas.js';
-import { GameLevel, PlayerMode } from '@/utils/gameUtils/Constants.js';
-import { MockAuth } from '@/utils/MockAuth';
-import { WebSocketClient } from '@/game/WebSocketClient';
+import { GameLevel, PlayerMode, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, VIRTUAL_BORDER_X, VIRTUAL_BORDER_BOTTOM, VIRTUAL_BORDER_TOP } from '@/utils/gameUtils/GameConstants.js';
+import { state } from '@/state';
+// import { TournamentManager } from './tournaments/TournamentManager';
 
 /*
   Game Orchestrator responsabilities:
@@ -19,6 +19,7 @@ export class gameOrchestrator {
   private babylonCanvas: BabylonCanvas;
   private gui: BabylonGUI;
   private gameCanvas: GameCanvas;
+  // private tournament: TournamentManager;
   // private gameManager: GameManager;
   // TODO CONCEPT: should we have a GameManager here?
   // instead of instantiating it in GameCanvas?
@@ -27,42 +28,62 @@ export class gameOrchestrator {
     this.babylonCanvas = new BabylonCanvas(containerId);
     this.gui = new BabylonGUI(this.babylonCanvas.getScene());
     this.setupMenuFlow();
+    //this.tournament = new TournamentManager();
+    //this.tournament = tournamentInstanceRecebido;
 
     this.babylonCanvas.startRenderLoop();
-    // this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => { });
-
-    // reference instance of GameCanvas being created/managed by BabylonCanvas
-    // this.gameCanvas = this.babylonCanvas.getGameCanvas();
+    // TODO FIX: when refreshing the page, resume the game from where it left off
+    window.addEventListener('resize', () => {
+      this.babylonCanvas.cleanupGame();
+      state.scaleFactor = this.getScaleFactor();
+      window.location.reload();
+    });
   }
+
+    getScaleFactor() {
+    // calculate scale factor based on the virtual dimensions and the actual window size
+    // this is used to scale the game objects, GUI, etc.
+    const scaleX = window.innerWidth / VIRTUAL_WIDTH;
+    const scaleY = window.innerHeight / VIRTUAL_HEIGHT;
+
+    // margins, considering the game border image
+    // scale it based on the virtual dimensions * scale factor
+    const leftMargin = VIRTUAL_BORDER_X * scaleX;
+    const rightMargin = VIRTUAL_BORDER_X * scaleX;
+    const topMargin = VIRTUAL_BORDER_TOP * scaleY;
+    const bottomMargin = VIRTUAL_BORDER_BOTTOM * scaleY;
+
+    // set game area dimensions
+    const gameAreaWidth = window.innerWidth - leftMargin - rightMargin;
+    const gameAreaHeight = window.innerHeight - topMargin - bottomMargin;
+
+    // set game position
+    const gameAreaLeft = leftMargin;
+    const gameAreaTop = topMargin;
+
+    return {
+      scaleX,
+      scaleY,
+      gameAreaWidth,
+      gameAreaHeight,
+      gameAreaLeft,
+      gameAreaTop,
+    };
+  }
+
 
   setupMenuFlow() {
     this.gui.showStartButton(() => {
-      const username = prompt("Digite seu nome:");
-      if (!MockAuth.login(username!)) return alert("Nome inválido!");
+      //const username = prompt("Digite seu nome:");
+      //if (!MockAuth.login(username!)) return alert("Nome inválido!");
 
       this.gui.showPlayerSelector((mode) => {
         this.gui.showDifficultySelector((level) => {
-          this.babylonCanvas.createGameCanvas(level, mode);
+          this.babylonCanvas.createGameCanvas(level as GameLevel, mode as PlayerMode);
           this.gameCanvas = this.babylonCanvas.getGameCanvas();
 
           if (mode === PlayerMode.ONE_PLAYER) {
             this.gameCanvas.enableBotForPlayer(1);
-          } else if (mode === PlayerMode.MULTI_PLAYER) {
-            const user = MockAuth.getUser();
-            const socket = new WebSocketClient("partida42", user!);
-
-            socket.onMessage((msg) => {
-              if (msg.type === "opponent_input") {
-                this.gameCanvas.updateOpponentDirection(msg.direction);
-              }
-              if (msg.type === "opponent_disconnected") {
-                this.gameCanvas.enableBotForPlayer(1); // fallback para bot
-              }
-            });
-
-            this.gameCanvas.onLocalInput((dir) => {
-              socket.send({ type: "input", direction: dir });
-            });
           }
 
           this.gui.showCountdown(3, () => {
@@ -70,15 +91,47 @@ export class gameOrchestrator {
             this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => {});
           });
 
-          this.gameCanvas.addEventListener('scoreChanged', (e: CustomEvent) => {
-            this.gui.clearGUI();
-            this.gui.showScoreBoard(e.detail, () => {});
-          });
+        function showGameResult(winner: string, score: { LEFT: number; RIGHT: number }) {
+          const box = document.createElement('div');
+          box.className = 'game-result-box';
+          box.innerHTML = `
+            <h2>🏆 ${winner} venceu!</h2>
+            <p>Placar final: ${score.LEFT} x ${score.RIGHT}</p>
+            <button id="backToMenu">Voltar ao menu</button>
+          `;
+          document.body.appendChild(box);
 
-          this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
-            this.gui.clearGUI();
-            this.babylonCanvas.endingGame();
+          document.getElementById('backToMenu')?.addEventListener('click', () => {
+            window.location.reload(); // ou chamar setupMenuFlow() diretamente
           });
+        }
+        
+        this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
+          const { winner, score } = e.detail;
+          const winnerName = winner === 'LEFT' ? 'Player 1' : 'Player 2';
+
+          const message = `🏆 ${winnerName} venceu!\nPlacar final: ${score.LEFT} x ${score.RIGHT}`;
+          alert(message); // ou GUI personalizada
+
+          // Ou se tiver GUI:
+          this.gui.showGameOver(winnerName, score);
+        });
+
+
+
+
+        //  this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
+        //     console.log('Received gameOver', e.detail);
+        //     this.gui.showGameOver();
+        //     setTimeout(() => {
+        //       this.gui.clearGUI();
+        //       this.babylonCanvas.initPlaneMaterial();
+
+        //       window.dispatchEvent(new CustomEvent('openSummary', {
+        //         detail: { summary: true, match: e.detail }
+        //       }));
+        //     }, 2000);
+        //   });
         });
       });
     });

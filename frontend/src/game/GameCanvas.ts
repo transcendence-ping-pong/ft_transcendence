@@ -2,7 +2,7 @@ import { GameManager } from '@/game/GameManager.js';
 import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
 import { Ball } from '@/game/objects/Ball.js';
 import { Paddle } from '@/game/objects/Paddle.js';
-import { BallLevelConfig, GameLevel, GameSize, VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from '@/utils/gameUtils/Constants.js';
+import { BallLevelConfig, GameLevel, GameSize, VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from '@/utils/gameUtils/GameConstants.js';
 import { getThemeColors, ThemeColors } from '@/utils/gameUtils/BabylonColors.js';
 import { state } from '@/state';
 import { BotPlayer } from './BotPlayer';
@@ -111,17 +111,29 @@ export class GameCanvas extends EventTarget {
 
           // after updating the score, check if the game is over
           if (this.gameManager.isGameOver) {
-            this.dispatchEvent(new CustomEvent('gameOver', { detail: this.gameManager.score }));
+            const winner = this.gameManager.getWinner();
+            const score = this.gameManager.score;
+
+            this.dispatchEvent(new CustomEvent('gameOver', {
+              detail: { winner, score }
+            }));
           }
+
+          // if (this.gameManager.isGameOver) {
+          //   this.dispatchEvent(new CustomEvent('gameOver', { detail: this.gameManager.score }));
+          // }
         }
       );
     }
 
     // move paddles if direction is set
      // move paddles if direction is set
+     //Tem bot
     for (let i = 0; i < 2; i++) {
       if (this.bots[i]) {
-        this.bots[i]!.update(deltaTime);
+        if (this.gameManager.isStarted){ //Para garantir que so e atualizado quando o jogo comeca
+           this.bots[i]!.update(deltaTime);
+        }
       } else {
         const dir = this.paddleDirections[i];
         if (dir === 'up') this.paddles[i].moveUp(deltaTime);
@@ -166,12 +178,25 @@ export class GameCanvas extends EventTarget {
     this.reset();
   }
 
+    //Creating bot
+  public enableBotMode(enable: boolean): void {
+    this.isBotEnable = enable;
+  }
+
+  public enableBotForPlayer(playerIndex: 0 | 1): void {
+    this.bots[playerIndex] = new BotPlayer(this.paddles[playerIndex], this.ball, this.canvas.height, this.getLevel());
+  }
+
   public reset() {
-    this.gameManager.getLevel();
-    // Reset ball and paddles to initial positions
     this.ball.resetPosition();
     this.paddles[0].resetPosition();
     this.paddles[1].resetPosition();
+
+    // Recria bot (para garantir que ele pegue o paddle centralizado)
+    if (this.isBotEnable) {
+      if (this.bots[0]) this.enableBotForPlayer(0);
+      if (this.bots[1]) this.enableBotForPlayer(1);
+    }
   }
 
   private onKeyDown(event: KeyboardEvent) {
@@ -213,15 +238,5 @@ export class GameCanvas extends EventTarget {
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
   }
-
-  //Creating bot
-  public enableBotMode(enable: boolean): void {
-    this.isBotEnable = enable;
-  }
-
-  public enableBotForPlayer(playerIndex: 0 | 1): void {
-    this.bots[playerIndex] = new BotPlayer(this.paddles[playerIndex], this.ball, this.canvas.height, this.getLevel());
-  }
-
 
 }

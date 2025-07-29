@@ -1,4 +1,4 @@
-import { GameLevel, GameScore } from '@/utils/gameUtils/Constants.js';
+import { GameLevel, GameScore } from '@/utils/gameUtils/GameConstants.js';
 
 /*
   Game Manager responsabilities:
@@ -35,6 +35,12 @@ export class GameManager {
     return (this.score[GameScore.LEFT] == this.scoreMax - 1 &&
       this.score[GameScore.RIGHT] == this.scoreMax - 1);
   }
+
+  public getWinner(): 'LEFT' | 'RIGHT' | null {
+    if (!this.isGameOver) return null;
+    return this.score.LEFT > this.score.RIGHT ? 'LEFT' : 'RIGHT';
+  }
+
 
   checkIsGameOver(player: GameScore): boolean {
     Object.values(this.score).forEach((score) => {

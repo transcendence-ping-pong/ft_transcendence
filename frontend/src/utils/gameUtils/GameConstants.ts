@@ -31,8 +31,15 @@ export type BallLevelConfigValue = {
   paddleSpeed: number;
 };
 
-export const VIRTUAL_WIDTH = 1000;
-export const VIRTUAL_HEIGHT = 500;
+// natural measurements of the game border image
+// scale factor is calculated based on the screen size, all game objects are scaled accordingly
+export const VIRTUAL_WIDTH = 1456;
+export const VIRTUAL_HEIGHT = 816;
+export const VIRTUAL_BORDER_TOP = 110;
+export const VIRTUAL_BORDER_BOTTOM = 130;
+export const VIRTUAL_BORDER_X = 120;
+export const GAME_AREA_HEIGHT = VIRTUAL_HEIGHT - VIRTUAL_BORDER_TOP - VIRTUAL_BORDER_BOTTOM;
+export const GAME_AREA_WIDTH = VIRTUAL_WIDTH - (VIRTUAL_BORDER_X * 2);
 
 // TODO CONCEPT: speed increases after hits, until reaches MAX?? Or after first hit?
 // MIN/MAX: Ball starts at MIN px/sec, can reach up to MAX px/sec.
@@ -100,8 +107,8 @@ export interface CourtBoundsSpecs {
 
 type GUIConstants = {
   SCENE_BACKGROUND_COLOR: string;
-  BUTTON_HEIGHT: string;
-  BUTTON_WIDTH: string;
+  BUTTON_HEIGHT: number;
+  BUTTON_WIDTH: number;
   BUTTON_GAP: number;
   BUTTON_FONT_SIZE: number;
   BUTTON_FONT_WEIGHT: string;
@@ -118,30 +125,42 @@ type GUIConstants = {
   COUNTDOWN_FONT_SIZE: number;
   COUNTDOWN_FONT_WEIGHT: string;
   COUNTDOWN_FONT_COLOR: string;
+  SCORE_FONT_COLOR: string;
+  SCORE_FONT_SIZE: number;
+  SCORE_FONT_WEIGHT: string;
+  SCORE_MARGIN_TOP: string;
+  SCORE_MARGIN_LEFT: string;
+  SCORE_MARGIN_RIGHT: string
 };
 
 export function getGUIConstants(): GUIConstants {
   const colors: ThemeColors = getThemeColors(state.theme);
 
   return {
-    SCENE_BACKGROUND_COLOR: colors.gameGradientEnd,
-    BUTTON_HEIGHT: '150px',
-    BUTTON_WIDTH: '400px',
-    BUTTON_GAP: 32,
-    BUTTON_FONT_SIZE: 42,
-    BUTTON_FONT_WEIGHT: 'bold',
+    SCENE_BACKGROUND_COLOR: colors.body, // #000000
+    BUTTON_HEIGHT: VIRTUAL_HEIGHT / 12,
+    BUTTON_WIDTH: VIRTUAL_WIDTH / 5,
+    BUTTON_GAP: VIRTUAL_HEIGHT / 40,
+    BUTTON_FONT_SIZE: VIRTUAL_HEIGHT / 25,
+    BUTTON_FONT_WEIGHT: 'normal',
     BUTTON_FONT_COLOR: colors.border,
     BUTTON_BORDER_COLOR: colors.border,
-    BUTTON_CORNER_RADIUS: 20,
+    BUTTON_CORNER_RADIUS: 0,
     BUTTON_THICKNESS: 4,
     BUTTON_BACKGROUND_COLOR: colors.gameGradientStart,
-    BUTTON_SHADOW_OFFSET_X: 2,
-    BUTTON_SHADOW_OFFSET_Y: 2,
-    BUTTON_SHADOW_COLOR: colors.border,
+    BUTTON_SHADOW_OFFSET_X: 4,
+    BUTTON_SHADOW_OFFSET_Y: 4,
+    BUTTON_SHADOW_COLOR: "rgba(0,0,0,0.25)",
     BUTTON_SHADOW_BLUR: 8,
     COUNTDOWN_DURATION: 3,
-    COUNTDOWN_FONT_SIZE: 250,
+    COUNTDOWN_FONT_SIZE: VIRTUAL_HEIGHT / 8,
     COUNTDOWN_FONT_WEIGHT: 'bold',
-    COUNTDOWN_FONT_COLOR: colors.border,
+    COUNTDOWN_FONT_COLOR: colors.border, // semi-transparent white
+    SCORE_FONT_COLOR: "rgba(0,0,0,0.25)", // semi-transparent black
+    SCORE_FONT_SIZE: VIRTUAL_HEIGHT / 6,
+    SCORE_FONT_WEIGHT: 'bold',
+    SCORE_MARGIN_TOP: "10%",
+    SCORE_MARGIN_LEFT: "-8%",
+    SCORE_MARGIN_RIGHT: "8%",
   };
 }

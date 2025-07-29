@@ -1,6 +1,4 @@
-import { state } from '@/state.js';
 import { t } from '@/locales/Translations.js'
-import emojiFlags from 'emoji-flags';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -72,10 +70,6 @@ template.innerHTML = `
     <a href="/" id="home" class="menu-item"></a>
     <a href="/game" id="game" class="menu-item"></a>
     <button id="logout" class="menu-item menu-logout"></button>
-    <label>
-      <span id="labelText"></span>
-      <select id="selectLanguages"></select>
-    </label>
   </nav>
 `;
 
@@ -92,39 +86,10 @@ export class MenuNavigation extends HTMLElement {
     const homeAnchor = this.shadowRoot?.getElementById('home') as HTMLAnchorElement;
     const gameAnchor = this.shadowRoot?.getElementById('game') as HTMLAnchorElement;
     const button = this.shadowRoot?.getElementById('logout') as HTMLButtonElement;
-    const label = this.shadowRoot?.getElementById('labelText') as HTMLLabelElement;
-    const selectLanguages = this.shadowRoot?.getElementById('selectLanguages') as HTMLSelectElement;
 
     if (homeAnchor) homeAnchor.textContent = t('nav.home');
     if (gameAnchor) gameAnchor.textContent = t('nav.game');
     if (button) button.textContent = t('auth.logout');
-    if (label) label.textContent = t('nav.languages');
-
-    // populate select array of languages
-    this.languages = state.availableLanguages;
-
-    if (selectLanguages) {
-      selectLanguages.innerHTML = '';
-      this.languages.forEach((lang: string) => {
-        const flag = emojiFlags[lang]?.emoji || '';
-        const country = emojiFlags[lang]?.name || lang.toUpperCase();
-        const option = document.createElement('option');
-        option.value = lang;
-        option.textContent = `${country} ${flag}`;
-        selectLanguages.appendChild(option);
-      });
-      selectLanguages.value = state.language;
-
-      // listen for language change
-      selectLanguages.addEventListener('change', async (e) => {
-        const newLang = (e.target as HTMLSelectElement).value;
-        this.dispatchEvent(new CustomEvent('languagechange', {
-          detail: { language: newLang },
-          bubbles: true,
-          composed: true
-        }));
-      });
-    }
   }
 }
 

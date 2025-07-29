@@ -1,5 +1,5 @@
 import { Paddle } from '@/game/objects/Paddle.js';
-import { GameLevel, GameScore, BallLevelConfig, VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from '@/utils/gameUtils/Constants.js';
+import { GameLevel, GameScore, BallLevelConfig, VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from '@/utils/gameUtils/GameConstants.js';
 import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
 import { state } from '@/state';
 
@@ -155,11 +155,11 @@ export class Ball {
     this.scoringPlayer = GameScore.DRAW;
   }
 
-  public getState() {
-    return {
-      x: this.virtualX,
-      y: this.virtualY,
-      size: this.size, // ou radius: this.size / 2, se preferir
-    };
-  }
+  // public getState() {
+  //   return {
+  //     x: this.virtualX,
+  //     y: this.virtualY,
+  //     size: this.size, // ou radius: this.size / 2, se preferir
+  //   };
+  // }
 }

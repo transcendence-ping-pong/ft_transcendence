@@ -1,13 +1,14 @@
 // frontend/src/game/BotPlayer.ts
 import type { Paddle } from './objects/Paddle';
 import type { Ball } from './objects/Ball';
-import { GameLevel } from '@/utils/gameUtils/Constants';
+import { GameLevel } from '@/utils/gameUtils/GameConstants';
 
 export class BotPlayer {
   private paddle: Paddle;
   private ball: Ball;
   private canvasHeight: number;
   private level: GameLevel;
+  private reactionDelayTimer = 0;
 
   constructor(paddle: Paddle, ball: Ball, canvasHeight: number, level: GameLevel) {
     this.paddle = paddle;
@@ -17,6 +18,7 @@ export class BotPlayer {
   }
 
   update(deltaTime: number): void {
+
     const ballY = this.ball.getY();
     const paddleY = this.paddle.getY();
     const paddleHeight = this.paddle.getHeight();
@@ -26,27 +28,46 @@ export class BotPlayer {
     let speed = 2;
     let precisionOffset = 0;
     let reactionThreshold = 0;
+    let errorChance = 0;
+    let delay = 0;
+    
 
     switch (this.level) {
       case GameLevel.EASY:
-        speed = 2;
+        delay = 0.15;
+        speed = 3;
         precisionOffset = 30;
         reactionThreshold = 40;
+        errorChance = 0.15;
         break;
       case GameLevel.MEDIUM:
-        speed = 3;
-        precisionOffset = 15;
-        reactionThreshold = 20;
+        delay = 0.05;
+        speed = 3.5;
+        precisionOffset = 10;
+        reactionThreshold = 15;
+        errorChance = 0.03;
         break;
       case GameLevel.HARD:
-        speed = 4;
-        precisionOffset = 0;
-        reactionThreshold = 0;
+        delay = 0;
+        speed = 3.5;
+        precisionOffset = 5;
+        reactionThreshold = 10;
+        errorChance = 0.01;
         break;
     }
 
+    // Delay de reação (temporizador)
+    this.reactionDelayTimer += deltaTime;
+    if (this.reactionDelayTimer < delay) return;
+    this.reactionDelayTimer = 0;
+
+    // Chance de errar e ignorar o movimento
+    if (Math.random() < errorChance) return;
+
+    // Alvo com imprecisão
     const targetY = ballY + (Math.random() - 0.5) * precisionOffset;
 
+    // Movimentação apenas se estiver longe o suficiente
     if (Math.abs(targetY - paddleCenter) > reactionThreshold) {
       if (targetY < paddleCenter) {
         this.paddle.moveUp(deltaTime * speed);
@@ -54,5 +75,16 @@ export class BotPlayer {
         this.paddle.moveDown(deltaTime * speed);
       }
     }
+
+    // Limitar área de movimento (só no EASY)
+    // if (this.level === GameLevel.EASY) {
+    //   const topLimit = this.canvasHeight * 0.05;
+    //   const bottomLimit = this.canvasHeight * 0.95 - paddleHeight;
+    //   const y = this.paddle.getY();
+    //   if (y < topLimit) 
+    //     this.paddle.setY(topLimit);
+    //   if (y > bottomLimit)
+    //     this.paddle.setY(bottomLimit);
+    // }
   }
 }

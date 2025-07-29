@@ -1,4 +1,4 @@
-import { GameSize, GameLevel, BallLevelConfig } from '@/utils/gameUtils/Constants.js';
+import { GameSize, GameLevel, BallLevelConfig } from '@/utils/gameUtils/GameConstants.js';
 import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
 
 const { PADDLE_WIDTH_RATIO, PADDLE_HEIGHT_RATIO, PADDLE_MARGIN_X, PADDLE_TO_COURT_GAP } = GameSize;
@@ -68,16 +68,15 @@ export class Paddle {
     this.y = Math.min(this.y + this.speed * dt, (bottom - this.height) - (this.width * PADDLE_TO_COURT_GAP));
   }
 
+  //bot
   public setY(y: number) {
     this.y = y;
   }
 
-  public getX() { return this.x; }
-  public getY() { return this.y; }
-  public getWidth() { return this.width; }
-  public getHeight() { return this.height; }
+  public getLevel(): GameLevel {
+    return  this.level;
+  }
 
-  //bot
   public getState() {
     return {
       x: this.x,
@@ -87,7 +86,9 @@ export class Paddle {
     };
   }
 
-  public getLevel(): GameLevel {
-    return  this.level;
-  }
+  public getX() { return this.x; }
+  public getY() { return this.y; }
+  public getWidth() { return this.width; }
+  public getHeight() { return this.height; }
+
 }

@@ -11,18 +11,18 @@ template.innerHTML = `
   <style>
     .nav-btn {
       background: var(--accent);
-      border: 1px solid var(--border);
+      border: 1px solid var(--accent);
       cursor: pointer;
-      width: 2.5rem;
-      height: 2.5rem;
+      width: 2.2rem;
+      height: 2.2rem;
       color: var(--border);
       display: inline-flex;
       align-items: center;
       transition: color 0.2s, background 0.2s, transform 0.18s cubic-bezier(.4,2,.6,1);
     }
     .nav-btn:hover, .nav-btn:focus, .active {
-      transform: scale(1.5);
-      background: var(--nav-hover);
+      transform: scale(1.1);
+      background: var(--body);
       box-shadow: 0 4px 16px #0004;
     }
     .logout:hover, .logout:focus {
@@ -30,7 +30,10 @@ template.innerHTML = `
     }
     .nav-buttons-wrapper {
       display: flex;
-      gap: 2.5rem;
+      gap: 2rem;
+    }
+    .nav-btn img {
+      filter: invert(var(--invert));
     }
   </style>
 
@@ -53,7 +56,7 @@ export class NavigationCta extends HTMLElement {
   connectedCallback() {
     this.shadowRoot?.getElementById('home')?.addEventListener('click', () => {
       window.history.pushState({}, '', '/');
-      window.dispatchEvent(new Event('popstate')); // trigger SPA re-render if needed
+      window.dispatchEvent(new Event('popstate'));
     });
     this.shadowRoot?.getElementById('game')?.addEventListener('click', () => {
       window.history.pushState({}, '', '/game');
