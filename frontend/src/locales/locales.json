@@ -1,0 +1,110 @@
+{
+  "GB": {
+    "auth": {
+      "login": "Login",
+      "logout": "Logout",
+      "username": "Username",
+      "password": "Password"
+    },
+    "nav": {
+      "home": "HOME",
+      "game": "GAME",
+      "languages": "Languages"
+    },
+    "error": {
+      "network": "Network error. Please try again.",
+      "notFound": "Page not found."
+    },
+    "game": {
+      "start": "START GAME",
+      "pause": "PAUSE",
+      "over": "GAME OVER",
+      "player1": "ONE PLAYER",
+      "player2": "TWO PLAYERS",
+      "level1": "EASY",
+      "level2": "MEDIUM",
+      "level3": "HARD"
+    }
+  },
+  "FR": {
+    "auth": {
+      "login": "Se connecter",
+      "logout": "Se déconnecter",
+      "username": "Nom d'utilisateur",
+      "password": "Mot de passe"
+    },
+    "nav": {
+      "home": "ACCUEIL",
+      "game": "JEU",
+      "languages": "Langues"
+    },
+    "error": {
+      "network": "Erreur réseau. Veuillez réessayer.",
+      "notFound": "Page non trouvée."
+    },
+    "game": {
+      "start": "COMMENCER LE JEU",
+      "pause": "PAUSE",
+      "over": "FIN DE PARTIE",
+      "player1": "UN JOUEUR",
+      "player2": "DEUX JOUEURS",
+      "level1": "FACILE",
+      "level2": "MOYEN",
+      "level3": "DIFFICILE"
+    }
+  },
+  "PT": {
+    "auth": {
+      "login": "Entrar",
+      "logout": "Sair",
+      "username": "Nome de usuário",
+      "password": "Senha"
+    },
+    "nav": {
+      "home": "INÍCIO",
+      "game": "JOGO",
+      "languages": "Idiomas"
+    },
+    "error": {
+      "network": "Erro de rede. Por favor, tente novamente.",
+      "notFound": "Página não encontrada."
+    },
+    "game": {
+      "start": "INICIAR JOGO",
+      "pause": "PAUSA",
+      "over": "FIM DE JOGO",
+      "player1": "UM JOGADOR",
+      "player2": "DOIS JOGADORES",
+      "level1": "FÁCIL",
+      "level2": "MÉDIO",
+      "level3": "DIFÍCIL"
+    }
+  },
+  "JP": {
+    "auth": {
+      "login": "ログイン",
+      "logout": "ログアウト",
+      "username": "ユーザー名",
+      "password": "パスワード"
+    },
+    "nav": {
+      "home": "ホーム",
+      "game": "ゲーム",
+      "languages": "言語"
+    },
+    "error": {
+      "network": "ネットワークエラー。もう一度お試しください。",
+      "notFound": "ページが見つかりません。"
+    },
+    "game": {
+      "start": "ゲーム開始",
+      "pause": "一時停止",
+      "over": "ゲームオーバー",
+      "player1": "１人プレイヤー",
+      "player2": "２人プレイヤー",
+      "level1": "簡単",
+      "level2": "普通",
+      "level3": "難しい"
+    }
+  }
+}
