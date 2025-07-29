@@ -18,7 +18,6 @@ fastify.register(fastifyStatic, {
 
 const port = 4000;
 
-// Initialize Google OAuth Client
 const client = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
@@ -27,7 +26,6 @@ const client = new OAuth2Client(
 
 let currentLoggedInUser = null;
 
-// TODO: Change path when file is moved to correct place (might not be needed, please check)
 let db_path = path.join(path.dirname(__dirname), '/database/database.db');
 
 const db = new sqlite3.Database(db_path, sqlite3.OPEN_READWRITE);
@@ -44,7 +42,6 @@ function saveRefreshToken(token, userId) {
     return new Promise((resolve, reject) => {
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7);
-        
         db.run(`INSERT INTO refresh_tokens (token, user_id, expires_at) VALUES (?, ?, ?)`, 
             [token, userId, expiresAt.toISOString()], function(err) {
             if (err) reject(err);
@@ -54,7 +51,6 @@ function saveRefreshToken(token, userId) {
 }
 
 function findRefreshToken(token) {
-    // Finds a valid (non-expired) refresh token and returns user info
     return new Promise((resolve, reject) => {
         db.get(`SELECT rt.*, u.username FROM refresh_tokens rt 
                 JOIN users u ON rt.user_id = u.user_id 
@@ -67,7 +63,6 @@ function findRefreshToken(token) {
 }
 
 function deleteRefreshToken(token) {
-    // Removes a specific refresh token (for logout)
     return new Promise((resolve, reject) => {
         db.run(`DELETE FROM refresh_tokens WHERE token = ?`, [token], function(err) {
             if (err) reject(err);
@@ -77,7 +72,6 @@ function deleteRefreshToken(token) {
 }
 
 function deleteAllUserRefreshTokens(userId) {
-    // Removes all refresh tokens for a user (logout from all devices)
     return new Promise((resolve, reject) => {
         db.run(`DELETE FROM refresh_tokens WHERE user_id = ?`, [userId], function(err) {
             if (err) reject(err);
@@ -106,7 +100,6 @@ function authenticateToken(request, reply, done) {
 }
 
 function cleanupExpiredTokens() {
-    // Removes expired refresh tokens from database
     db.run(`DELETE FROM refresh_tokens WHERE expires_at <= datetime('now')`, function(err) {
         if (err) {
             console.error('Error cleaning up expired tokens:', err);
@@ -257,7 +250,6 @@ fastify.post('/verify-token', (req, res) => {
         });
     }
 });
-
 
 fastify.get('/current-token', { preHandler: authenticateToken }, (req, res) => {
     const { username } = req.query;
@@ -475,7 +467,6 @@ fastify.get('/auth/google/callback', async (req, res) => {
         const email = payload.email;
         const name = payload.name;
 
-        // Check if user exists
         db.get(`SELECT * FROM users WHERE google_id = ?`, [googleId], async (err, row) => {
             if (err) {
                 console.error('Database error:', err);
@@ -486,7 +477,6 @@ fastify.get('/auth/google/callback', async (req, res) => {
             let user_id;
 
             if (!row) {
-                // Create new user
                 db.run(`INSERT INTO users (username, password, secret, google_id, email) VALUES (?, ?, ?, ?, ?)`,
                     [name, '', '', googleId, email], function (err) {
                         if (err) {
@@ -495,29 +485,22 @@ fastify.get('/auth/google/callback', async (req, res) => {
                         }
                         username = name;
                         user_id = this.lastID;
-
-                        // Generate tokens and send to frontend
                         sendTokens(username, user_id, res);
                     });
             } else {
                 username = row.username;
                 user_id = row.user_id;
-
-                // Generate tokens and send to frontend
                 sendTokens(username, user_id, res);
             }
         });
 
-        // Helper function to generate and send tokens
         function sendTokens(username, user_id, res) {
             const user = { username, user_id };
             const accessToken = generateAccessToken(user);
             const refreshToken = generateRefreshToken(user);
 
-            // Save refresh token
             saveRefreshToken(refreshToken, user_id)
                 .then(() => {
-                    // Instead of redirect, send tokens as JSON
                     res.send({
                         message: 'Login successful',
                         username,
@@ -539,18 +522,13 @@ fastify.get('/auth/google/callback', async (req, res) => {
     }
 });
 
-
 fastify.get('/current-user', { preHandler: authenticateToken }, (req, res) => {
-    // Returns user info from JWT token instead of session
     res.send({ username: req.user.username, user_id: req.user.user_id });
 });
 
-// Replace the logged-in route with this simple redirect:
 fastify.get('/logged-in', (req, res) => {
     const username = req.query.username;
     currentLoggedInUser = username;
-    
-    // Direct redirect to home page
     res.redirect('/');
 });
 
@@ -558,4 +536,84 @@ fastify.get('/favicon.ico', (req, res) => res.status(204));
 
 fastify.listen({ port: port, host: '0.0.0.0' }, () => {
     console.log(`Server running at http://localhost:${port}`);
+});
+
+fastify.post('/change-username', { preHandler: authenticateToken }, (request, reply) => {
+    const { newUsername } = request.body;
+    if (!newUsername || !isValidUsername(newUsername)) {
+        return reply.status(400).send({ error: 'Invalid new username.' });
+    }
+    db.run(
+        `UPDATE users SET username = ? WHERE user_id = ?`,
+        [newUsername, request.user.user_id],
+        function (err) {
+            if (err) {
+                if (err.code === 'SQLITE_CONSTRAINT') {
+                    return reply.status(400).send({ error: 'Username already exists.' });
+                }
+                return reply.status(500).send({ error: 'Database error.' });
+            }
+            reply.send({ message: 'Username updated successfully.' });
+        }
+    );
+});
+
+fastify.post('/change-email', { preHandler: authenticateToken }, (request, reply) => {
+    const { newEmail } = request.body;
+    if (!newEmail || !newEmail.includes('@')) {
+        return reply.status(400).send({ error: 'Invalid email.' });
+    }
+    db.run(
+        `UPDATE users SET email = ? WHERE user_id = ?`,
+        [newEmail, request.user.user_id],
+        function (err) {
+            if (err) {
+                return reply.status(500).send({ error: 'Database error.' });
+            }
+            reply.send({ message: 'Email updated successfully.' });
+        }
+    );
+});
+
+fastify.post('/change-password', { preHandler: authenticateToken }, (request, reply) => {
+    const { newPassword } = request.body;
+    if (!newPassword || !isValidPassword(newPassword)) {
+        return reply.status(400).send({ error: 'Invalid new password.' });
+    }
+    bcrypt.hash(newPassword, 13, (err, hashedPassword) => {
+        if (err) {
+            return reply.status(500).send({ error: 'Error hashing password.' });
+        }
+        db.run(
+            `UPDATE users SET password = ? WHERE user_id = ?`,
+            [hashedPassword, request.user.user_id],
+            function (err) {
+                if (err) {
+                    return reply.status(500).send({ error: 'Database error.' });
+                }
+                reply.send({ message: 'Password updated successfully.' });
+            }
+        );
+    });
+});
+
+fastify.post('/generate-new-2fa', { preHandler: authenticateToken }, (request, reply) => {
+    const username = request.user.username;
+    db.get(`SELECT * FROM users WHERE user_id = ?`, [request.user.user_id], (err, row) => {
+        if (err || !row) {
+            return reply.status(500).send({ error: 'User not found.' });
+        }
+        const secret = speakeasy.generateSecret({ name: "ft_transcendence(" + username + ")" });
+        db.run(`UPDATE users SET secret = ? WHERE user_id = ?`, [secret.base32, request.user.user_id], function (err) {
+            if (err) {
+                return reply.status(500).send({ error: 'Error saving new secret.' });
+            }
+            qrcode.toDataURL(secret.otpauth_url, function (err, qrCodeUrl) {
+                if (err) {
+                    return reply.status(500).send({ error: 'Error generating QR code.' });
+                }
+                reply.send({ qrCodeUrl, secret: secret.base32 });
+            });
+        });
+    });
 });

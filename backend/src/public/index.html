@@ -276,6 +276,8 @@
             } else {
                 loginStatus.textContent = '';
             }
+            document.getElementById('profileSection').style.display = loggedInUser ? 'block' : 'none';
+
         }
 
         window.onload = async () => {
@@ -328,5 +330,21 @@
     <br>
     <h2>Users</h2>
     <ul id="userList"></ul>
+    <div id="profileSection" style="display:none; margin-top:30px;">
+        <h2>Profile Settings</h2>
+        <label for="newUsername">New Username:</label>
+        <input type="text" id="newUsername" placeholder="Enter new username">
+        <button onclick="changeUsername()">Change Username</button>
+        <br><br>
+        <label for="newEmail">New Email:</label>
+        <input type="email" id="newEmail" placeholder="Enter new email">
+        <button onclick="changeEmail()">Change Email</button>
+        <br><br>
+        <label for="newPassword">New Password:</label>
+        <input type="password" id="newPassword" placeholder="Enter new password">
+        <button onclick="changePassword()">Change Password</button>
+        <br><br>
+        <button onclick="generateSecret()">Generate New 2FA QR Code</button>
+    </div>
 </body>
 </html>

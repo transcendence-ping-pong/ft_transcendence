@@ -11,6 +11,4 @@ if [ ! -f "$DB_FILE" ]; then
   sqlite3 "$DB_FILE" < "$SCHEMA_FILE"
 else
   echo "Database already exists. Skipping."
-  sqlite3 "$DB_FILE" < "$SCHEMA_FILE"
-
 fi
