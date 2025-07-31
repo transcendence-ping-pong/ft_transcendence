@@ -13,16 +13,15 @@ async function matchRoutes(fastify, options) {
 		});
 	});
 
-	fastify.post('/matches', (request, reply) => {
+	fastify.post('/matches', async (request, reply) => {
 		const {
-			matchType,
 			creatorUserId,
+			remoteUserId,
 			player1DisplayName,
 			player2DisplayName,
 			winnerDisplayName,
 			scorePlayer1,
 			scorePlayer2,
-			forfeit
 		} = request.body;
 
 		// TODO: Verify if additional checks are needed
@@ -47,10 +46,10 @@ async function matchRoutes(fastify, options) {
 		const time = h + ":" + m + ":" + s;
 		const date = day + "/" + month + "/" + year;
 
-		db.run(`INSERT INTO matchStats (matchType, creatorUserId, player1DisplayName, player2DisplayName,
-			 winnerDisplayName, scorePlayer1, scorePlayer2, forfeit, date, time) 
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [matchType, creatorUserId, player1DisplayName, 
-				player2DisplayName, winnerDisplayName, scorePlayer1, scorePlayer2, forfeit, date, time], function (err) {
+		await db.run(`INSERT INTO matchStats (creatorUserId, remoteUserId, player1DisplayName, player2DisplayName,
+			 winnerDisplayName, scorePlayer1, scorePlayer2, date, time) 
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [creatorUserId, remoteUserId, player1DisplayName, 
+				player2DisplayName, winnerDisplayName, scorePlayer1, scorePlayer2, date, time], function (err) {
 			if (err) {
 				return reply.status(500).send({ error: 'Error adding match to database' });
 			}
@@ -63,13 +62,23 @@ async function matchRoutes(fastify, options) {
 				}
 				reply.send({ message: 'Success' });
 			});
+
+			if (remoteUserId) {
+
+				db.run(`INSERT INTO matchHistory (userId, matchId) VALUES (?, ?)`, [remoteUserId, matchId], function (err) {
+					if (err) {
+						return reply.status(500).send({ error: 'Error adding match to user history' });
+					}
+					reply.send({ message: 'Success' });
+				});
+			}
 		});
 	});
 
-	fastify.get('/matches/:matchId', (request, reply) => {
+	fastify.get('/matches/:matchId', async (request, reply) => {
 		const { matchId } = request.params;
 
-		db.get(`SELECT * FROM matchStats WHERE matchId = ?`, matchId, (err, rows) => {
+		await db.get(`SELECT * FROM matchStats WHERE matchId = ?`, matchId, (err, rows) => {
 			if (err) {
 				return reply.status(500).send({ error: 'Error fetching match from database' });
 			}
@@ -77,10 +86,10 @@ async function matchRoutes(fastify, options) {
 		});
 	});
 
-	fastify.get('/matches/history/:userId', (request, reply) => {
+	fastify.get('/matches/history/:userId', async (request, reply) => {
 		const { userId } = request.params;
 
-		db.get(`SELECT * FROM matchHistory WHERE userId = ?`, userId, (err, rows) => {
+		await db.get(`SELECT * FROM matchHistory WHERE userId = ?`, userId, (err, rows) => {
 			if (err) {
 				return reply.status(500).send({ error: 'Error fetching user history from database' });
 			}

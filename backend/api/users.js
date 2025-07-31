@@ -18,9 +18,19 @@ async function userRoutes(fastify, options) {
 
 		db.get(`SELECT * FROM userStats WHERE userId = ?`, matchId, (err, rows) => {
 			if (err) {
-				return reply.status(500).send({ error: 'Error fetching match from database' });
+				return reply.status(500).send({ error: 'Error fetching user from database' });
 			}
 			reply.send(rows);
+		});
+	});
+
+	fastify.post('/users/stats:userId', async (request, reply) => {
+		const { userId } = request.params;
+		
+		await db.run(`INSERT INTO userStatus (userId) VALUES (?)`, [userId], function (err) {
+			if (err) {
+				return reply.status(500).send({ error: 'Error adding match to database' });
+			}
 		});
 	});
 };
