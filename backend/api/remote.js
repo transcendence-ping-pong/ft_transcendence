@@ -39,4 +39,19 @@ async function remoteConnection(options) {
 	};
 };
 
+fastify.listen({ port: port, host: '0.0.0.0' }, (err) => {
+	if (err) {
+		console.error('Error starting Fastify server:', err);
+		return;
+	}
+	const networkIP = getNetworkIP();
+
+	const socketPort = port + 1;
+	server.listen(socketPort, '0.0.0.0', () => {
+		console.log(`--------------------------------`);
+		console.log(`Multiplayer: http://${networkIP}:80`);
+		console.log(`--------------------------------`);
+	});
+});
+
 module.exports = remoteConnection;
