@@ -91,3 +91,12 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     expires_at DATETIME,
     FOREIGN KEY (userId) REFERENCES users (userId) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    token TEXT UNIQUE NOT NULL,
+    user_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+);

@@ -1,47 +1,44 @@
 
-const fastify = require('fastify')({ logger: true });
-const fastifyStatic = require('@fastify/static');
-const fastifyCors = require('@fastify/cors');
-const sqlite3 = require('sqlite3').verbose();
+ const fastify = require('fastify')({ logger: true });
+ const fastifyStatic = require('@fastify/static');
+ const fastifyCors = require('@fastify/cors');
+ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-let db_path = path.join(__dirname, '/database/database.db');
+ require('dotenv').config({ path: './src/.env' });
 
-const db = new sqlite3.Database(db_path, sqlite3.OPEN_READWRITE);
+ let db_path = path.join(__dirname, '/database/database.db');
 
-await fastify.decorate('db', db);
+ const db = new sqlite3.Database(db_path, sqlite3.OPEN_READWRITE);
 
-fastify.register(require('./api/matches'));
-fastify.register(require('./api/remote'));
-// fastify.register(require('./api/users'));
+ fastify.decorate('db', db);
 
-const port = 4000;
+ fastify.register(require('./api/matches'));
+//   fastify.register(require('./api/remote'));
+//   fastify.register(require('./api/auth'));
+//   fastify.register(require('./api/users'));
 
-let html_path = path.join(__dirname, 'temp');
+ const port = 4000;
 
-fastify.register(fastifyStatic, {
-	root: html_path,
-	prefix: '/',
-});
+let html_path = path.join(path.dirname(__dirname), 'frontend/src/');
 
-fastify.register(fastifyCors, {
-	origin: true, // Allow all origins (for development)
-	credentials: true
-});
+console.log(html_path);
 
-fastify.listen({ port: port, host: '0.0.0.0' }, (err) => {
-	if (err) {
-		console.error('Error starting Fastify server:', err);
-		return;
-	}
-	const networkIP = getNetworkIP();
+ fastify.register(fastifyStatic, {
+ 	root: html_path,
+ 	prefix: '/',
+ });
 
-	const socketPort = port + 1;
-	server.listen(socketPort, '0.0.0.0', () => {
-		console.log(`--------------------------------`);
-		console.log(`Multiplayer: http://${networkIP}:80`);
-		console.log(`--------------------------------`);
-	});
-});
+ fastify.register(fastifyCors, {
+ 	origin: true, // Allow all origins (for development)
+ 	credentials: true
+ });
 
-fastify.get('/favicon.ico', (req, res) => res.status(204));
+ fastify.listen({ port: port, host: '0.0.0.0' }, (err) => {
+ 	if (err) {
+ 		console.error('Error starting Fastify server:', err);
+ 		return;
+ 	}
+ });
+
+ fastify.get('/favicon.ico', (req, res) => res.status(204));

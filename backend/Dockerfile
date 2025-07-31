@@ -11,7 +11,7 @@ COPY ./api ./api
 COPY ./database ./database
 COPY app.js app.js
 
-# COPY src ./src
+COPY src ./src
 
 RUN apk add --no-cache sqlite
 
