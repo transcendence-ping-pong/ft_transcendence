@@ -1,25 +1,48 @@
-// // TODO SOCKET: mock WebSocketService for development (no backend)
-
-type MessageHandler = (data: any) => void;
+import { io } from 'socket.io-client';
+import { state } from '../state.js';
 
 class WebSocketService {
-  private handlers: MessageHandler[] = [];
+  private socket: any = null;
 
-  // TODO SOCKET: no real connection in mock mode
-  connect(_url: string) {
-    // no-op for mock
+  connect(url: string) {
+    if (this.socket) return;
+    
+    this.socket = io(url, {
+      query: { clientId: state.clientId }
+    });
+
+    this.socket.on('connect', () => {
+      console.log('✅ Connected to backend WebSocket!');
+      console.log('Client ID:', state.clientId);
+    });
+
+    this.socket.on('disconnect', () => {
+      console.log('❌ Disconnected from backend WebSocket');
+    });
+
+	this.socket.emit('test', 'boas');
+	this.socket.on('test', (data) => {
+		console.log('Received test message:', data);
+	})
   }
 
-  onMessage(cb: MessageHandler) {
-    this.handlers.push(cb);
+  emit(event: string, data?: any) {
+    if (this.socket) {
+      this.socket.emit(event, data);
+    }
   }
 
-  // TODO SOCKET: mock simulate receiving a message
-  emitMock(data: any) {
-    this.handlers.forEach((cb) => cb(data));
+  onMessage(cb: (data: any) => void) {
+    if (this.socket) {
+      this.socket.on('message', cb);
+    }
   }
 
-  // TODO SOCKET MIGUEL: for real backend, implement send() and connection logic here
+  on(event: string, callback: (data: any) => void) {
+    if (this.socket) {
+      this.socket.on(event, callback);
+    }
+  }
 }
 
 export const websocketService = new WebSocketService();

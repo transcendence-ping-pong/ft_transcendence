@@ -7,6 +7,7 @@ import { renderProfile } from '@/pages/profile.js';
 import { initRouter } from '@/utils/Router.js';
 import { notificationService } from "@/services/notificationService";
 import { startMockNotifications } from "@/services/mockNotifications.js";
+import { websocketService } from "@/services/websocketService.js";
 import '@/styles/index.css';
 import '@babylonjs/loaders';
 
@@ -22,6 +23,7 @@ import '@babylonjs/loaders';
   - manage specific game scenes or components directly
   - handle user authentication or session management directly
 */
+// import { getUsers } from './services/api.js';
 
 const routes = {
   "/": renderHome,
@@ -39,7 +41,7 @@ notificationService.listen((notif) => {
 });
 
 // TODO SOCKET: REMOVE MOCK
-startMockNotifications();
+// startMockNotifications();
 
 document.addEventListener('DOMContentLoaded', async () => {
   // TODO: translations by default will be in english. Apply switching to other languages later
@@ -56,8 +58,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     state.translations = await getTranslations(newLang);
 
     const render = routes[window.location.pathname];
+
     if (render) render('app');
-  })
+  });
 
   // handle back/forward navigation - history API
   // https://developer.mozilla.org/en-US/docs/Web/API/History_API
@@ -65,4 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.key === 'ArrowLeft') window.history.back();
     if (e.key === 'ArrowRight') window.history.forward();
   });
+
+  // Connect to WebSocket
+  websocketService.connect(`http://${window.location.hostname}:4001`);
 });
