@@ -1,8 +1,12 @@
 import { GameCanvas } from '@/game/GameCanvas.js';
-import { hexToColor4 } from '@/utils/Colors.js';
 import { crtFragmentShader } from '@/utils/gameUtils/CrtFragmentShader.js';
+import { GameLevel, PlayerMode, VIRTUAL_BORDER_TOP, VIRTUAL_BORDER_X, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, VIRTUAL_BORDER_BOTTOM } from '@/utils/gameUtils/GameConstants.js';
+import { getThemeColors, ThemeColors } from '@/utils/gameUtils/BabylonColors.js';
 import * as BABYLON from "@babylonjs/core";
 import { Engine, Scene, Color3, StandardMaterial } from "@babylonjs/core";
+import { importMeshAsync } from "@/utils/gameUtils/Mesh.js";
+import { createSparkleEffect, createSpinAnimation } from "@/utils/gameUtils/Animations.js";
+import { state } from '@/state.js';
 
 /*
   BabylonCanvas responsabilities:
@@ -26,6 +30,7 @@ export class BabylonCanvas {
   private engine: Engine;
   private scene: Scene;
   private dynamicTexture?: any;
+  private lastTimestamp: number = performance.now(); // used to calculate deltaTime
 
   constructor(containerId: string) {
     this.canvas = document.createElement('canvas');
@@ -37,11 +42,15 @@ export class BabylonCanvas {
     this.engine = new BABYLON.Engine(this.canvas, true);
     this.scene = this.createScene();
 
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
-    this.gameCanvas = new GameCanvas("", this.canvas.width, this.canvas.height);
+    this.canvas.width = state.scaleFactor.gameAreaWidth;
+    this.canvas.height = state.scaleFactor.gameAreaHeight;
+    this.canvas.style.position = 'absolute';
+    this.canvas.style.left = `${state.scaleFactor.gameAreaLeft}px`;
+    this.canvas.style.top = `${state.scaleFactor.gameAreaTop}px`;
+    this.canvas.style.width = `${state.scaleFactor.gameAreaWidth}px`;
+    this.canvas.style.height = `${state.scaleFactor.gameAreaHeight}px`;
 
-    this.applyDynamicTextureToMesh("gameScreen", this.gameCanvas.getCanvasElement());
+    // when browser window is resized, resize the canvas and engine
     window.addEventListener('resize', () => this.engine.resize());
   }
 
@@ -49,7 +58,7 @@ export class BabylonCanvas {
     const scene = new BABYLON.Scene(this.engine);
 
     // TODO: centralize color management
-    scene.clearColor = hexToColor4("#1a2233", 1);
+    this.createRadialGradientBackground(this.scene);
 
     // lock camera at origin, looking forward
     // Vector3(0, 1, -5) -> x, y, z coordinates, position
@@ -71,6 +80,12 @@ export class BabylonCanvas {
     const planeHeight = 2;
     const planeWidth = planeHeight * aspect;
     const plane = BABYLON.MeshBuilder.CreatePlane("gameScreen", { width: planeWidth, height: planeHeight }, this.scene);
+
+    const mat = new StandardMaterial("screenMat", this.scene);
+    mat.alpha = 0; // fully transparent at the start
+    mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+
+    plane.material = mat;
     plane.position = new BABYLON.Vector3(0, 0, 1); // put plane in front of the camera
 
     BABYLON.Effect.ShadersStore["crtFragmentShader"] = crtFragmentShader;
@@ -88,15 +103,41 @@ export class BabylonCanvas {
     return scene;
   }
 
+  get plane() {
+    return this.scene.getMeshByName("gameScreen");
+  }
+
+  get transparentMaterial() {
+    const mat = new StandardMaterial("screenMat", this.scene);
+    mat.alpha = 0; // fully transparent at the start
+    mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+    return mat;
+  }
+
+  initPlaneMaterial() {
+    this.plane.material = this.transparentMaterial;
+  }
+
+  public createGameCanvas(level: GameLevel, mode: PlayerMode) {
+    this.gameCanvas = new GameCanvas(level, "", this.canvas.width, this.canvas.height);
+    this.gameCanvas.setLevel(level);
+    this.applyDynamicTextureToMesh("gameScreen", this.gameCanvas.getCanvasElement());
+  }
+
   // constantly update the scene, i.e. animations
   // SINGLE ANIMATION LOOP: in Babylon render loop, call a method to update the 2D game too
   // avoid two separate requestAnimationFrame running at the same time
   // MAIN LOOP WILL BE CALLED BY GAME ORCHESTRATOR
-  public startRenderLoop(gameCanvas: GameCanvas) {
+  public startRenderLoop() {
     this.engine.runRenderLoop(() => {
-      if (this.dynamicTexture && gameCanvas) {
+      // calculate ellapsed time (dt) in seconds between frames
+      const currentTimestamp = performance.now();
+      const deltaTime = (currentTimestamp - this.lastTimestamp) / 1000;
+      this.lastTimestamp = currentTimestamp;
+
+      if (this.dynamicTexture && this.gameCanvas) {
         // render 2D game onto offscreen canvas (buffer) managed by GameCanvas
-        gameCanvas.render2DGameCanvas();
+        this.gameCanvas.render2DGameCanvas(false, deltaTime);
 
         const texSize = this.dynamicTexture.getSize();
         const ctx = this.dynamicTexture.getContext();
@@ -105,8 +146,8 @@ export class BabylonCanvas {
         // map sorce canvas to destination texture, scaling it to fit
         // drawImage(src,0,0,sw,sh,0,0,dw,dh);
         ctx.drawImage(
-          gameCanvas.getCanvasElement(),
-          0, 0, gameCanvas.getCanvasElement().width, gameCanvas.getCanvasElement().height,
+          this.gameCanvas.getCanvasElement(),
+          0, 0, this.gameCanvas.getCanvasElement().width, this.gameCanvas.getCanvasElement().height,
           0, 0, texSize.width, texSize.height
         );
         this.dynamicTexture.update();
@@ -155,6 +196,125 @@ export class BabylonCanvas {
     glowLayer.intensity = 0.25;
   }
 
+  private createRadialGradientBackground(scene: BABYLON.Scene) {
+    const colors = getThemeColors(state.theme) as ThemeColors;
+    // Create a fullscreen background layer
+    const background = new BABYLON.Layer("background", null, scene, true);
+
+    // Create a dynamic texture for the gradient
+    const textureSize = 1024;
+    const dynamicTexture = new BABYLON.DynamicTexture("gradientTexture", { width: textureSize, height: textureSize }, scene, false);
+    background.texture = dynamicTexture;
+
+    const ctx = dynamicTexture.getContext();
+    // Create a radial gradient from center outwards
+    const centerX = textureSize / 2;
+    const centerY = textureSize / 2;
+    const radius = textureSize / 2;
+    const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+
+    // set colors
+    gradient.addColorStop(0, colors.gameGradientStart);
+    gradient.addColorStop(1, colors.gameGradientEnd);
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, textureSize, textureSize);
+
+    dynamicTexture.update();
+  }
+
+  private createGlowRampBehindModel(mesh: BABYLON.Mesh, scene: BABYLON.Scene) {
+    const boundingInfo = mesh.getBoundingInfo();
+    const center = boundingInfo.boundingBox.centerWorld;
+    const radius = boundingInfo.boundingBox.extendSizeWorld.length() * 1.3;
+
+    // Create a plane slightly behind the model
+    const glowPlane = BABYLON.MeshBuilder.CreatePlane("glowPlane", { size: radius * 2 }, scene);
+    glowPlane.position = center.clone();
+    glowPlane.position.z -= radius * 0.5; // Move behind the model
+    // glowPlane.scaling = new BABYLON.Vector3(1.5, 1.5, 1.5);
+
+    // Use the correct texture URL
+    const textureUrl = "https://playground.babylonjs.com/textures/WhiteTransarentRamp.png";
+    const glowMat = new BABYLON.StandardMaterial("glowMat", scene);
+    glowMat.diffuseTexture = new BABYLON.Texture(textureUrl, scene);
+    glowMat.diffuseTexture.hasAlpha = true;
+    glowMat.useAlphaFromDiffuseTexture = true;
+    glowMat.emissiveColor = BABYLON.Color3.FromHexString("#fcf4c5");
+    glowMat.alpha = 0.2;
+    glowMat.backFaceCulling = false;
+    glowMat.disableDepthWrite = true; // <-- This ensures the model always draws over the plane
+    glowPlane.material = glowMat;
+
+    glowPlane.isPickable = false;
+    glowPlane.receiveShadows = false;
+
+    // Render the plane before the model
+    glowPlane.renderingGroupId = 0;
+    mesh.renderingGroupId = 1;
+  }
+
+  public async endingGame() {
+    // hide the plane where dynamic texture is applied
+    const plane = this.scene.getMeshByName("gameScreen");
+    if (plane) plane.dispose();
+
+    // this.createRadialGradientBackground(this.scene);
+
+    // const models = await importMeshAsync("", "./assets/models/", "rubber_duck_toy_2k.glb", this.scene);
+    // // const models = await importMeshAsync("", "./assets/models/", "all_purpose_cleaner_2k.glb", this.scene);
+    // // const models = await importMeshAsync("", "./assets/models/", "garden_gnome_2k.glb", this.scene);
+    // this.model = models.meshes[1];
+    // this.model.rotationQuaternion = null;
+
+    // // GREEN LIGHT ?
+
+    // const center = this.model.getBoundingInfo().boundingBox.center;
+    // const centerWorld = this.model.getBoundingInfo().boundingBox.centerWorld;
+    // this.model.position = new BABYLON.Vector3(
+    //   this.model.position.x - center.x * 2,
+    //   this.model.position.y - center.y * 2,
+    //   this.model.position.z - center.z * 2
+    // );
+    // this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
+
+    // createSparkleEffect(this.model, this.scene);
+    // this.createGlowRampBehindModel(this.model, this.scene);
+    // createSpinAnimation(this.model, this.scene);
+  }
+
+  // public async endingGame() {
+  //   // hide the plane where dynamic texture is applied
+  //   const plane = this.scene.getMeshByName("gameScreen");
+  //   if (plane) plane.dispose();
+
+  //   this.createRadialGradientBackground(this.scene);
+
+  //   // const models = await importMeshAsync("", "./assets/models/", "plastic_monobloc_chair_01_2k.glb", this.scene);
+  //   // const models = await importMeshAsync("", "./assets/models/", "yellow_onion_2k.glb", this.scene);
+  //   const models = await importMeshAsync("", "./assets/models/", "all_purpose_cleaner_2k.glb", this.scene);
+  //   // const models = await importMeshAsync("", "./assets/models/", "rubber_duck_toy_2k.glb", this.scene);
+  //   // const models = await importMeshAsync("", "./assets/models/", "garden_gnome_2k.glb", this.scene);
+  //   this.model = models.meshes[1];
+  //   console.log("Rubber duck model loaded:", this.model.name, this.model);
+  //   this.model.rotationQuaternion = null; // remove quaternion to use euler angles
+
+  //   const center = this.model.getBoundingInfo().boundingBox.center;
+
+  //   // TODO: set a constant to camera position
+  //   this.model.position = new BABYLON.Vector3(
+  //     this.model.position.x - center.x * 2,
+  //     this.model.position.y - center.y * 2,
+  //     this.model.position.z - center.z * 2
+  //   );
+
+  //   // this.model.rotation.x = Math.PI / 30; // tilt downward??
+  //   // this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
+  //   this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
+  //   // this.model.scaling = new BABYLON.Vector3(5, 5, 5);
+
+  //   createSpinAnimation(this.model, this.scene);
+  // }
 
   public getGameCanvas() {
     return this.gameCanvas;
@@ -166,12 +326,17 @@ export class BabylonCanvas {
 
   public cleanupGame() {
     if (this.engine) {
-      // requestAnimationFrame is cleaned under the hood
       this.engine.stopRenderLoop();
+      this.engine.dispose();
+      this.engine = null;
+      this.gameCanvas = null;
     }
 
-    // remove html element?
+    if (this.canvas && this.canvas.parentNode) {
+      this.canvas.parentNode.removeChild(this.canvas);
+      this.canvas = null;
+    }
 
-    window.removeEventListener('resize', () => this.engine.resize());
+    window.removeEventListener('resize', () => this.engine?.resize());
   }
 }

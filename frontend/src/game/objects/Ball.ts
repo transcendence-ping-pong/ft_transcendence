@@ -1,109 +1,149 @@
 import { Paddle } from '@/game/objects/Paddle.js';
-import { GameLevel, BallLevelConfig } from '@/utils/gameUtils/types.js';
+import { GameLevel, GameScore, BallLevelConfig, VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from '@/utils/gameUtils/GameConstants.js';
 import { GameCourtBounds } from '@/game/objects/GameCourtBounds.js';
+import { state } from '@/state';
+
+/*
+  Ball responsabilities:
+  - mantain its own position, velocity, size
+  - provide methods to update its state (move, bounce, reset)
+  - provide information about its state:
+    - am I out of bounds, on each side?
+    - which one is the scoring player?
+    - am I colliding with a paddle?
+
+  Do not:
+  - handle out of bounds/ scoring logic (it is GameManager's responsibility)
+*/
 
 export class Ball {
-  constructor(
-    public x: number, // x coordinate
-    public y: number, // y coordinate
-    public vx: number, // velocity: x axis direction (positive or negative) + step for jumping pixels (speed) 
-    public vy: number, // idem, but for y axis
-    public size: number, // size of the ball (it is a square, as the original Pong game)
-    public color: string = "white",
-    public trail: { x: number; y: number; alpha?: number }[] = [],
-    private lastTrailX?: number,
-    private lastTrailY?: number
-    // public currentLevel: GameLevel = GameLevel.EASY
-  ) { }
+  // ball moves px/sec horizontally, -px/sec vertically
+  private vx: number; // velocity: x axis direction (positive or negative) + step for jumping pixels (speed) 
+  private vy: number; // idem, but for y axis
+  private virtualX: number = VIRTUAL_WIDTH;
+  private virtualY: number = VIRTUAL_HEIGHT;
+  public scoringPlayer: GameScore; // which player scored last, or DRAW if no one scored yet
 
-  draw(ctx: CanvasRenderingContext2D) {
-    ctx.fillStyle = this.color;
-    ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+  constructor(
+    public x: number,
+    public y: number,
+    public size: number, // size of the ball (it is a square, as the original Pong game)
+    private level: GameLevel,
+    private courtBounds: GameCourtBounds,
+    public color: string = "white",
+  ) {
+    this.setInitialVelocity();
   }
 
-  // https://www.youtube.com/watch?v=6i5kZV_KOCU
+  private setInitialVelocity() {
+    const { MIN } = BallLevelConfig[this.level];
+    this.vx = MIN;
+    this.vy = -MIN;
+  }
+
+  draw(ctx: CanvasRenderingContext2D) {
+    const scaleX = ctx.canvas.width / VIRTUAL_WIDTH;
+    const scaleY = ctx.canvas.height / VIRTUAL_HEIGHT;
+    const drawX = this.virtualX * scaleX;
+    const drawY = this.virtualY * scaleY;
+    const drawSize = this.size * Math.min(scaleX, scaleY);
+
+    ctx.fillStyle = this.color;
+    ctx.fillRect(drawX - drawSize / 2, drawY - drawSize / 2, drawSize, drawSize);
+  }
+
+  collidesWithPaddle = (paddle: Paddle) => {
+    return (
+      this.virtualX + this.size / 2 >= paddle.getX() &&
+      this.virtualX - this.size / 2 <= paddle.getX() + paddle.getWidth() &&
+      this.virtualY + this.size / 2 >= paddle.getY() &&
+      this.virtualY - this.size / 2 <= paddle.getY() + paddle.getHeight()
+    );
+  };
+
+  isOutOfBounds = (left: number, right: number) => {
+    return (
+      this.virtualX - this.size / 2 < left || // left side wall courtBounds
+      this.virtualX + this.size / 2 > right // right side wall courtBounds
+    );
+  };
+
+  bounceOffPaddle(paddle: Paddle, onPaddleBounce?: () => void) {
+    const { MAX, MIN, maxBounceAngle } = BallLevelConfig[this.level];
+
+    // prevent sticking to the paddle
+    if (this.vx < 0) {
+      this.virtualX = paddle.getX() + paddle.getWidth() + this.size / 2; // left paddle
+    } else {
+      this.virtualX = paddle.getX() - this.size / 2; // right paddle
+    }
+
+    // calculate normalized hit position (-1 to 1)
+    const relativeIntersectY = (this.virtualY - (paddle.getY() + paddle.getHeight() / 2));
+    const normalized = relativeIntersectY / (paddle.getHeight() / 2);
+    const bounceAngle = normalized * maxBounceAngle;
+
+    // TODO CONCEPT: should we increase speed after each hit? or after first hit?
+    // calculate current speed and increase by 20% (cap at MAX_BALL_SPEED)
+    let speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+    speed = Math.max(Math.min(speed * 1.5, MAX), MIN);
+
+    // update velocity: always right direction after left paddle, or left direction after right paddle
+    this.vx = (this.vx < 0 ? Math.abs(speed * Math.cos(bounceAngle)) : -Math.abs(speed * Math.cos(bounceAngle)));
+    this.vy = speed * Math.sin(bounceAngle);
+
+    if (onPaddleBounce) onPaddleBounce(); // TODO CONCEPT: sound?? log??
+  }
+
+  // https://www.virtualYoutube.com/watch?v=6i5kZV_KOCU
   updatePosition(
     dt: number,
-    courtBounds: GameCourtBounds,
     paddles: Paddle[],
-    currentLevel: GameLevel,
-    onPaddleBounce?: () => void // optional callback for speed increase, sound, etc.
+    onPaddleBounce?: () => void, // callback
+    onOutOfBounds?: () => void // callback
   ) {
-    const { MIN, MAX, maxBounceAngle } = BallLevelConfig[currentLevel];
-    const { top, bottom, right, left } = courtBounds.specs;
-    const isCollisionWithPaddle = (paddle: Paddle) => {
-      return (
-        this.x + this.size / 2 >= paddle.getX() &&
-        this.x - this.size / 2 <= paddle.getX() + paddle.getWidth() &&
-        this.y + this.size / 2 >= paddle.getY() &&
-        this.y - this.size / 2 <= paddle.getY() + paddle.getHeight()
-      );
-    };
-
-    const isOutOfBounds = () => {
-      return (
-        this.x - this.size / 2 < left || // left side wall courtBounds
-        this.x + this.size / 2 > right // right side wall courtBounds
-      );
-    };
-
-    // reminder: for...in - iterate over keys (indexes) of an object or array
+    // Paddle collision
     for (const paddle of paddles) {
-      // check if the ball is colliding with the paddle
-      if (isCollisionWithPaddle(paddle)) {
-        // prevent sticking to the paddle
-        if (this.vx < 0) {
-          this.x = paddle.getX() + paddle.getWidth() + this.size / 2; // left paddle
-        } else {
-          this.x = paddle.getX() - this.size / 2; // right paddle
-        }
-
-        // calculate normalized hit position (-1 to 1)
-        const relativeIntersectY = (this.y - (paddle.getY() + paddle.getHeight() / 2));
-        const normalized = relativeIntersectY / (paddle.getHeight() / 2);
-        const bounceAngle = normalized * maxBounceAngle;
-
-        // TODO CONCEPT: should we increase speed after each hit? or after first hit?
-        // calculate current speed and increase by 10% (cap at MAX_BALL_SPEED)
-        let speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-        speed = Math.min(speed * 1.1, MAX);
-
-        // update velocity: always right direction after left paddle, or left direction after right paddle
-        this.vx = (this.vx < 0 ? Math.abs(speed * Math.cos(bounceAngle)) : -Math.abs(speed * Math.cos(bounceAngle)));
-        this.vy = speed * Math.sin(bounceAngle);
-
-        if (onPaddleBounce) onPaddleBounce(); // TODO CONCEPT: sound?? log??
-      } else if (isOutOfBounds()) {
-        // TODO CONCEPT: score??? reset to center?? Check if score is less than 11?
-
-        this.x = (left + right) / 2;
-        this.y = (top + bottom) / 2;
-        this.trail = [];
-        this.lastTrailX = undefined;
-        this.lastTrailY = undefined;
-
-        // TODO FIX: check!!!!!!!!!!!!!!!!!!!!!
-        const angle = (Math.random() - 0.5) * maxBounceAngle; // random angle?
-        const direction = (this.vx < 0 ? 1 : -1); // send ball to the opposite direction???
-        this.vx = direction * MIN * Math.cos(angle);
-        this.vy = MIN * Math.sin(angle);
+      if (this.collidesWithPaddle(paddle)) {
+        this.bounceOffPaddle(paddle, onPaddleBounce);
       }
     }
 
-    // top/bottom wall collision CourtBounds
-    // TODO CONCEPT: add more getters?
-    if (this.y - this.size / 2 < top) {
-      this.y = top + this.size / 2;
+    // wall collision (top/bottom)
+    const { top, bottom, left, right } = this.courtBounds.specs;
+    if (this.virtualY - this.size / 2 < top) {
+      this.virtualY = top + this.size / 2;
       this.vy = -this.vy;
     }
-    if (this.y + this.size / 2 > bottom) {
-      this.y = bottom - this.size / 2;
+    if (this.virtualY + this.size / 2 > bottom) {
+      this.virtualY = bottom - this.size / 2;
       this.vy = -this.vy;
     }
 
+    // wall collision (left/right) = out of bounds
+    if (this.virtualX - this.size / 2 < left) this.scoringPlayer = GameScore.RIGHT;
+    if (this.virtualX + this.size / 2 > right) this.scoringPlayer = GameScore.LEFT;
+    if (this.scoringPlayer && onOutOfBounds) onOutOfBounds();
+
     // position = position + velocity
     // velocity = velocity + acceleration
-    this.x += this.vx * dt; // update x position
-    this.y += this.vy * dt; // update y position
+    this.virtualX += this.vx * dt;
+    this.virtualY += this.vy * dt;
+  }
+
+  // the player who just lost the point serves the next ball
+  resetPosition() {
+    const { maxBounceAngle } = BallLevelConfig[this.level];
+    const { left, right, top, bottom } = this.courtBounds.specs;
+
+    this.virtualX = (left + right) / 2;
+    this.virtualY = (top + bottom) / 2;
+
+    const angle = (Math.random() - 0.5) * maxBounceAngle;
+    const direction = this.scoringPlayer === GameScore.LEFT ? 1 : -1;
+    this.setInitialVelocity();
+    this.vx *= direction * Math.cos(angle);
+    this.vy *= Math.sin(angle);
+    this.scoringPlayer = GameScore.DRAW;
   }
 }

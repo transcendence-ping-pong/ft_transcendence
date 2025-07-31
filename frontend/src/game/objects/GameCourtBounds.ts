@@ -1,4 +1,4 @@
-import { GameSize, CourtBoundsSpecs } from '@/utils/gameUtils/types.js';
+import { GameSize, CourtBoundsSpecs } from '@/utils/gameUtils/GameConstants.js';
 
 // single source of truth for the game limits
 export class GameCourtBounds {
@@ -19,30 +19,34 @@ export class GameCourtBounds {
   }
 
   draw(ctx: CanvasRenderingContext2D) {
-    // is this overkill? maybe......
-    ctx.save(); // save current state in stack, sp it doesn't affect other drawings
-    ctx.strokeStyle = this.color;
-    ctx.lineWidth = this.width * GameSize.LINE_WIDTH_RATIO;
+    const scaleX = ctx.canvas.width / this.width;
+    const scaleY = ctx.canvas.height / this.height;
 
-    ctx.setLineDash([GameSize.DASH_LENGTH, GameSize.DASH_GAP]);
+    ctx.save();
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = this.width * GameSize.LINE_WIDTH_RATIO * scaleX;
+
+    ctx.setLineDash([this.width * GameSize.DASH_LENGTH * scaleX, this.width * GameSize.DASH_GAP * scaleX]);
+
     // top horizontal line
     ctx.beginPath();
-    ctx.moveTo(this.specs.left, this.specs.top);
-    ctx.lineTo(this.specs.right, this.specs.top);
+    ctx.moveTo(this.specs.left * scaleX, this.specs.top * scaleY);
+    ctx.lineTo(this.specs.right * scaleX, this.specs.top * scaleY);
     ctx.stroke();
 
     // bottom horizontal line
     ctx.beginPath();
-    ctx.moveTo(this.specs.left, this.specs.bottom);
-    ctx.lineTo(this.specs.right, this.specs.bottom);
+    ctx.moveTo(this.specs.left * scaleX, this.specs.bottom * scaleY);
+    ctx.lineTo(this.specs.right * scaleX, this.specs.bottom * scaleY);
     ctx.stroke();
 
     // center line
     ctx.beginPath();
-    ctx.moveTo(this.width / 2, this.specs.top);
-    ctx.lineTo(this.width / 2, this.specs.bottom);
+    ctx.moveTo((this.width / 2) * scaleX, this.specs.top * scaleY);
+    ctx.lineTo((this.width / 2) * scaleX, this.specs.bottom * scaleY);
     ctx.stroke();
+
     ctx.setLineDash([]);
-    ctx.restore(); // restore previous state from stack
+    ctx.restore();
   }
 }
