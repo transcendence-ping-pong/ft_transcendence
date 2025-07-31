@@ -7,9 +7,9 @@ import { renderProfile } from '@/pages/profile.js';
 import { initRouter } from '@/utils/Router.js';
 import { notificationService } from "@/services/notificationService";
 import { startMockNotifications } from "@/services/mockNotifications.js";
+import { websocketService } from "@/services/websocketService.js";
 import '@/styles/index.css';
 import '@babylonjs/loaders';
-import { io } from 'socket.io-client';
 
 /*
   Main responsabilities:
@@ -41,7 +41,7 @@ notificationService.listen((notif) => {
 });
 
 // TODO SOCKET: REMOVE MOCK
-startMockNotifications();
+// startMockNotifications();
 
 document.addEventListener('DOMContentLoaded', async () => {
   // TODO: translations by default will be in english. Apply switching to other languages later
@@ -58,22 +58,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     state.translations = await getTranslations(newLang);
 
     const render = routes[window.location.pathname];
-  
-  const socket = io(`http://${window.location.hostname}:4001`);
-  
 
-  // web console logs
-  socket.on('connect', () => {
-    console.log('✅ Connected to backend WebSocket!');
-    console.log('Socket ID:', socket.id);
+    if (render) render('app');
   });
-
-  socket.on('disconnect', () => {
-    console.log('❌ Disconnected from backend WebSocket');
-  });
-  
-  if (render) render('app');
-  })
 
   // handle back/forward navigation - history API
   // https://developer.mozilla.org/en-US/docs/Web/API/History_API
@@ -82,5 +69,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.key === 'ArrowRight') window.history.forward();
   });
 
-
+  // Connect to WebSocket
+  websocketService.connect(`http://${window.location.hostname}:4001`);
 });

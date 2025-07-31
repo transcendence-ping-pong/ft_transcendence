@@ -12,6 +12,21 @@
   - handle user authentication or session management directly
 */
 
+// Generate unique client ID for socket connections
+const generateClientId = (): string => {
+  return 'client-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+};
+
+// Get or create client ID - ensures we always have one
+const getOrCreateClientId = (): string => {
+  let clientId = localStorage.getItem('clientId');
+  if (!clientId) {
+    clientId = generateClientId();
+    localStorage.setItem('clientId', clientId);
+  }
+  return clientId;
+};
+
 const savedState = localStorage.getItem('appState');
 const initialState = savedState ? JSON.parse(savedState) : {
   language: 'en',
@@ -23,6 +38,11 @@ const initialState = savedState ? JSON.parse(savedState) : {
   loggedInUser: null as { id: string; username: string; email?: string } | null,
   // TODO: add other state properties that we need to persist
 };
+
+// Ensure clientId is always available
+initialState.clientId = getOrCreateClientId();
+
+console.log('State initialized with Client ID:', initialState.clientId);
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
 export const state = new Proxy(initialState, {

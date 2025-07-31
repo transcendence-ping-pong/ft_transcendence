@@ -8,7 +8,7 @@ all:
 
 	@echo "RUNNING"
 	docker compose up -d --build
-	docker compose logs -f backend frontend
+	docker compose logs -f backend
 	@echo "work work work"
 
 clean:

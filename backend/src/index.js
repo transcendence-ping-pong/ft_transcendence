@@ -21,12 +21,6 @@ fastify.register(fastifyCors, {
 // Also, without info on what .env needs, this blocks all possible execution
 // require('dotenv').config({ path: '/home/manumart/Desktop/maneleh42/ft_transcendence/backend/src/.env' });
 
-// Register CORS
-fastify.register(fastifyCors, {
-	origin: true, // Allow all origins for development
-	credentials: true
-});
-
 fastify.register(fastifyStatic, {
 	root: path.join(__dirname, 'public'),
 	prefix: '/',
@@ -169,10 +163,16 @@ const io = require('socket.io')(server, {
 });
 
 io.on('connection', (socket) => {
-	console.log('Client connected:', socket.id);
+	const clientId = socket.handshake.query.clientId;
+	console.log('Client connected:', clientId);
+
+	socket.on('test', (data) => {
+		console.log('Received test message:', data);
+		socket.emit('test', 'xau');
+	})
 
 	socket.on('disconnect', () => {
-		console.log('Client disconnected:', socket.id);
+		console.log('Client disconnected:', clientId);
 	});
 });
 
