@@ -17,14 +17,17 @@ CREATE TABLE IF NOT EXISTS users (
 -- 	email TEXT
 -- );
 
+-- TODO: Check if displayname can be same as username
+
 CREATE TABLE IF NOT EXISTS userStats (
 	userId INTEGER NOT NULL PRIMARY KEY,
 	displayName TEXT,
 	avatar TEXT NOT NULL DEFAULT 'placeholder',
 	userStatus INTEGER DEFAULT 0,
 	matchCount INTEGER DEFAULT 0,
-	winCount INTEGER DEFAULT 0,
-	lossCount INTEGER DEFAULT 0,
+	matchwinCount INTEGER DEFAULT 0,
+	matchlossCount INTEGER DEFAULT 0,
+	tournamentCount INTEGER DEFAULT 0,
 	tournamentWinCount INTEGER DEFAULT 0,
 	FOREIGN KEY (userId) REFERENCES users(userId)
 );
@@ -37,7 +40,6 @@ CREATE TABLE IF NOT EXISTS friendList (
 	FOREIGN KEY (friendId) REFERENCES users (userId)
 );
 
-
 CREATE TABLE IF NOT EXISTS matchHistory (
 	userId INTEGER NOT NULL,
 	matchId INTEGER NOT NULL,
@@ -48,7 +50,7 @@ CREATE TABLE IF NOT EXISTS matchHistory (
 CREATE TABLE IF NOT EXISTS matchStats (
 	matchId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	creatorUserId INTEGER NOT NULL,
-	remoteUserId INTEGER,
+	remoteUserId INTEGER DEFAULT 0,
 	player1DisplayName TEXT NOT NULL,
 	player2DisplayName TEXT NOT NULL,
 	winnerDisplayName TEXT,
