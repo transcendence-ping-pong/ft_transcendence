@@ -41,6 +41,35 @@ export class GameManager {
     return this.score.LEFT > this.score.RIGHT ? 'LEFT' : 'RIGHT';
   }
 
+  async saveMatchResult(winner: GameScore) {
+    const payload = {
+      matchType: this.level || 'undefined',
+      creatorUserId: 1, // TODO: Substituir com ID real do usuário logado
+      player1DisplayName: 'Jogador 1',
+      player2DisplayName: 'Bot',
+      winnerDisplayName: winner === GameScore.LEFT ? 'Jogador 1' : 'Bot',
+      scorePlayer1: this.score[GameScore.LEFT],
+      scorePlayer2: this.score[GameScore.RIGHT],
+      forfeit: false
+    };
+
+    try {
+      const response = await fetch('/api/matches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        console.error('Erro ao salvar resultado:', await response.text());
+      } else {
+        console.log('Resultado enviado para API com sucesso!');
+      }
+    } catch (error) {
+      console.error('Erro de rede ao salvar resultado:', error);
+    }
+  }
+
 
   checkIsGameOver(player: GameScore): boolean {
     Object.values(this.score).forEach((score) => {
@@ -49,6 +78,9 @@ export class GameManager {
         // TODO: UI output for winning/losing
         console.log(`Game Over! Player ${player} wins!`);
         this.endGame();
+
+        // Enviar os dados para a API aqui:
+        this.saveMatchResult(player);
       }
     });
     return this.isGameOver;

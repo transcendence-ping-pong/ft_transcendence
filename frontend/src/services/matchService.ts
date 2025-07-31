@@ -1,6 +1,7 @@
-const API_BASE = 'http://localhost:4000';
+const API_BASE = '/api';
 
 export async function getAllMatches() {
+  console.log('Fetching matches');
   const res = await fetch(`${API_BASE}/matches`);
   if (!res.ok) throw new Error('Failed to fetch matches');
   return res.json();

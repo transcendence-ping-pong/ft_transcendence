@@ -90,35 +90,17 @@ export class gameOrchestrator {
             this.gameCanvas.startGame();
             this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => {});
           });
-
-        function showGameResult(winner: string, score: { LEFT: number; RIGHT: number }) {
-          const box = document.createElement('div');
-          box.className = 'game-result-box';
-          box.innerHTML = `
-            <h2>🏆 ${winner} venceu!</h2>
-            <p>Placar final: ${score.LEFT} x ${score.RIGHT}</p>
-            <button id="backToMenu">Voltar ao menu</button>
-          `;
-          document.body.appendChild(box);
-
-          document.getElementById('backToMenu')?.addEventListener('click', () => {
-            window.location.reload(); // ou chamar setupMenuFlow() diretamente
-          });
-        }
         
-        this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
-          const { winner, score } = e.detail;
-          const winnerName = winner === 'LEFT' ? 'Player 1' : 'Player 2';
+          this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
+            const { winner, score } = e.detail;
+            const winnerName = winner === 'LEFT' ? 'Player 1' : 'Player 2';
 
-          const message = `🏆 ${winnerName} venceu!\nPlacar final: ${score.LEFT} x ${score.RIGHT}`;
-          alert(message); // ou GUI personalizada
+            const message = `🏆 ${winnerName} venceu!\nPlacar final: ${score.LEFT} x ${score.RIGHT}`;
+            alert(message); // ou GUI personalizada
 
-          // Ou se tiver GUI:
-          this.gui.showGameOver(winnerName, score);
-        });
-
-
-
+            // Ou se tiver GUI:
+            this.gui.showGameOver(winnerName, score);
+          });
 
         //  this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
         //     console.log('Received gameOver', e.detail);

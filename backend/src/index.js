@@ -9,7 +9,10 @@ const sqlite3 = require('sqlite3').verbose();
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
 const { OAuth2Client } = require('google-auth-library');
+const matches = require('./api/matches');
 
+fastify.decorate('db', db); // isso permite acessar o banco via fastify.db nas rotas
+fastify.register(matches, { prefix: '/api' }); // prefixo opcional
 // TODO: Change path... definitely not /home/manumart/Desktop/maneleh42 ;)
 // Also, without info on what .env needs, this blocks all possible execution
 // require('dotenv').config({ path: '/home/manumart/Desktop/maneleh42/ft_transcendence/backend/src/.env' });
