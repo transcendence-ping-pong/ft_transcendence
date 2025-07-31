@@ -5,8 +5,6 @@ const path = require('path');
 const fastify = require('fastify')({ logger: true });
 const fastifyStatic = require('@fastify/static');
 const fastifyCors = require('@fastify/cors');
-const { Server } = require('socket.io');
-const { createServer } = require('http');
 
 const sqlite3 = require('sqlite3').verbose();
 const speakeasy = require('speakeasy');
@@ -155,9 +153,9 @@ fastify.get('/users', (req, res) => {
 
 // WEBSOCKET
 
-const server = createServer();
+const server = require('http').createServer();
 
-const io = new Server(server, {
+const io = require('socket.io')(server, {
 	cors: {
 		origin: "*",
 		methods: ["GET", "POST"]
