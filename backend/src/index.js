@@ -53,7 +53,7 @@ function saveRefreshToken(token, userId) {
 
 function findRefreshToken(token) {
     return new Promise((resolve, reject) => {
-        db.get(`SELECT rt.*, u.username FROM refresh_tokens rt 
+        db.get(`SELECT rt.*, u.username, u.email FROM refresh_tokens rt 
                 JOIN users u ON rt.user_id = u.user_id 
                 WHERE rt.token = ? AND rt.expires_at > datetime('now')`, 
             [token], (err, row) => {
@@ -95,8 +95,14 @@ function authenticateToken(request, reply, done) {
             reply.status(403).send({ error: 'Invalid or expired token' });
             return;
         }
-        request.user = user;
-        done();
+        db.get(`SELECT user_id, username, email FROM users WHERE user_id = ?`, [user.user_id], (dbErr, row) => {
+            if (dbErr || !row) {
+                reply.status(403).send({ error: 'User no longer exists' });
+                return;
+            }
+            request.user = user;
+            done();
+        });
     });
 }
 
@@ -143,6 +149,11 @@ function isValidPassword(password) {
     return isSafePassword(password);
 }
 
+function isValidEmail(email) {
+    return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// --- TOKEN REFRESH ---
 fastify.post('/token', async (req, res) => {
     const refreshToken = req.body.token;
     if (!refreshToken) {
@@ -158,9 +169,11 @@ fastify.post('/token', async (req, res) => {
         jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
             if (err) return res.status(403).send({ error: 'Invalid refresh token' });
             
+            // Add email to the access token
             const accessToken = generateAccessToken({ 
                 username: tokenData.username, 
-                user_id: tokenData.user_id 
+                user_id: tokenData.user_id,
+                email: tokenData.email  // Add this line
             });
             res.send({ accessToken: accessToken });
         });
@@ -170,43 +183,46 @@ fastify.post('/token', async (req, res) => {
     }
 });
 
+// --- 2FA: GENERATE SECRET ---
 fastify.post('/generate', { preHandler: authenticateToken }, (request, reply) => {
-    const { username } = request.body;
+    const { email } = request.body;
 
-    if (!username) {
-        return reply.status(400).send({ error: 'Username is required' });
+    if (!email) {
+        return reply.status(400).send({ error: 'Email is required' });
     }
 
-    if (request.user.username !== username) {
+    // Use the email from the authenticated token if not provided
+    const userEmail = email || request.user.email;
+
+    if (request.user.email !== userEmail) {
         return reply.status(403).send({ error: 'You can only generate secrets for your own account' });
     }
 
-    db.get(`SELECT * FROM users WHERE username = ?`, [username], (err, row) => {
+    db.get(`SELECT * FROM users WHERE email = ?`, [userEmail], (err, row) => {
         if (err) {
             return reply.status(500).send({ error: 'Error fetching user from database' });
         }
-
         if (!row) {
             return reply.status(404).send({ error: 'User not found' });
         }
 
-        const secret = speakeasy.generateSecret({ name: "ft_transcendence(" + username + ")" });
+        const secret = speakeasy.generateSecret({ name: "ft_transcendence(" + row.username + ")" });
 
         qrcode.toDataURL(secret.otpauth_url, function (err, qrCodeUrl) {
             if (err) {
                 return reply.status(500).send({ error: 'Error generating QR code' });
             }
-
             reply.send({ qrCodeUrl, secret: secret.base32 });
         });
     });
 });
 
+// --- 2FA: VERIFY TOKEN ---
 fastify.post('/verify-token', (req, res) => {
-    const { username, token, secret } = req.body;
+    const { email, token, secret } = req.body;
 
-    if (!username || !token) {
-        return res.status(400).json({ error: 'Username and token are required' });
+    if (!email || !token) {
+        return res.status(400).json({ error: 'Email and token are required' });
     }
 
     if (secret) {
@@ -218,7 +234,7 @@ fastify.post('/verify-token', (req, res) => {
         });
 
         if (verified) {
-            db.run(`UPDATE users SET secret = ? WHERE username = ?`, [secret, username], function (err) {
+            db.run(`UPDATE users SET secret = ? WHERE email = ?`, [secret, email], function (err) {
                 if (err) {
                     return res.status(500).json({ error: 'Error saving secret to database' });
                 }
@@ -228,21 +244,18 @@ fastify.post('/verify-token', (req, res) => {
             res.status(403).json({ error: 'Invalid token' });
         }
     } else {
-        db.get(`SELECT secret FROM users WHERE username = ?`, [username], (err, row) => {
+        db.get(`SELECT secret FROM users WHERE email = ?`, [email], (err, row) => {
             if (err) {
                 return res.status(500).json({ error: 'Error fetching secret from database' });
             }
-
             if (!row || !row.secret) {
                 return res.status(404).json({ error: 'User not found or authenticator not activated' });
             }
-
             const verified = speakeasy.totp.verify({
                 secret: row.secret,
                 encoding: 'base32',
                 token: token
             });
-
             if (verified) {
                 res.json({ message: 'Token verified successfully' });
             } else {
@@ -252,55 +265,62 @@ fastify.post('/verify-token', (req, res) => {
     }
 });
 
-fastify.get('/current-token', { preHandler: authenticateToken }, (req, res) => {
-    const { username } = req.query;
+// --- 2FA: CHECK 2FA STATUS ---
+fastify.get('/check-2fa', (req, res) => {
+    const { email } = req.query;
 
-    if (!username) {
-        return res.status(400).send({ error: 'Username is required' });
+    if (!email) {
+        return res.status(400).send({ error: 'Email is required' });
     }
 
-    if (req.user.username !== username) {
+    db.get(`SELECT secret FROM users WHERE email = ?`, [email], (err, row) => {
+        if (err) {
+            return res.status(500).send({ error: 'Error fetching user from database' });
+        }
+        if (!row) {
+            return res.status(404).send({ error: 'User not found' });
+        }
+        res.send({ has2FA: !!row.secret });
+    });
+});
+
+// --- 2FA: GET CURRENT TOKEN ---
+fastify.get('/current-token', { preHandler: authenticateToken }, (req, res) => {
+    const { email } = req.query;
+
+    if (!email) {
+        return res.status(400).send({ error: 'Email is required' });
+    }
+
+    if (req.user.email !== email) {
         return res.status(403).send({ error: 'You can only get tokens for your own account' });
     }
 
-    db.get(`SELECT secret FROM users WHERE username = ?`, [username], (err, row) => {
+    db.get(`SELECT secret FROM users WHERE email = ?`, [email], (err, row) => {
         if (err) {
             return res.status(500).send({ error: 'Error fetching secret from database' });
         }
-
         if (!row || !row.secret) {
             return res.status(404).send({ error: 'User not found or authenticator not activated' });
         }
-
         const token = speakeasy.totp({
             secret: row.secret,
             encoding: 'base32'
         });
-
         res.send({ token });
     });
 });
-fastify.get('/users', { preHandler: authenticateToken }, (req, res) => {
-    db.all(`SELECT user_id, username, secret, google_id, email FROM users`, (err, rows) => {
-        if (err) {
-            console.error('Database error in /users endpoint:', err);
-            return res.status(500).send({ error: 'Error fetching users from database' });
-        }
-        res.send(rows);
-    });
-});
 
+// --- SIGNUP ---
 fastify.post('/signup', (req, res) => {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!username || !password) {
-        return res.status(400).send({ error: 'Username and password are required' });
+    if (!email || !password) {
+        return res.status(400).send({ error: 'Email and password are required' });
     }
 
-    if (!isValidUsername(username)) {
-        return res.status(400).send({ 
-            error: 'Username must be 3-20 characters long and contain only letters and numbers' 
-        });
+    if (!isValidEmail(email)) {
+        return res.status(400).send({ error: 'Invalid email format' });
     }
 
     if (!isValidPassword(password)) {
@@ -309,82 +329,78 @@ fastify.post('/signup', (req, res) => {
         });
     }
 
+    const username = email.split('@')[0];
+
     bcrypt.hash(password, 13, (err, hashedPassword) => {
         if (err) {
             return res.status(500).send({ error: 'Error hashing password' });
         }
 
-        db.run(`INSERT INTO users (username, password, secret) VALUES (?, ?, ?)`, [username, hashedPassword, ''], function (dbErr) {
-            if (dbErr) {
-                if (dbErr.code === 'SQLITE_CONSTRAINT') {
-                    return res.status(400).send({ error: 'Username already exists' });
+        db.run(
+            `INSERT INTO users (email, username, password, secret) VALUES (?, ?, ?, ?)`,
+            [email, username, hashedPassword, ''],
+            function (dbErr) {
+                if (dbErr) {
+                    if (dbErr.code === 'SQLITE_CONSTRAINT') {
+                        return res.status(400).send({ error: 'Email or username already exists' });
+                    }
+                    return res.status(500).send({ error: 'Error saving user to database' });
                 }
-                return res.status(500).send({ error: 'Error saving user to database' });
+                res.send({ message: 'Signup successful' });
             }
-
-            res.send({ message: 'Signup successful' });
-        });
+        );
     });
 });
 
+// --- LOGIN ---
 fastify.post('/login', (req, res) => {
-    const { username, password, token } = req.body;
+    const { email, password, token } = req.body;
 
-    if (!username || !password) {
-        return res.status(400).send({ error: 'Username and password are required' });
+    if (!email || !password) {
+        return res.status(400).send({ error: 'Email and password are required' });
     }
 
-    if (!isValidUsername(username)) {
-        return res.status(400).send({ error: 'Invalid username format' });
+    if (!isValidEmail(email)) {
+        return res.status(400).send({ error: 'Invalid email format' });
     }
 
-    db.get(`SELECT * FROM users WHERE username = ?`, [username], async (err, row) => {
+    db.get(`SELECT * FROM users WHERE email = ?`, [email], async (err, row) => {
         if (err) {
             return res.status(500).send({ error: 'Error fetching user from database' });
         }
-
         if (!row) {
-            return res.status(404).send({ error: 'Invalid username or password' });
+            return res.status(404).send({ error: 'Invalid email or password' });
         }
-
         bcrypt.compare(password, row.password, async (bcryptErr, passwordMatch) => {
             if (bcryptErr) {
                 return res.status(500).send({ error: 'Error verifying password' });
             }
-
             if (!passwordMatch) {
-                return res.status(404).send({ error: 'Invalid username or password' });
+                return res.status(404).send({ error: 'Invalid email or password' });
             }
-
             if (row.secret) {
                 if (!token) {
                     return res.status(400).send({ error: 'Authenticator token is required', requiresToken: true });
                 }
-
                 const verified = speakeasy.totp.verify({
                     secret: row.secret,
                     encoding: 'base32',
                     token: token
                 });
-
                 if (!verified) {
                     return res.status(403).send({ error: 'Invalid authenticator token', requiresToken: true });
                 }
             }
-
-            currentLoggedInUser = username;
-            
+            currentLoggedInUser = row.username;
             try {
-                const user = { username: username, user_id: row.user_id };
+                const user = { username: row.username, user_id: row.user_id, email: row.email };
                 const accessToken = generateAccessToken(user);
                 const refreshToken = generateRefreshToken(user);
-                
                 await saveRefreshToken(refreshToken, row.user_id);
-                
-                res.send({ 
-                    message: 'Login successful', 
+                res.send({
+                    message: 'Login successful',
                     username: row.username,
-                    accessToken: accessToken,    
+                    accessToken: accessToken,
                     refreshToken: refreshToken
                 });
             } catch (tokenError) {
@@ -395,6 +411,7 @@ fastify.post('/login', (req, res) => {
     });
 });
 
+// --- LOGOUT ---
 fastify.post('/logout', async (req, res) => {
     const { token } = req.body; 
     currentLoggedInUser = null;
@@ -411,6 +428,7 @@ fastify.post('/logout', async (req, res) => {
     res.send({ message: 'Logout successful' });
 });
 
+// --- LOGOUT ALL ---
 fastify.post('/logout-all', { preHandler: authenticateToken }, async (req, res) => {
     try {
         await deleteAllUserRefreshTokens(req.user.user_id);
@@ -421,26 +439,23 @@ fastify.post('/logout-all', { preHandler: authenticateToken }, async (req, res) 
     }
 });
 
-fastify.get('/check-2fa', (req, res) => {
-    const { username } = req.query;
+// --- CURRENT USER ---
+fastify.get('/current-user', { preHandler: authenticateToken }, (req, res) => {
+    res.send({ username: req.user.username, user_id: req.user.user_id, email: req.user.email });
+});
 
-    if (!username) {
-        return res.status(400).send({ error: 'Username is required' });
-    }
-
-    db.get(`SELECT secret FROM users WHERE username = ?`, [username], (err, row) => {
+// --- USERS LIST ---
+fastify.get('/users', { preHandler: authenticateToken }, (req, res) => {
+    db.all(`SELECT user_id, username, secret, google_id, email FROM users`, (err, rows) => {
         if (err) {
-            return res.status(500).send({ error: 'Error fetching user from database' });
+            console.error('Database error in /users endpoint:', err);
+            return res.status(500).send({ error: 'Error fetching users from database' });
         }
-
-        if (!row) {
-            return res.status(404).send({ error: 'User not found' });
-        }
-
-        res.send({ has2FA: !!row.secret });
+        res.send(rows);
     });
 });
 
+// --- GOOGLE AUTH ---
 fastify.get('/auth/google', (req, res) => {
     const url = client.generateAuthUrl({
         access_type: 'offline',
@@ -451,7 +466,6 @@ fastify.get('/auth/google', (req, res) => {
 
 fastify.get('/auth/google/callback', async (req, res) => {
     const code = req.query.code;
-
     if (!code) {
         return res.status(400).send('Invalid request. No authorization code provided.');
     }
@@ -468,52 +482,44 @@ fastify.get('/auth/google/callback', async (req, res) => {
         const email = payload.email;
         const name = payload.name;
 
-        db.get(`SELECT * FROM users WHERE google_id = ?`, [googleId], async (err, row) => {
-            if (err) {
-                console.error('Database error:', err);
-                return res.status(500).send({ error: 'Error handling user in database' });
-            }
-
-            let username;
-            let user_id;
-
-            if (!row) {
-                db.run(`INSERT INTO users (username, password, secret, google_id, email) VALUES (?, ?, ?, ?, ?)`,
-                    [name, '', '', googleId, email], function (err) {
-                        if (err) {
-                            console.error('Database error:', err);
-                            return res.status(500).send({ error: 'Error creating user' });
-                        }
-                        username = name;
-                        user_id = this.lastID;
-                        sendTokens(username, user_id, res);
-                    });
-            } else {
-                username = row.username;
-                user_id = row.user_id;
-                sendTokens(username, user_id, res);
-            }
-        });
-
-        function sendTokens(username, user_id, res) {
-            const user = { username, user_id };
-            const accessToken = generateAccessToken(user);
-            const refreshToken = generateRefreshToken(user);
-
-            saveRefreshToken(refreshToken, user_id)
-                .then(() => {
-                    res.send({
-                        message: 'Login successful',
-                        username,
-                        accessToken,
-                        refreshToken
-                    });
-                })
-                .catch((tokenError) => {
-                    console.error('Error saving refresh token:', tokenError);
-                    res.status(500).send({ error: 'Error creating session' });
+        function dbGet(sql, params) {
+            return new Promise((resolve, reject) => {
+                db.get(sql, params, (err, row) => {
+                    if (err) reject(err);
+                    else resolve(row);
                 });
+            });
         }
+        function dbRun(sql, params) {
+            return new Promise((resolve, reject) => {
+                db.run(sql, params, function (err) {
+                    if (err) reject(err);
+                    else resolve(this.lastID);
+                });
+            });
+        }
+
+        let user = await dbGet(`SELECT * FROM users WHERE google_id = ?`, [googleId]);
+        let username, user_id;
+
+        if (!user) {
+            user_id = await dbRun(
+                `INSERT INTO users (username, password, secret, google_id, email) VALUES (?, ?, ?, ?, ?)`,
+                [name, '', '', googleId, email]
+            );
+            username = name;
+        } else {
+            username = user.username;
+            user_id = user.user_id;
+        }
+
+        const accessToken = generateAccessToken({ username, user_id, email });
+        const refreshToken = generateRefreshToken({ username, user_id, email });
+        await saveRefreshToken(refreshToken, user_id);
+
+        const redirectUrl = `/?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}&username=${encodeURIComponent(username)}`;
+        return res.redirect(redirectUrl);
+
     } catch (error) {
         console.error('Error during Google OAuth callback:', error);
         if (error.message && error.message.includes('invalid_grant')) {
@@ -523,22 +529,7 @@ fastify.get('/auth/google/callback', async (req, res) => {
     }
 });
 
-fastify.get('/current-user', { preHandler: authenticateToken }, (req, res) => {
-    res.send({ username: req.user.username, user_id: req.user.user_id });
-});
-
-fastify.get('/logged-in', (req, res) => {
-    const username = req.query.username;
-    currentLoggedInUser = username;
-    res.redirect('/');
-});
-
-fastify.get('/favicon.ico', (req, res) => res.status(204));
-
-fastify.listen({ port: port, host: '0.0.0.0' }, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
-
+// --- PROFILE MANAGEMENT ---
 fastify.post('/change-username', { preHandler: authenticateToken }, (request, reply) => {
     const { newUsername } = request.body;
     if (!newUsername || !isValidUsername(newUsername)) {
@@ -555,23 +546,6 @@ fastify.post('/change-username', { preHandler: authenticateToken }, (request, re
                 return reply.status(500).send({ error: 'Database error.' });
             }
             reply.send({ message: 'Username updated successfully.' });
-        }
-    );
-});
-
-fastify.post('/change-email', { preHandler: authenticateToken }, (request, reply) => {
-    const { newEmail } = request.body;
-    if (!newEmail || !newEmail.includes('@')) {
-        return reply.status(400).send({ error: 'Invalid email.' });
-    }
-    db.run(
-        `UPDATE users SET email = ? WHERE user_id = ?`,
-        [newEmail, request.user.user_id],
-        function (err) {
-            if (err) {
-                return reply.status(500).send({ error: 'Database error.' });
-            }
-            reply.send({ message: 'Email updated successfully.' });
         }
     );
 });
@@ -598,23 +572,9 @@ fastify.post('/change-password', { preHandler: authenticateToken }, (request, re
     });
 });
 
-fastify.post('/generate-new-2fa', { preHandler: authenticateToken }, (request, reply) => {
-    const username = request.user.username;
-    db.get(`SELECT * FROM users WHERE user_id = ?`, [request.user.user_id], (err, row) => {
-        if (err || !row) {
-            return reply.status(500).send({ error: 'User not found.' });
-        }
-        const secret = speakeasy.generateSecret({ name: "ft_transcendence(" + username + ")" });
-        db.run(`UPDATE users SET secret = ? WHERE user_id = ?`, [secret.base32, request.user.user_id], function (err) {
-            if (err) {
-                return reply.status(500).send({ error: 'Error saving new secret.' });
-            }
-            qrcode.toDataURL(secret.otpauth_url, function (err, qrCodeUrl) {
-                if (err) {
-                    return reply.status(500).send({ error: 'Error generating QR code.' });
-                }
-                reply.send({ qrCodeUrl, secret: secret.base32 });
-            });
-        });
-    });
+// --- MISC ---
+fastify.get('/favicon.ico', (req, res) => res.status(204));
+
+fastify.listen({ port: port, host: '0.0.0.0' }, () => {
+    console.log(`Server running at http://localhost:${port}`);
 });
