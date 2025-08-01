@@ -191,6 +191,7 @@ Z axis is pointing forward, babylon has different coordinate system than Blender
 | **Web components attributes** | `<my-button text="Hello"></my-button>` | `if (this.hasAttribute('text')) this.text = this.getAttribute('text')`. Then, `textContent` can use value set via attribute, manipulation should happen when element is mounted in DOM (connectedCallback). **HTML attributes and DOM properties CAN be connected but don't have to. They're not the same.** |
 | **Light/Shadow DOM** | `this.attachShadow({ mode: 'open' })` | Styles applied to normal/light DOM shouldnt affect nested custom web component. Shadow DOM: custom element has its own DOM tree, not directly connected to real DOM (therefore, not affected by global styling). |
 | **CORS support** | `npm install @fastify/cors` | Add CORS support to Fastify backend for frontend to communicate with it from a different origin (e.g. localhost:3000 to localhost:4000). |
+| **nginx** | `docker-compose exec nginx cat /etc/nginx/nginx.conf` | View the Nginx configuration file inside the container. Nginx is used for reverse proxy, forwarding requests to the appropriate backend service. Avoid CORS issues, serve both frontend and backend through the same port/domain. It can handle SSL/TLS termination, so app can be served securely. Moreover, it also handles load balancing and caching (distribute cache). **IN LOCAL DEVELOPMENT AS WE USE VITEST, NGINX IS NOT NEEDED. This because dev server servers the frontend and it talks directly to BE (with CORS enabled)** |
 
 ## Tournament Organization
 
