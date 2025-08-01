@@ -13,7 +13,7 @@ export function renderLogin(containerId: string) {
         alt="Login Background"
         class="absolute top-0 left-0 w-full h-full z-20 pointer-events-none"
       />
-      <generic-modal dismissible="false">
+      <generic-modal dismissible="false" appear-delay="1000">
         <div slot="body" class="p-4" id="auth-modal-content"></div>
       </generic-modal>
     </div>
@@ -22,6 +22,14 @@ export function renderLogin(containerId: string) {
   let mode = 'login'; // or 'signup'
   const content = container.querySelector('#auth-modal-content');
 
+  function showSpinner() {
+    content.innerHTML = `
+      <div class="flex justify-center items-center h-48">
+        <div class="w-12 h-12 border-8 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
+      </div>
+    `;
+  }
+
   function renderAuthComponent() {
     content.innerHTML = '';
     let el;
@@ -29,13 +37,26 @@ export function renderLogin(containerId: string) {
       el = document.createElement('user-login');
       el.addEventListener('switch-to-signup', () => {
         mode = 'signup';
-        renderAuthComponent();
+        showSpinner();
+        setTimeout(renderAuthComponent, 800);
+      });
+      el.addEventListener('login-success', () => {
+        showSpinner();
+        setTimeout(() => {
+          window.location.href = '/home';
+        }, 1200);
       });
     } else {
       el = document.createElement('user-signup');
       el.addEventListener('switch-to-login', () => {
         mode = 'login';
-        renderAuthComponent();
+        showSpinner();
+        setTimeout(renderAuthComponent, 800);
+      });
+      el.addEventListener('signup-success', () => {
+        mode = 'login';
+        showSpinner();
+        setTimeout(renderAuthComponent, 800);
       });
     }
     content.appendChild(el);

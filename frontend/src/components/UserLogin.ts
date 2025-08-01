@@ -6,14 +6,13 @@ template.innerHTML = `
   <style>
     :host {
       display: block;
-      font-family: WiredMono, helvetica, sans-serif;
-      max-width: 400px;
+      min-width: 400px;
       margin: 0 auto;
     }
     .form-title {
-      font-size: 1.5em;
+      font-size: 2rem;
       font-weight: bold;
-      margin-bottom: 1em;
+      margin-bottom: 1rem;
       text-align: center;
     }
     form {
@@ -27,7 +26,7 @@ template.innerHTML = `
       border: 1.5px solid var(--accent);
       font-size: 1rem;
       background: var(--body);
-      color: var(--border);
+      color: var(--text);
       outline: none;
       transition: border-color 0.2s;
     }
@@ -37,57 +36,80 @@ template.innerHTML = `
     button {
       padding: 1rem 0;
       border: none;
-      background: var(--accent);
+      background: var(--accent-secondary);
       color: var(--body);
-      font-size: 1rem;
+      font-size: 1.125rem;
       font-weight: bold;
+      min-height: 59px;
       cursor: pointer;
       transition: background 0.2s, color 0.2s;
     }
     button:hover, button:focus {
-      background: var(--border);
-      color: var(--accent);
+      background: var(--accent);
+      color: var(--text);
     }
     .google-btn {
-      background: #4285F4;
-      color: #fff;
-      margin-bottom: 0.5em;
+      background: var(--google);
+      color: var(--text);
+    }
+    .google-btn:hover, .google-btn:focus {
+      background: var(--google-hover);
+    }
+    .google-btn-icon {
+      width: 1.5em;
+      height: 1.5em;
+      vertical-align: middle;
+      margin-right: 0.5em;
     }
     .footer {
-      margin-top: 1em;
       text-align: center;
-      font-size: 0.98em;
+      font-size: 1rem;
       color: var(--text);
     }
     .footer button {
       background: none;
-      color: var(--accent);
+      color: var(--accent-secondary);
       border: none;
       font-weight: bold;
       cursor: pointer;
       padding: 0;
       font-size: 1em;
       margin-left: 0.5em;
+      text-decoration: none;
+    }
+    .footer button:hover, .footer button:focus {
+      transform: scale(1.05);
       text-decoration: underline;
     }
     .error {
-      color: red;
+      color: var(--warning);
       text-align: center;
       margin-bottom: 0.5em;
     }
   </style>
 
-  <div class="form-title">${t('auth.login')}</div>
+  <div class="form-title">${t('auth.signin')}</div>
   <form id="loginForm" autocomplete="off">
     <input id="email" name="email" type="email" required autocomplete="email" placeholder="${t('auth.email')}" />
     <input id="password" name="password" type="password" minlength=7 required autocomplete="current-password" placeholder="${t('auth.password')}" />
-    <button id="login" type="submit">${t('auth.login')}</button>
-    <button id="google" type="button" class="google-btn">${t('auth.continueWithGoogle')}</button>
+    <button id="login" type="submit">${t('auth.signin')}</button>
+    <button id="google" type="button" class="google-btn">
+      <svg class="google-btn-icon" viewBox="0 0 48 48">
+        <g>
+          <path fill="#4285F4" d="M24 9.5c3.54 0 6.36 1.22 8.34 2.26l6.18-6.18C34.62 2.06 29.7 0 24 0 14.64 0 6.4 5.48 2.44 13.44l7.6 5.91C12.2 13.36 17.6 9.5 24 9.5z"/>
+          <path fill="#34A853" d="M46.1 24.5c0-1.54-.14-3.02-.39-4.45H24v8.43h12.44c-.54 2.74-2.18 5.06-4.64 6.62l7.44 5.79C43.98 37.06 46.1 31.36 46.1 24.5z"/>
+          <path fill="#FBBC05" d="M10.04 28.35c-.62-1.84-.98-3.8-.98-5.85s.36-4.01.98-5.85l-7.6-5.91C.86 14.98 0 19.33 0 24c0 4.67.86 9.02 2.44 13.26l7.6-5.91z"/>
+          <path fill="#EA4335" d="M24 48c6.48 0 11.92-2.14 15.9-5.84l-7.44-5.79c-2.08 1.4-4.74 2.23-8.46 2.23-6.4 0-11.8-3.86-14.96-9.45l-7.6 5.91C6.4 42.52 14.64 48 24 48z"/>
+          <path fill="none" d="M0 0h48v48H0z"/>
+        </g>
+      </svg>
+      ${t('auth.signinWithGoogle')}
+    </button>
     <div id="error" class="error"></div>
   </form>
   <div class="footer">
     ${t('auth.createAccount')}
-    <button id="signupBtn" type="button">${t('auth.createAccount')}</button>
+    <button id="signupBtn" type="button">${t('auth.signup')}</button>
   </div>
 `;
 
