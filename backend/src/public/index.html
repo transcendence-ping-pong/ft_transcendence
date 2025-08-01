@@ -6,6 +6,33 @@
     <title>Authenticator</title>
     <script>
         let loggedInUser = null;
+        let userEmail = null; // Add this to store user email
+
+        async function checkServerLoginStatus() {
+            const token = localStorage.getItem('accessToken');
+            try {
+                const response = await fetch('/current-user', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.username) {
+                        loggedInUser = data.username;
+                        userEmail = data.email; // Store user email
+                        localStorage.setItem('loggedInUser', data.username);
+                        localStorage.setItem('userEmail', data.email); // Store in localStorage
+                        updateLoginStatus(data.username);
+                        check2FAStatus();
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking server login status:', error);
+            }
+            return false;
+        }
 
         async function signup() {
             if (loggedInUser) {
@@ -13,18 +40,18 @@
                 return;
             }
 
-            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            if (!username || !password) {
-                alert('Please enter both username and password');
+            if (!email || !password) {
+                alert('Please enter both email and password');
                 return;
             }
 
             const response = await fetch('/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ email, password })
             });
 
             const data = await response.json();
@@ -37,19 +64,19 @@
         }
 
         async function login() {
-            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const token = document.getElementById('loginToken').value;
 
-            if (!username || !password) {
-                alert('Please enter both username and password');
+            if (!email || !password) {
+                alert('Please enter both email and password');
                 return;
             }
 
             const response = await fetch('/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, token })
+                body: JSON.stringify({ email, password, token })
             });
 
             const data = await response.json();
@@ -61,31 +88,22 @@
                     document.getElementById('tokenSection').style.display = 'block';
                 }
             } else {
-                loggedInUser = username;
-                localStorage.setItem('loggedInUser', username);
+                loggedInUser = data.username;
+                userEmail = email; // Store the email
+                localStorage.setItem('loggedInUser', data.username);
+                localStorage.setItem('userEmail', email);
+                localStorage.setItem('accessToken', data.accessToken);
+                localStorage.setItem('refreshToken', data.refreshToken);
                 updateLoginStatus(loggedInUser);
                 document.getElementById('tokenSection').style.display = 'none';
                 alert('Login successful!');
                 check2FAStatus();
+                fetchUsers();
             }
         }
 
         async function googleLogin() {
             window.location.href = '/auth/google';
-        }
-
-        async function fetchLoggedInUser() {
-            const response = await fetch('/auth/google/callback');
-            const data = await response.json();
-
-            if (data.error) {
-                alert(data.error);
-            } else {
-                const user = data.user;
-                localStorage.setItem('loggedInUser', user.username);
-                updateLoginStatus(user.username);
-                addUserToList(user);
-            }
         }
 
         async function logout() {
@@ -94,10 +112,11 @@
                 return;
             }
 
+            const refreshToken = localStorage.getItem('refreshToken');
             const response = await fetch('/logout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: loggedInUser })
+                body: JSON.stringify({ token: refreshToken })
             });
 
             const data = await response.json();
@@ -106,7 +125,11 @@
                 alert(data.error);
             } else {
                 loggedInUser = null;
+                userEmail = null;
                 localStorage.removeItem('loggedInUser');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
                 updateLoginStatus(null);
                 document.getElementById('authenticatorSection').style.display = 'none';
                 alert('Logout successful');
@@ -114,7 +137,39 @@
         }
 
         async function check2FAStatus() {
-            const response = await fetch(`/check-2fa?username=${loggedInUser}`);
+            if (!loggedInUser || !userEmail) return;
+
+            const token = localStorage.getItem('accessToken');
+            const usersResponse = await fetch('/users', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            let users = [];
+            try {
+                users = await usersResponse.json();
+            } catch (e) {
+                users = [];
+            }
+
+            if (!Array.isArray(users)) {
+                users = [];
+            }
+
+            const currentUser = users.find(user => user.username === loggedInUser);
+
+            // If user has a Google ID, don't show 2FA options
+            if (currentUser && currentUser.google_id) {
+                document.getElementById('tokenSection').style.display = 'none';
+                document.getElementById('verifyTokenSection').style.display = 'none';
+                document.getElementById('generateSecretSection').style.display = 'none';
+                document.getElementById('authenticatorSection').style.display = 'none';
+                return;
+            }
+            
+            // Use email instead of username for 2FA check
+            const response = await fetch(`/check-2fa?email=${encodeURIComponent(userEmail)}`);
             const data = await response.json();
 
             if (data.error) {
@@ -136,23 +191,35 @@
         }
 
         async function fetchUsers() {
-            const response = await fetch('/users');
-            const users = await response.json();
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch('/users', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            let users = [];
+            try {
+                users = await response.json();
+            } catch (e) {
+                users = [];
+            }
 
             const userList = document.getElementById('userList');
             userList.innerHTML = '';
 
-            users.forEach(user => {
-                const listItem = document.createElement('li');
-                listItem.textContent = `ID: ${user.id}, Username: ${user.username}, Password: ${user.password}, Secret: ${user.secret}, Google ID: ${user.google_id || 'N/A'}, Email: ${user.email || 'N/A'}`;
-                userList.appendChild(listItem);
-            });
+            if (Array.isArray(users) && users.length > 0) {
+                users.forEach(user => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `ID: ${user.user_id}, Username: ${user.username}, Has 2FA: ${user.secret ? 'Yes' : 'No'}, Google ID: ${user.google_id || 'N/A'}, Email: ${user.email || 'N/A'}`;
+                    userList.appendChild(listItem);
+                });
+            }
         }
 
         async function verifyToken() {
             const token = document.getElementById('verifyToken').value;
 
-            if (!loggedInUser) {
+            if (!loggedInUser || !userEmail) {
                 alert('You must be logged in to verify a token.');
                 return;
             }
@@ -165,7 +232,7 @@
             const response = await fetch('/verify-token', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: loggedInUser, token })
+                body: JSON.stringify({ email: userEmail, token })
             });
 
             try {
@@ -184,15 +251,24 @@
         }
 
         async function generateSecret() {
-            if (!loggedInUser) {
+            if (!loggedInUser || !userEmail) {
                 alert('You must be logged in to generate a secret.');
+                return;
+            }
+
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                alert('No access token found. Please log in again.');
                 return;
             }
 
             const response = await fetch('/generate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: loggedInUser })
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`
+                },
+                body: JSON.stringify({ email: userEmail })
             });
 
             const data = await response.json();
@@ -205,35 +281,125 @@
             }
         }
 
+        // Add profile management functions
+        async function changeUsername() {
+            const newUsername = document.getElementById('newUsername').value;
+            if (!newUsername) {
+                alert('Please enter a new username');
+                return;
+            }
+
+            const accessToken = localStorage.getItem('accessToken');
+            const response = await fetch('/change-username', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`
+                },
+                body: JSON.stringify({ newUsername })
+            });
+
+            const data = await response.json();
+            if (data.error) {
+                alert(data.error);
+            } else {
+                alert(data.message);
+                loggedInUser = newUsername;
+                localStorage.setItem('loggedInUser', newUsername);
+                updateLoginStatus(newUsername);
+                fetchUsers();
+            }
+        }
+
+        async function changePassword() {
+            const newPassword = document.getElementById('newPassword').value;
+            if (!newPassword) {
+                alert('Please enter a new password');
+                return;
+            }
+
+            const accessToken = localStorage.getItem('accessToken');
+            const response = await fetch('/change-password', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`
+                },
+                body: JSON.stringify({ newPassword })
+            });
+
+            const data = await response.json();
+            if (data.error) {
+                alert(data.error);
+            } else {
+                alert(data.message);
+            }
+        }
+
+        // Update email display when user logs in
         function updateLoginStatus(loggedInUser) {
             const loginStatus = document.getElementById('loginStatus');
             if (loggedInUser) {
                 loginStatus.textContent = `Logged in as: ${loggedInUser}`;
+                const emailDisplay = document.getElementById('userEmailDisplay');
+                if (emailDisplay && userEmail) {
+                    emailDisplay.textContent = userEmail;
+                }
             } else {
                 loginStatus.textContent = '';
             }
+            document.getElementById('profileSection').style.display = loggedInUser ? 'block' : 'none';
         }
 
-        function addUserToList(user) {
-            const userList = document.getElementById('userList');
-            const listItem = document.createElement('li');
-            listItem.textContent = `ID: ${user.id}, Username: ${user.username}, Email: ${user.email || 'N/A'}`;
-            userList.appendChild(listItem);
-        }
-
-        window.onload = () => {
-            loggedInUser = localStorage.getItem('loggedInUser');
-            if (loggedInUser) {
-                updateLoginStatus(loggedInUser);
+        window.onload = async () => {
+            const storedUser = localStorage.getItem('loggedInUser');
+            const storedEmail = localStorage.getItem('userEmail');
+            let valid = false;
+            if (storedUser && storedEmail) {
+                loggedInUser = storedUser;
+                userEmail = storedEmail;
+                updateLoginStatus(storedUser);
+                valid = await checkServerLoginStatus();
+                if (!valid) {
+                    // User/token invalid, clear everything
+                    loggedInUser = null;
+                    userEmail = null;
+                    localStorage.removeItem('loggedInUser');
+                    localStorage.removeItem('userEmail');
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    updateLoginStatus(null);
+                }
+            } else {
+                await checkServerLoginStatus();
             }
             fetchUsers();
         };
     </script>
+    <script>
+    // Parse tokens from URL after Google login
+    (function() {
+        const params = new URLSearchParams(window.location.search);
+        const accessToken = params.get('accessToken');
+        const refreshToken = params.get('refreshToken');
+        const username = params.get('username');
+        if (accessToken && refreshToken && username) {
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('refreshToken', refreshToken);
+            localStorage.setItem('loggedInUser', username);
+            // For Google login, extract email from username if needed
+            // Remove tokens from URL for cleanliness
+            window.history.replaceState({}, document.title, "/");
+            // Optionally, reload to update UI
+            window.location.reload();
+        }
+    })();
+    </script>
 </head>
 <body>
     <h1>Authenticator</h1>
-    <label for="username">Username:</label>
-    <input type="text" id="username" placeholder="Enter username">
+    <label for="email">Email:</label>
+    <input type="email" id="email" placeholder="Enter email">
     <br>
     <label for="password">Password:</label>
     <input type="password" id="password" placeholder="Enter Password">
@@ -268,5 +434,19 @@
     <br>
     <h2>Users</h2>
     <ul id="userList"></ul>
+    <div id="profileSection" style="display:none; margin-top:30px;">
+        <h2>Profile Settings</h2>
+        <label for="newUsername">New Username:</label>
+        <input type="text" id="newUsername" placeholder="Enter new username">
+        <button onclick="changeUsername()">Change Username</button>
+        <br><br>
+        <p><strong>Email: </strong><span id="userEmailDisplay"></span> (Cannot be changed)</p>
+        <br>
+        <label for="newPassword">New Password:</label>
+        <input type="password" id="newPassword" placeholder="Enter new password">
+        <button onclick="changePassword()">Change Password</button>
+        <br><br>
+        <button onclick="generateSecret()">Generate New 2FA QR Code</button>
+    </div>
 </body>
 </html>
