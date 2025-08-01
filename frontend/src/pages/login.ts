@@ -25,7 +25,7 @@ export function renderLogin(containerId: string) {
   function showSpinner() {
     content.innerHTML = `
       <div class="flex justify-center items-center h-48">
-        <div class="w-12 h-12 border-8 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
+        <div class="w-12 h-12 border-8 border-[var(--loading)] border-t-[var(--accent-tertiary)] rounded-full animate-spin"></div>
       </div>
     `;
   }
