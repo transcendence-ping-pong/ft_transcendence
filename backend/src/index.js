@@ -9,18 +9,28 @@ const sqlite3 = require('sqlite3').verbose();
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
 const { OAuth2Client } = require('google-auth-library');
-const matches = require('./api/matches');
+require('dotenv').config();
+import cors from '@fastify/cors';
 
-fastify.decorate('db', db); // isso permite acessar o banco via fastify.db nas rotas
-fastify.register(matches, { prefix: '/api' }); // prefixo opcional
+const matchRoutes = require('./api/matches');
+
+
+fastify.register(matchRoutes, { prefix: '/api' }); // prefixo opcional
 // TODO: Change path... definitely not /home/manumart/Desktop/maneleh42 ;)
 // Also, without info on what .env needs, this blocks all possible execution
 // require('dotenv').config({ path: '/home/manumart/Desktop/maneleh42/ft_transcendence/backend/src/.env' });
 
 fastify.register(fastifyStatic, {
-  root: path.join(__dirname, 'public'),
+  root: path.join(__dirname, '../../frontend/src'), // ajustado conforme sua estrutura
   prefix: '/',
 });
+
+
+await fastify.register(cors, {
+  origin: '*', // ou 'http://localhost:3000'
+});
+
+
 
 const port = 4000;
 
@@ -34,9 +44,11 @@ const client = new OAuth2Client(
 let currentLoggedInUser = null;
 
 // TODO: Change path when file is moved to correct place (might not be needed, please check)
-let db_path = path.join(path.dirname(__dirname), '/database/database.db');
+let db_path = path.join(path.dirname(__dirname), '../database/database.db');
 
 const db = new sqlite3.Database(db_path, sqlite3.OPEN_READWRITE);
+
+fastify.decorate('db', db); // isso permite acessar o banco via fastify.db nas rotas
 
 fastify.post('/generate', (req, res) => {
     const { username } = req.body;
@@ -290,6 +302,16 @@ fastify.get('/auth/google/callback', async (req, res) => {
     }
 });
 
+// async function matchRoutes(fastify, options) {
+//   fastify.get('/', async (request, reply) => {
+//     return [{ id: 1, players: ['A', 'B'], score: '5-2' }];
+//   });
+// }
+
+// module.exports = matchRoutes;
+
+// module.exports = matchRoutes;
+
 // Add a route to handle the logged-in page update
 fastify.get('/logged-in', (req, res) => {
     const username = req.query.username;
@@ -304,3 +326,7 @@ fastify.get('/logged-in', (req, res) => {
 });
 
 fastify.get('/favicon.ico', (req, res) => res.status(204));
+
+fastify.ready().then(() => {
+  console.log(fastify.printRoutes());
+});

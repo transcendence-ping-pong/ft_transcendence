@@ -1,0 +1,15 @@
+{
+  "devDependencies": {
+    "@types/babylonjs": "^2.3.31",
+    "vite": "^7.0.4"
+  },
+  "scripts": {
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@babylonjs/core": "^8.18.0",
+    "@babylonjs/gui": "^8.18.0",
+    "@babylonjs/loaders": "^8.18.0",
+    "@babylonjs/materials": "^8.18.0"
+  }
+}
