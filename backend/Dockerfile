@@ -8,6 +8,7 @@ COPY package.json ./
 RUN npm install
 
 COPY ./api ./api
+COPY ./temp ./temp
 COPY ./database ./database
 COPY app.js app.js
 

@@ -33,6 +33,16 @@ async function userRoutes(fastify, options) {
 			}
 		});
 	});
+
+	fastify.post('/users/addfriend/:userId', async (request, reply) => {
+		const { userId } = request.params;
+		
+		await db.run(`INSERT INTO userStatus (userId) VALUES (?)`, [userId], function (err) {
+			if (err) {
+				return reply.status(500).send({ error: 'Error adding match to database' });
+			}
+		});
+	});
 };
 
 module.exports = userRoutes;

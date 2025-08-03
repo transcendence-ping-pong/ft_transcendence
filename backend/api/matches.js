@@ -1,4 +1,6 @@
 
+const { splitIntoRandomPairs } = require('./utils');
+
 async function matchRoutes(fastify, options) {
 
 	const db = fastify.db;
@@ -16,40 +18,23 @@ async function matchRoutes(fastify, options) {
 	fastify.post('/matches', async (request, reply) => {
 		const {
 			creatorUserId,
-			remoteUserId,
+			remoteUserId = null,
 			player1DisplayName,
-			player2DisplayName,
-			winnerDisplayName,
-			scorePlayer1,
-			scorePlayer2,
+			player2DisplayName = 'Bot'
 		} = request.body;
 
 		// TODO: Verify if additional checks are needed
-		if (!creatorUserId) {
-			return reply.status(400).send({ error: 'Incomplete player credentials.' });
+		if (!creatorUserId || !player1DisplayName) {
+			return reply.status(400).send({ error: 'Invalid parameters.' });
 		}
 
-		const d = new Date();
+		const event = new Date();
 
-		function addZero(i) {
-			if (i < 10) {i = "0" + i}
-			return i;
-		}
+		const time = event.toLocaleTimeString("pt-PT");
+		const date = event.toLocaleDateString("pt-PT");
 
-		let day = addZero(d.getDate());
-		let month = addZero(d.getMonth() + 1);
-		let year = addZero(d.getFullYear());
-		let h = addZero(d.getHours());
-		let m = addZero(d.getMinutes());
-		let s = addZero(d.getSeconds());
-
-		const time = h + ":" + m + ":" + s;
-		const date = day + "/" + month + "/" + year;
-
-		await db.run(`INSERT INTO matchStats (creatorUserId, remoteUserId, player1DisplayName, player2DisplayName,
-			 winnerDisplayName, scorePlayer1, scorePlayer2, date, time) 
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [creatorUserId, remoteUserId, player1DisplayName, 
-				player2DisplayName, winnerDisplayName, scorePlayer1, scorePlayer2, date, time], function (err) {
+		await db.run(`INSERT INTO matchStats (creatorUserId, remoteUserId, player1DisplayName, player2DisplayName, date, time) 
+			VALUES (?, ?, ?, ?, ?, ?)`, [creatorUserId, remoteUserId, player1DisplayName, player2DisplayName, date, time], function (err) {
 			if (err) {
 				return reply.status(500).send({ error: 'Error adding match to database' });
 			}
@@ -60,7 +45,6 @@ async function matchRoutes(fastify, options) {
 				if (err) {
 					return reply.status(500).send({ error: 'Error adding match to user history' });
 				}
-				reply.send({ message: 'Success' });
 			});
 
 			if (remoteUserId) {
@@ -69,20 +53,37 @@ async function matchRoutes(fastify, options) {
 					if (err) {
 						return reply.status(500).send({ error: 'Error adding match to user history' });
 					}
-					reply.send({ message: 'Success' });
 				});
 			}
+			reply.send({ message: 'Success' });
 		});
 	});
 
 	fastify.get('/matches/:matchId', async (request, reply) => {
 		const { matchId } = request.params;
 
-		await db.get(`SELECT * FROM matchStats WHERE matchId = ?`, matchId, (err, rows) => {
+		await db.get(`SELECT creatorUserId, remoteUserId, player1DisplayName, player2DisplayName, winnerDisplayName, scorePlayer1, scorePlayer2, date, time FROM matchStats WHERE matchId = ?`, matchId, (err, rows) => {
 			if (err) {
 				return reply.status(500).send({ error: 'Error fetching match from database' });
 			}
 			reply.send(rows);
+		});
+	});
+
+	fastify.patch('/matches/:matchId', async (request, reply) => {
+		const { matchId } = request.params;
+
+		const {
+			winnerDisplayName,
+			scorePlayer1,
+			scorePlayer2,
+		} = request.body;
+
+		await db.run(`UPDATE matches SET winnerDisplayName = ?, scorePlayer1 = ?, scorePlayer2 = ? WHERE matchId = ?`, [winnerDisplayName, scorePlayer1, scorePlayer2, matchId], (err, rows) => {
+			if (err) {
+				return reply.status(500).send({ error: 'Error updating match' });
+			}
+			reply.send({ message: 'Success' });
 		});
 	});
 
@@ -94,6 +95,46 @@ async function matchRoutes(fastify, options) {
 				return reply.status(500).send({ error: 'Error fetching user history from database' });
 			}
 			reply.send(rows);
+		});
+	});
+
+	fastify.post('/tournament', async (request, reply) => {
+		const { userId, players } = request.body;
+
+		if (players.length != 8)
+			return reply.status(500).send({ error: 'Invalid player amount' });
+
+		const shuffle = splitIntoRandomPairs(players);
+
+		await db.run(`INSERT INTO tournament (creatorId) VALUES (?)`, [userId], async function (err) {
+			if (err) {
+				return reply.status(500).send({ error: 'Error creating tournament' });
+			}
+
+			const tournId = this.lastID;
+
+			for (let i = 0; i < shuffle.length; i++)
+			{
+				const event = new Date();
+
+				const time = event.toLocaleTimeString("pt-PT");
+				const date = event.toLocaleDateString("pt-PT");
+			
+				await db.run(`INSERT INTO matchStats (creatorUserId, player1DisplayName, player2DisplayName, date, time) 
+					VALUES (?, ?, ?, ?, ?)`, [userId, shuffle[i][0], shuffle[i][1], date, time], async function (err) {
+					if (err) {
+						return reply.status(500).send({ error: 'Error creating match'});
+					}
+
+					const matchId = this.lastID;
+
+					await db.run(`UPDATE tournament SET quarterfinalId${i + 1} = ? WHERE tournamentId = ?`, [matchId, tournId], function (err) {
+						if (err) {
+							return reply.status(500).send({ error: 'Error adding match to tournament'});
+						}
+					});
+				});
+			};
 		});
 	});
 };
