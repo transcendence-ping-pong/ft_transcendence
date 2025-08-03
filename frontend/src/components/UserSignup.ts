@@ -81,6 +81,7 @@ template.innerHTML = `
 
   <div class="form-title">${t('auth.signup')}</div>
   <form id="signupForm" autocomplete="off">
+    <input id="username" name="username" type="text" required autocomplete="username" placeholder="${t('auth.username')}" />
     <input id="email" name="email" type="email" required autocomplete="email" placeholder="${t('auth.email')}" />
     <input id="password" name="password" type="password" minlength=7 required autocomplete="new-password" placeholder="${t('auth.password')}" />
     <button id="signup" type="submit">${t('auth.signup')}</button>

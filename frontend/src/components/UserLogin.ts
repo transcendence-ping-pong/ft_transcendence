@@ -1,5 +1,7 @@
 import { t } from '@/locales/Translations.js';
 import * as authService from '@/services/authService.js';
+import { state } from '@/state';
+import { UserData } from '@/utils/playerUtils/types';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -126,37 +128,92 @@ export class UserLogin extends HTMLElement {
     shadow.getElementById('signupBtn').onclick = this._onSignupClick.bind(this);
   }
 
-  async _onLogin(e) {
+  // TODO: where to retrieve the token from?
+  // const token = document.getElementById('loginToken').value; ???
+  async _onLogin(e: Event) {
     e.preventDefault();
-    const email = this.shadowRoot.getElementById('email').value.trim();
-    const password = this.shadowRoot.getElementById('password').value;
+    const email = (this.shadowRoot.getElementById('email') as HTMLInputElement).value.trim();
+    const password = (this.shadowRoot.getElementById('password') as HTMLInputElement).value;
+    // const token = (this.shadowRoot.getElementById('loginToken') as HTMLInputElement).value;
+    console.log('Login attempt with email:', email, password);
     if (!email || !password) {
-      this._setError('Please enter both email and password');
+      this._setError(t('auth.errorMissingFields'));
       return;
     }
-    const res = await authService.login(email, password);
-    if (res.error) {
+
+    let res: authService.AuthResponse;
+    try {
+      res = await authService.login(email, password);
+    } catch (error) {
       this._setError(res.error);
-    } else {
+      console.error('Login error:', error);
+    } finally {
+      console.log('Login response:', res);
       this._setError('');
-      alert('Login successful!');
-      // TODO: dispatch a custom event here for successful login? add logged in user to state?
-      // TODO: then check in main if is authenticated function isAuthenticated() {
-      // return !!localStorage.getItem('loggedInUser');... otherwise, always redirect to login
+      // save user data in global state
+      state.userData = {
+        username: res.user.username || '',
+        email: res.user.email || '',
+        accessToken: res.secret || '',
+        // refreshToken: res.refreshToken || '',
+        // expiresAt: res.expiresAt || undefined
+      } as UserData;
+      console.log('User data saved in state:', state.userData);
+      // dispatch event for successful login
+      this.dispatchEvent(new CustomEvent('login-success', { bubbles: true, composed: true }));
     }
   }
 
-  async _onGoogleLogin(e) {
+  // async function login() {
+  //           const email = document.getElementById('email').value;
+  //           const password = document.getElementById('password').value;
+  //           const token = document.getElementById('loginToken').value;
+
+  //           if (!email || !password) {
+  //               alert('Please enter both email and password');
+  //               return;
+  //           }
+
+  //           const response = await fetch('/login', {
+  //               method: 'POST',
+  //               headers: { 'Content-Type': 'application/json' },
+  //               body: JSON.stringify({ email, password, token })
+  //           });
+
+  //           const data = await response.json();
+
+  //           if (data.error) {
+  //               alert(data.error);
+
+  //               if (data.requiresToken) {
+  //                   document.getElementById('tokenSection').style.display = 'block';
+  //               }
+  //           } else {
+  //               loggedInUser = data.username;
+  //               userEmail = email; // Store the email
+  //               localStorage.setItem('loggedInUser', data.username);
+  //               localStorage.setItem('userEmail', email);
+  //               localStorage.setItem('accessToken', data.accessToken);
+  //               localStorage.setItem('refreshToken', data.refreshToken);
+  //               updateLoginStatus(loggedInUser);
+  //               document.getElementById('tokenSection').style.display = 'none';
+  //               alert('Login successful!');
+  //               check2FAStatus();
+  //               fetchUsers();
+  //           }
+  //       }
+
+  async _onGoogleLogin(e: Event) {
     e.preventDefault();
     await authService.googleLogin();
   }
 
-  _onSignupClick(e) {
+  _onSignupClick(e: Event) {
     e.preventDefault();
     this.dispatchEvent(new CustomEvent('switch-to-signup', { bubbles: true, composed: true }));
   }
 
-  _setError(msg) {
+  _setError(msg: string) {
     this.shadowRoot.getElementById('error').textContent = msg;
   }
 }

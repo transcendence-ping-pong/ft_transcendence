@@ -8,7 +8,7 @@ const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
 const { OAuth2Client } = require('google-auth-library');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken'); 
+const jwt = require('jsonwebtoken');
 
 require('dotenv').config({ path: './backend/src/.env' });
 
@@ -16,6 +16,10 @@ fastify.register(fastifyStatic, {
     root: path.join(__dirname, 'public'),
     prefix: '/',
 });
+
+// fastify.register(fastifyCors, {
+//     origin: true, // or specify frontend: 'http://localhost:3000'
+// });
 
 const port = 4000;
 
@@ -43,11 +47,11 @@ function saveRefreshToken(token, userId) {
     return new Promise((resolve, reject) => {
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7);
-        db.run(`INSERT INTO refresh_tokens (token, user_id, expires_at) VALUES (?, ?, ?)`, 
-            [token, userId, expiresAt.toISOString()], function(err) {
-            if (err) reject(err);
-            else resolve(this.lastID);
-        });
+        db.run(`INSERT INTO refresh_tokens (token, user_id, expires_at) VALUES (?, ?, ?)`,
+            [token, userId, expiresAt.toISOString()], function (err) {
+                if (err) reject(err);
+                else resolve(this.lastID);
+            });
     });
 }
 
@@ -55,17 +59,17 @@ function findRefreshToken(token) {
     return new Promise((resolve, reject) => {
         db.get(`SELECT rt.*, u.username, u.email FROM refresh_tokens rt 
                 JOIN users u ON rt.user_id = u.user_id 
-                WHERE rt.token = ? AND rt.expires_at > datetime('now')`, 
+                WHERE rt.token = ? AND rt.expires_at > datetime('now')`,
             [token], (err, row) => {
-            if (err) reject(err);
-            else resolve(row);
-        });
+                if (err) reject(err);
+                else resolve(row);
+            });
     });
 }
 
 function deleteRefreshToken(token) {
     return new Promise((resolve, reject) => {
-        db.run(`DELETE FROM refresh_tokens WHERE token = ?`, [token], function(err) {
+        db.run(`DELETE FROM refresh_tokens WHERE token = ?`, [token], function (err) {
             if (err) reject(err);
             else resolve(this.changes);
         });
@@ -74,7 +78,7 @@ function deleteRefreshToken(token) {
 
 function deleteAllUserRefreshTokens(userId) {
     return new Promise((resolve, reject) => {
-        db.run(`DELETE FROM refresh_tokens WHERE user_id = ?`, [userId], function(err) {
+        db.run(`DELETE FROM refresh_tokens WHERE user_id = ?`, [userId], function (err) {
             if (err) reject(err);
             else resolve(this.changes);
         });
@@ -107,7 +111,7 @@ function authenticateToken(request, reply, done) {
 }
 
 function cleanupExpiredTokens() {
-    db.run(`DELETE FROM refresh_tokens WHERE expires_at <= datetime('now')`, function(err) {
+    db.run(`DELETE FROM refresh_tokens WHERE expires_at <= datetime('now')`, function (err) {
         if (err) {
             console.error('Error cleaning up expired tokens:', err);
         } else if (this.changes > 0) {
@@ -159,19 +163,19 @@ fastify.post('/token', async (req, res) => {
     if (!refreshToken) {
         return res.status(401).send({ error: 'Refresh token required' });
     }
-    
+
     try {
         const tokenData = await findRefreshToken(refreshToken);
         if (!tokenData) {
             return res.status(403).send({ error: 'Invalid or expired refresh token' });
         }
-        
+
         jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
             if (err) return res.status(403).send({ error: 'Invalid refresh token' });
-            
+
             // Add email to the access token
-            const accessToken = generateAccessToken({ 
-                username: tokenData.username, 
+            const accessToken = generateAccessToken({
+                username: tokenData.username,
                 user_id: tokenData.user_id,
                 email: tokenData.email  // Add this line
             });
@@ -324,8 +328,8 @@ fastify.post('/signup', (req, res) => {
     }
 
     if (!isValidPassword(password)) {
-        return res.status(400).send({ 
-            error: 'Password must be longer than 6 characters' 
+        return res.status(400).send({
+            error: 'Password must be longer than 6 characters'
         });
     }
 
@@ -392,31 +396,31 @@ fastify.post('/login', (req, res) => {
                 }
             }
             currentLoggedInUser = row.username;
-            try {
-                const user = { username: row.username, user_id: row.user_id, email: row.email };
-                const accessToken = generateAccessToken(user);
-                const refreshToken = generateRefreshToken(user);
-                await saveRefreshToken(refreshToken, row.user_id);
-                res.send({
-                    message: 'Login successful',
-                    username: row.username,
-                    accessToken: accessToken,
-                    refreshToken: refreshToken
-                });
-            } catch (tokenError) {
-                console.error('Error saving refresh token:', tokenError);
-                res.status(500).send({ error: 'Error creating session' });
-            }
+            // try {
+            const user = { username: row.username, user_id: row.user_id, email: row.email };
+            const accessToken = generateAccessToken(user);
+            const refreshToken = generateRefreshToken(user);
+            await saveRefreshToken(refreshToken, row.user_id);
+            res.send({
+                message: 'Login successful',
+                username: row.username,
+                accessToken: accessToken,
+                refreshToken: refreshToken
+            });
+            // } catch (tokenError) {
+            console.error('Error saving refresh token:', tokenError);
+            res.status(500).send({ error: 'Error creating session' });
+            // }
         });
     });
 });
 
 // --- LOGOUT ---
 fastify.post('/logout', async (req, res) => {
-    const { token } = req.body; 
+    const { token } = req.body;
     currentLoggedInUser = null;
     req.session = null;
-    
+
     if (token) {
         try {
             await deleteRefreshToken(token);
