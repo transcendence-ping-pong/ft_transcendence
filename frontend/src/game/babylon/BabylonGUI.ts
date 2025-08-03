@@ -247,11 +247,14 @@ export class BabylonGUI {
     });
   }
 
-  showGameOver() {
+  showGameOver(winnerName: string, score: { LEFT: number; RIGHT: number }) {
     this.clearGUI();
     this.fadeBackground(0, 0.8);
+
+    const resultText = `🏆 ${winnerName} venceu!\nPlacar final: ${score.LEFT} x ${score.RIGHT}`;
+
     this.gameOverText = new TextBlock();
-    this.gameOverText.text = t(t("game.over"));
+    this.gameOverText.text = resultText;
     this.gameOverText.color = this.GUIConstants.COUNTDOWN_FONT_COLOR;
     this.gameOverText.fontSize = this.GUIConstants.COUNTDOWN_FONT_SIZE * state.scaleFactor.scaleY + 'px';
     this.gameOverText.fontWeight = this.GUIConstants.COUNTDOWN_FONT_WEIGHT;

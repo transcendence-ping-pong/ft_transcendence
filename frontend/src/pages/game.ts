@@ -18,7 +18,10 @@ export function renderGame(containerId: string) {
         />
       </div>
     `;
-    new gameOrchestrator('game-screen');
+      // Wait for DOM update before initializing the orchestrator
+    setTimeout(() => {
+      new gameOrchestrator('game-screen');
+    }, 0);
 
     window.addEventListener('openSummary', (e: CustomEvent) => {
       console.log('openSummary event received', e.detail);

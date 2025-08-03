@@ -36,13 +36,34 @@ export class GameManager {
       this.score[GameScore.RIGHT] == this.scoreMax - 1);
   }
 
-  checkIsGameOver(player: GameScore): boolean {
+  public getWinner(): 'LEFT' | 'RIGHT' | null {
+    if (!this.isGameOver) return null;
+    return this.score.LEFT > this.score.RIGHT ? 'LEFT' : 'RIGHT';
+  }
+
+    async saveMatchResult(winner: GameScore) {
+    const payload = {
+      matchType: this.level || 'undefined',
+      creatorUserId: 1, // TODO: Substituir com ID real do usuário logado
+      player1DisplayName: 'Jogador 1',
+      player2DisplayName: 'Bot',
+      winnerDisplayName: winner === GameScore.LEFT ? 'Jogador 1' : 'Bot',
+      scorePlayer1: this.score[GameScore.LEFT],
+      scorePlayer2: this.score[GameScore.RIGHT],
+      forfeit: false
+    };
+  }
+
+ checkIsGameOver(player: GameScore): boolean {
     Object.values(this.score).forEach((score) => {
       if (this.checkTwoPointsRule()) this.scoreMax++;
       if (score == this.scoreMax) {
         // TODO: UI output for winning/losing
         console.log(`Game Over! Player ${player} wins!`);
         this.endGame();
+
+        // Enviar os dados para a API aqui:
+        this.saveMatchResult(player);
       }
     });
     return this.isGameOver;

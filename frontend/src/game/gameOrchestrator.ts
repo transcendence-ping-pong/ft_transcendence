@@ -77,28 +77,39 @@ export class gameOrchestrator {
           this.babylonCanvas.createGameCanvas(level as GameLevel, mode as PlayerMode);
           this.gameCanvas = this.babylonCanvas.getGameCanvas();
 
+          if (mode === PlayerMode.ONE_PLAYER) {
+            this.gameCanvas.enableBotForPlayer(1);
+          }
+
+
           this.gui.showCountdown(3, () => {
             this.gameCanvas.startGame();
-            this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => { });
+            this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => {});
           });
 
-          this.gameCanvas.addEventListener('scoreChanged', (e: CustomEvent) => {
-            console.log('Received scoreChanged', e.detail);
-            this.gui.clearGUI();
-            this.gui.showScoreBoard(e.detail, () => { });
-          });
+          // this.gameCanvas.addEventListener('scoreChanged', (e: CustomEvent) => {
+          //   console.log('Received scoreChanged', e.detail);
+          //   this.gui.clearGUI();
+          //   this.gui.showScoreBoard(e.detail, () => { });
+          // });
 
           this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
-            console.log('Received gameOver', e.detail);
-            this.gui.showGameOver();
-            setTimeout(() => {
-              this.gui.clearGUI();
-              this.babylonCanvas.initPlaneMaterial();
+            //console.log('Received gameOver', e.detail);
+            const { winner, score } = e.detail;
+            const winnerName = winner === 'LEFT' ? 'Player 1' : 'Player 2';
+            const message = `🏆 ${winnerName} venceu!\nPlacar final: ${score.LEFT} x ${score.RIGHT}`;
+            alert(message);
 
-              window.dispatchEvent(new CustomEvent('openSummary', {
-                detail: { summary: true, match: e.detail }
-              }));
-            }, 2000);
+            this.gui.showGameOver(winnerName, score);
+
+            // setTimeout(() => {
+            //   this.gui.clearGUI();
+            //   this.babylonCanvas.initPlaneMaterial();
+
+            //   window.dispatchEvent(new CustomEvent('openSummary', {
+            //     detail: { summary: true, match: e.detail }
+            //   }));
+            // }, 2000);
           });
         });
       });
