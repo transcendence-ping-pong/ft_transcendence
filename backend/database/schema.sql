@@ -25,11 +25,11 @@ CREATE TABLE IF NOT EXISTS userStats (
 	avatar TEXT NOT NULL DEFAULT 'placeholder',
 	userStatus INTEGER DEFAULT 0,
 	matchCount INTEGER DEFAULT 0,
-	matchwinCount INTEGER DEFAULT 0,
-	matchlossCount INTEGER DEFAULT 0,
+	matchWinCount INTEGER DEFAULT 0,
+	matchLossCount INTEGER DEFAULT 0,
 	tournamentCount INTEGER DEFAULT 0,
 	tournamentWinCount INTEGER DEFAULT 0,
-	FOREIGN KEY (userId) REFERENCES users(userId)
+	FOREIGN KEY (userId) REFERENCES users (userId)
 );
 
 CREATE TABLE IF NOT EXISTS friendList (
@@ -43,14 +43,14 @@ CREATE TABLE IF NOT EXISTS friendList (
 CREATE TABLE IF NOT EXISTS matchHistory (
 	userId INTEGER NOT NULL,
 	matchId INTEGER NOT NULL,
-	FOREIGN KEY (userId) REFERENCES users(userId),
-	FOREIGN KEY (matchId) REFERENCES matchStats(matchId)
+	FOREIGN KEY (userId) REFERENCES users (userId),
+	FOREIGN KEY (matchId) REFERENCES matchStats (matchId)
 );
 
 CREATE TABLE IF NOT EXISTS matchStats (
 	matchId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	creatorUserId INTEGER NOT NULL,
-	remoteUserId INTEGER DEFAULT 0,
+	remoteUserId INTEGER,
 	player1DisplayName TEXT NOT NULL,
 	player2DisplayName TEXT NOT NULL,
 	winnerDisplayName TEXT,
@@ -81,15 +81,6 @@ CREATE TABLE IF NOT EXISTS tournament (
 	FOREIGN KEY (semifinalId1) REFERENCES matchStats (matchId),
 	FOREIGN KEY (semifinalId2) REFERENCES matchStats (matchId),
 	FOREIGN KEY (finalId) REFERENCES matchStats (matchId)
-);
-
-CREATE TABLE IF NOT EXISTS refresh_tokens (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    token TEXT UNIQUE NOT NULL,
-    userId INTEGER NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    expires_at DATETIME,
-    FOREIGN KEY (userId) REFERENCES users (userId) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS refresh_tokens (

@@ -1,5 +1,7 @@
 const { splitIntoRandomPairs } = require('./utils');
 
+const { splitIntoRandomPairs } = require('./utils');
+
 async function matchRoutes(fastify, options) {
 
 	const db = fastify.db;
@@ -34,8 +36,8 @@ async function matchRoutes(fastify, options) {
 		const time = event.toLocaleTimeString("pt-PT");
 		const date = event.toLocaleDateString("pt-PT");
 
-		await db.run(`INSERT INTO matchStats (creatorUserId, player1DisplayName, player2DisplayName, date, time, winnerDisplayName) 
-			VALUES (?, ?, ?, ?, ?, NULL)`, [creatorId, pair[0], pair[1], date, time], function (err) {
+		await db.run(`INSERT INTO matchStats (creatorUserId, remoteUserId, player1DisplayName, player2DisplayName, date, time) 
+			VALUES (?, ?, ?, ?, ?, ?)`, [creatorUserId, remoteUserId, player1DisplayName, player2DisplayName, date, time], function (err) {
 			if (err) {
 				return reply.status(500).send({ error: 'Error adding match to database' });
 			}
@@ -58,7 +60,6 @@ async function matchRoutes(fastify, options) {
 				});
 			}
 			reply.send({ message: 'Success' });
-			return;
 		});
 	});
 
@@ -90,6 +91,23 @@ async function matchRoutes(fastify, options) {
 			}
 			reply.send({ message: 'Success' });
 			return;
+		});
+	});
+
+	fastify.patch('/matches/:matchId', async (request, reply) => {
+		const { matchId } = request.params;
+
+		const {
+			winnerDisplayName,
+			scorePlayer1,
+			scorePlayer2,
+		} = request.body;
+
+		await db.run(`UPDATE matches SET winnerDisplayName = ?, scorePlayer1 = ?, scorePlayer2 = ? WHERE matchId = ?`, [winnerDisplayName, scorePlayer1, scorePlayer2, matchId], (err, rows) => {
+			if (err) {
+				return reply.status(500).send({ error: 'Error updating match' });
+			}
+			reply.send({ message: 'Success' });
 		});
 	});
 

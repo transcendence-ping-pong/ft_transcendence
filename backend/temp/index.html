@@ -1,110 +1,122 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Match Entry</title>
+  <meta charset="UTF-8">
+  <title>Fastify API Tester</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+    section { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+    input, textarea { width: 100%; padding: 8px; margin-bottom: 10px; }
+    button { padding: 10px 20px; }
+    h2 { margin-top: 0; }
+    pre { background: #f7f7f7; padding: 10px; border-radius: 5px; white-space: pre-wrap; }
+  </style>
 </head>
 <body>
-  <h1>Enter Match Information</h1>
 
-  <label for="player1DisplayName">Player 1 Display Name:</label>
-  <input type="text" id="player1DisplayName" required><br><br>
+  <h1>Fastify Route Tester</h1>
 
-  <label for="player2DisplayName">Player 2 Display Name:</label>
-  <input type="text" id="player2DisplayName"><br><br>
+  <!-- POST /matches -->
+  <section>
+    <h2>Create Match (`POST /matches`)</h2>
+    <form id="postMatchForm">
+      <input type="number" name="creatorUserId" placeholder="Creator User ID" required>
+      <input type="number" name="remoteUserId" placeholder="Remote User ID (optional)">
+      <input type="text" name="player1DisplayName" placeholder="Player 1 Display Name" required>
+      <input type="text" name="player2DisplayName" placeholder="Player 2 Display Name (optional)">
+      <button type="submit">Submit Match</button>
+    </form>
+    <pre id="postMatchResult"></pre>
+  </section>
 
-  <label for="creatorUserId">Creator User ID:</label>
-  <input type="number" id="creatorUserId" required><br><br>
+  <!-- GET /matches/:matchId -->
+  <section>
+    <h2>Get Match by ID (`GET /matches/:matchId`)</h2>
+    <form id="getMatchForm">
+      <input type="number" name="matchId" placeholder="Match ID" required>
+      <button type="submit">Fetch Match</button>
+    </form>
+    <pre id="getMatchResult"></pre>
+  </section>
 
-  <label for="scorePlayer1">Score Player 1:</label>
-  <input type="number" id="scorePlayer1" required><br><br>
+  <!-- PATCH /matches/:matchId -->
+  <section>
+    <h2>Update Match (`PATCH /matches/:matchId`)</h2>
+    <form id="patchMatchForm">
+      <input type="number" name="matchId" placeholder="Match ID" required>
+      <input type="text" name="winnerDisplayName" placeholder="Winner Display Name">
+      <input type="number" name="scorePlayer1" placeholder="Score Player 1">
+      <input type="number" name="scorePlayer2" placeholder="Score Player 2">
+      <button type="submit">Update Match</button>
+    </form>
+    <pre id="patchMatchResult"></pre>
+  </section>
 
-  <label for="scorePlayer2">Score Player 2:</label>
-  <input type="number" id="scorePlayer2" required><br><br>
+  <!-- GET /matches/history/:userId -->
+  <section>
+    <h2>Get Match History (`GET /matches/history/:userId`)</h2>
+    <form id="getHistoryForm">
+      <input type="number" name="userId" placeholder="User ID" required>
+      <button type="submit">Fetch History</button>
+    </form>
+    <pre id="getHistoryResult"></pre>
+  </section>
 
-  <label for="forfeit">Forfeit (0 or 1):</label>
-  <input type="number" id="forfeit" min="0" max="1"><br><br>
-
-  <label for="winnerDisplayName">Winner Display Name:</label>
-  <input type="text" id="winnerDisplayName" required><br><br>
-
-  <label for="matchType">Match Type:</label>
-  <input type="text" id="matchType"><br><br>
-
-  <button onclick="submitMatch()">Submit Match</button>
-
-  <h2>All Matches</h2>
-  <div id="matches">Loading...</div>
+  <!-- POST /tournament -->
+  <section>
+    <h2>Create Tournament (`POST /tournament`)</h2>
+    <form id="tournamentForm">
+      <input type="number" name="userId" placeholder="User ID" required>
+      <textarea name="players" rows="4" placeholder='Enter 8 player names, comma-separated'></textarea>
+      <button type="submit">Create Tournament</button>
+    </form>
+    <pre id="tournamentResult"></pre>
+  </section>
 
   <script>
-    async function submitMatch() {
-      const payload = {
-		player1DisplayName: document.getElementById('player1DisplayName').value,
-		player2DisplayName: document.getElementById('player2DisplayName').value,
-        creatorUserId: Number(document.getElementById('creatorUserId').value),
-        scorePlayer1: Number(document.getElementById('scorePlayer1').value),
-        scorePlayer2: Number(document.getElementById('scorePlayer2').value),
-        forfeit: Number(document.getElementById('forfeit').value),
-		winnerDisplayName: document.getElementById('winnerDisplayName').value,
-        matchType: document.getElementById('matchType').value
-      };
+    async function handleForm(formId, resultId, method, endpointBuilder, bodyBuilder = null) {
+      document.getElementById(formId).addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const endpoint = typeof endpointBuilder === 'function' ? endpointBuilder(formData) : endpointBuilder;
+        const options = { method, headers: { "Content-Type": "application/json" } };
 
-      const res = await fetch('/matches', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
+        if (bodyBuilder) {
+          options.body = JSON.stringify(bodyBuilder(formData));
+        }
+
+        const res = await fetch(endpoint, options);
+        const data = await res.json();
+        document.getElementById(resultId).textContent = JSON.stringify(data, null, 2);
       });
-
-      if (res.ok) {
-        alert('Match submitted!');
-        loadMatches();
-      } else {
-        alert('Error submitting match');
-      }
     }
 
-    async function loadMatches() {
-      const res = await fetch('/matches');
-      const data = await res.json();
+    // POST /matches
+    handleForm("postMatchForm", "postMatchResult", "POST", "/matches", (fd) => ({
+      creatorUserId: Number(fd.get("creatorUserId")),
+      remoteUserId: fd.get("remoteUserId") ? Number(fd.get("remoteUserId")) : null,
+      player1DisplayName: fd.get("player1DisplayName"),
+      player2DisplayName: fd.get("player2DisplayName") || "Bot"
+    }));
 
-      const container = document.getElementById('matches');
-      container.innerHTML = '';
+    // GET /matches/:matchId
+    handleForm("getMatchForm", "getMatchResult", "GET", (fd) => `/matches/${fd.get("matchId")}`);
 
-      if (data.length === 0) {
-        container.innerText = 'No matches found.';
-        return;
-      }
+    // PATCH /matches/:matchId
+    handleForm("patchMatchForm", "patchMatchResult", "PATCH", (fd) => `/matches/${fd.get("matchId")}`, (fd) => ({
+      winnerDisplayName: fd.get("winnerDisplayName"),
+      scorePlayer1: Number(fd.get("scorePlayer1")),
+      scorePlayer2: Number(fd.get("scorePlayer2"))
+    }));
 
-      const table = document.createElement('table');
-      const header = document.createElement('tr');
-      const columns = [
-        'matchId', 'creatorUserId', 'player1DisplayName', 'player2DisplayName',
-        'scorePlayer1', 'scorePlayer2', 'forfeit',
-        'winnerDisplayName', 'matchType'
-      ];
+    // GET /matches/history/:userId
+    handleForm("getHistoryForm", "getHistoryResult", "GET", (fd) => `/matches/history/${fd.get("userId")}`);
 
-      columns.forEach(col => {
-        const th = document.createElement('th');
-        th.textContent = col;
-        header.appendChild(th);
-      });
-      table.appendChild(header);
-
-      data.forEach(match => {
-        const row = document.createElement('tr');
-        columns.forEach(col => {
-          const cell = document.createElement('td');
-          cell.textContent = match[col] ?? '';
-          row.appendChild(cell);
-        });
-        table.appendChild(row);
-      });
-
-      container.appendChild(table);
-    }
-
-    window.onload = loadMatches;
+    // POST /tournament
+    handleForm("tournamentForm", "tournamentResult", "POST", "/tournament", (fd) => ({
+      userId: Number(fd.get("userId")),
+      players: fd.get("players").split(",").map(p => p.trim()).filter(p => p)
+    }));
   </script>
 </body>
 </html>
