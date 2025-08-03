@@ -43,7 +43,7 @@ export function renderLogin(containerId: string) {
       el.addEventListener('login-success', () => {
         showSpinner();
         setTimeout(() => {
-          window.location.href = '/home';
+          window.location.href = '/';
         }, 1200);
       });
     } else {

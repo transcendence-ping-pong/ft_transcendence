@@ -141,7 +141,7 @@ export class UserLogin extends HTMLElement {
       return;
     }
 
-    let res: authService.AuthResponse;
+    let res;
     try {
       res = await authService.login(email, password);
     } catch (error) {
@@ -152,10 +152,10 @@ export class UserLogin extends HTMLElement {
       this._setError('');
       // save user data in global state
       state.userData = {
-        username: res.user.username || '',
-        email: res.user.email || '',
-        accessToken: res.secret || '',
-        // refreshToken: res.refreshToken || '',
+        username: res.username || '',
+        email: email || '',
+        accessToken: res.accessToken || '',
+        refreshToken: res.refreshToken || '',
         // expiresAt: res.expiresAt || undefined
       } as UserData;
       console.log('User data saved in state:', state.userData);

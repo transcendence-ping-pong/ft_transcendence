@@ -1,7 +1,7 @@
 export interface AuthResponse {
   error?: string;
   message?: string;
-  user?: { id: string; username: string; email?: string };
+  username?: { id: string; username: string; email?: string };
   requiresToken?: boolean;
   has2FA?: boolean;
   qrCodeUrl?: string;

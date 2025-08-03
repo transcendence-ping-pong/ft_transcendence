@@ -17,9 +17,9 @@ fastify.register(fastifyStatic, {
     prefix: '/',
 });
 
-// fastify.register(fastifyCors, {
-//     origin: true, // or specify frontend: 'http://localhost:3000'
-// });
+fastify.register(fastifyCors, {
+    origin: true, // or specify frontend: 'http://localhost:3000'
+});
 
 const port = 4000;
 
@@ -396,21 +396,21 @@ fastify.post('/login', (req, res) => {
                 }
             }
             currentLoggedInUser = row.username;
-            // try {
-            const user = { username: row.username, user_id: row.user_id, email: row.email };
-            const accessToken = generateAccessToken(user);
-            const refreshToken = generateRefreshToken(user);
-            await saveRefreshToken(refreshToken, row.user_id);
-            res.send({
-                message: 'Login successful',
-                username: row.username,
-                accessToken: accessToken,
-                refreshToken: refreshToken
-            });
-            // } catch (tokenError) {
-            console.error('Error saving refresh token:', tokenError);
-            res.status(500).send({ error: 'Error creating session' });
-            // }
+            try {
+                const user = { username: row.username, user_id: row.user_id, email: row.email };
+                const accessToken = generateAccessToken(user);
+                const refreshToken = generateRefreshToken(user);
+                await saveRefreshToken(refreshToken, row.user_id);
+                res.send({
+                    message: 'Login successful',
+                    username: row.username,
+                    accessToken: accessToken,
+                    refreshToken: refreshToken
+                });
+            } catch (tokenError) {
+                console.error('Error saving refresh token:', tokenError);
+                res.status(500).send({ error: 'Error creating session' });
+            }
         });
     });
 });
