@@ -30,6 +30,8 @@ docker-compose.override.yml
 # VSCode settings
 .vscode/
 
-# temporary files (backend)
-backend/api/auth.js
+# temporary debug files (backend)
+# backend/temp
 backend/api/users.js
+backend/api/remote.js
+backend/api/auth.js
