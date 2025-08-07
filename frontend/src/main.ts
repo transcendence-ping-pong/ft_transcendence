@@ -9,6 +9,7 @@ import { notificationService } from "@/services/notificationService";
 import { startMockNotifications } from "@/services/mockNotifications.js";
 import '@/styles/index.css';
 import '@babylonjs/loaders';
+import { renderBracket } from '@/pages/tournament.js';
 
 /*
   Main responsabilities:
@@ -28,6 +29,7 @@ const routes = {
   "/login": renderLogin,
   "/game": renderGame,
   "/profile/:username": renderProfile,
+  "/tournament": renderBracket,
 };
 
 type NavigateFn = (path: string) => void;

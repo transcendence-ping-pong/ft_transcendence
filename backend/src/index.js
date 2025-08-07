@@ -1,7 +1,9 @@
 const path = require('path');
 const fastify = require('fastify')({ logger: true });
 const fastifyStatic = require('@fastify/static');
-const fastifyCors = require('@fastify/cors');
+fastify.register(require('@fastify/cors'), {
+  origin: true, // permite qualquer origem (use com cuidado em produção!)
+});
 
 const sqlite3 = require('sqlite3').verbose();
 const speakeasy = require('speakeasy');
@@ -43,7 +45,7 @@ function saveRefreshToken(token, userId) {
     return new Promise((resolve, reject) => {
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7);
-        db.run(`INSERT INTO refresh_tokens (token, user_id, expires_at) VALUES (?, ?, ?)`, 
+        db.run(`INSERT INTO refresh_tokens (token, userId, expires_at) VALUES (?, ?, ?)`, 
             [token, userId, expiresAt.toISOString()], function(err) {
             if (err) reject(err);
             else resolve(this.lastID);
@@ -54,7 +56,7 @@ function saveRefreshToken(token, userId) {
 function findRefreshToken(token) {
     return new Promise((resolve, reject) => {
         db.get(`SELECT rt.*, u.username, u.email FROM refresh_tokens rt 
-                JOIN users u ON rt.user_id = u.user_id 
+                JOIN users u ON rt.userId = u.userId 
                 WHERE rt.token = ? AND rt.expires_at > datetime('now')`, 
             [token], (err, row) => {
             if (err) reject(err);
@@ -74,7 +76,7 @@ function deleteRefreshToken(token) {
 
 function deleteAllUserRefreshTokens(userId) {
     return new Promise((resolve, reject) => {
-        db.run(`DELETE FROM refresh_tokens WHERE user_id = ?`, [userId], function(err) {
+        db.run(`DELETE FROM refresh_tokens WHERE userId = ?`, [userId], function(err) {
             if (err) reject(err);
             else resolve(this.changes);
         });
@@ -95,7 +97,7 @@ function authenticateToken(request, reply, done) {
             reply.status(403).send({ error: 'Invalid or expired token' });
             return;
         }
-        db.get(`SELECT user_id, username, email FROM users WHERE user_id = ?`, [user.user_id], (dbErr, row) => {
+        db.get(`SELECT userId, username, email FROM users WHERE userId = ?`, [user.userId], (dbErr, row) => {
             if (dbErr || !row) {
                 reply.status(403).send({ error: 'User no longer exists' });
                 return;
@@ -172,7 +174,7 @@ fastify.post('/token', async (req, res) => {
             // Add email to the access token
             const accessToken = generateAccessToken({ 
                 username: tokenData.username, 
-                user_id: tokenData.user_id,
+                userId: tokenData.userId,
                 email: tokenData.email  // Add this line
             });
             res.send({ accessToken: accessToken });
@@ -210,9 +212,11 @@ fastify.post('/generate', { preHandler: authenticateToken }, (request, reply) =>
 
         qrcode.toDataURL(secret.otpauth_url, function (err, qrCodeUrl) {
             if (err) {
-                return reply.status(500).send({ error: 'Error generating QR code' });
+                reply.status(500).send({ error: 'Error generating QR code' });
+                return;
             }
             reply.send({ qrCodeUrl, secret: secret.base32 });
+            return;
         });
     });
 });
@@ -393,10 +397,10 @@ fastify.post('/login', (req, res) => {
             }
             currentLoggedInUser = row.username;
             try {
-                const user = { username: row.username, user_id: row.user_id, email: row.email };
+                const user = { username: row.username, userId: row.userId, email: row.email };
                 const accessToken = generateAccessToken(user);
                 const refreshToken = generateRefreshToken(user);
-                await saveRefreshToken(refreshToken, row.user_id);
+                await saveRefreshToken(refreshToken, row.userId);
                 res.send({
                     message: 'Login successful',
                     username: row.username,
@@ -431,7 +435,7 @@ fastify.post('/logout', async (req, res) => {
 // --- LOGOUT ALL ---
 fastify.post('/logout-all', { preHandler: authenticateToken }, async (req, res) => {
     try {
-        await deleteAllUserRefreshTokens(req.user.user_id);
+        await deleteAllUserRefreshTokens(req.user.userId);
         res.send({ message: 'Logged out from all devices' });
     } catch (error) {
         console.error('Error logging out from all devices:', error);
@@ -441,12 +445,12 @@ fastify.post('/logout-all', { preHandler: authenticateToken }, async (req, res) 
 
 // --- CURRENT USER ---
 fastify.get('/current-user', { preHandler: authenticateToken }, (req, res) => {
-    res.send({ username: req.user.username, user_id: req.user.user_id, email: req.user.email });
+    res.send({ username: req.user.username, userId: req.user.userId, email: req.user.email });
 });
 
 // --- USERS LIST ---
 fastify.get('/users', { preHandler: authenticateToken }, (req, res) => {
-    db.all(`SELECT user_id, username, secret, google_id, email FROM users`, (err, rows) => {
+    db.all(`SELECT userId, username, secret, googleID, email FROM users`, (err, rows) => {
         if (err) {
             console.error('Database error in /users endpoint:', err);
             return res.status(500).send({ error: 'Error fetching users from database' });
@@ -499,23 +503,23 @@ fastify.get('/auth/google/callback', async (req, res) => {
             });
         }
 
-        let user = await dbGet(`SELECT * FROM users WHERE google_id = ?`, [googleId]);
-        let username, user_id;
+        let user = await dbGet(`SELECT * FROM users WHERE googleID = ?`, [googleId]);
+        let username, userId;
 
         if (!user) {
-            user_id = await dbRun(
-                `INSERT INTO users (username, password, secret, google_id, email) VALUES (?, ?, ?, ?, ?)`,
+            userId = await dbRun(
+                `INSERT INTO users (username, password, secret, googleID, email) VALUES (?, ?, ?, ?, ?)`,
                 [name, '', '', googleId, email]
             );
             username = name;
         } else {
             username = user.username;
-            user_id = user.user_id;
+            userId = user.userId;
         }
 
-        const accessToken = generateAccessToken({ username, user_id, email });
-        const refreshToken = generateRefreshToken({ username, user_id, email });
-        await saveRefreshToken(refreshToken, user_id);
+        const accessToken = generateAccessToken({ username, userId, email });
+        const refreshToken = generateRefreshToken({ username, userId, email });
+        await saveRefreshToken(refreshToken, userId);
 
         const redirectUrl = `/?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}&username=${encodeURIComponent(username)}`;
         return res.redirect(redirectUrl);
@@ -536,16 +540,19 @@ fastify.post('/change-username', { preHandler: authenticateToken }, (request, re
         return reply.status(400).send({ error: 'Invalid new username.' });
     }
     db.run(
-        `UPDATE users SET username = ? WHERE user_id = ?`,
-        [newUsername, request.user.user_id],
+        `UPDATE users SET username = ? WHERE userId = ?`,
+        [newUsername, request.user.userId],
         function (err) {
             if (err) {
                 if (err.code === 'SQLITE_CONSTRAINT') {
-                    return reply.status(400).send({ error: 'Username already exists.' });
+                    reply.status(400).send({ error: 'Username already exists.' });
+                    return;
                 }
-                return reply.status(500).send({ error: 'Database error.' });
+                reply.status(500).send({ error: 'Database error.' });
+                return;
             }
             reply.send({ message: 'Username updated successfully.' });
+            return;
         }
     );
 });
@@ -560,13 +567,15 @@ fastify.post('/change-password', { preHandler: authenticateToken }, (request, re
             return reply.status(500).send({ error: 'Error hashing password.' });
         }
         db.run(
-            `UPDATE users SET password = ? WHERE user_id = ?`,
-            [hashedPassword, request.user.user_id],
+            `UPDATE users SET password = ? WHERE userId = ?`,
+            [hashedPassword, request.user.userId],
             function (err) {
                 if (err) {
-                    return reply.status(500).send({ error: 'Database error.' });
+                    reply.status(500).send({ error: 'Database error.' });
+                    return;
                 }
                 reply.send({ message: 'Password updated successfully.' });
+                return;
             }
         );
     });
@@ -574,6 +583,10 @@ fastify.post('/change-password', { preHandler: authenticateToken }, (request, re
 
 // --- MISC ---
 fastify.get('/favicon.ico', (req, res) => res.status(204));
+
+const matchRoutes = require('../api/matches');
+fastify.decorate('db', db);
+fastify.register(matchRoutes, { prefix: '/api' });
 
 fastify.listen({ port: port, host: '0.0.0.0' }, () => {
     console.log(`Server running at http://localhost:${port}`);

@@ -27,7 +27,22 @@ export class gameOrchestrator {
     state.scaleFactor = this.getScaleFactor();
     this.babylonCanvas = new BabylonCanvas(containerId);
     this.gui = new BabylonGUI(this.babylonCanvas.getScene());
-    this.setupMenuFlow();
+     // Detecta se veio de torneio pela query string
+    const params = new URLSearchParams(window.location.search);
+    const isTournament = params.get('tournament') === '1';
+    
+   if (isTournament) {
+    // Cria o jogo direto no nível médio, modo 2 jogadores locais
+      this.babylonCanvas.createGameCanvas(GameLevel.MEDIUM, PlayerMode.TWO_PLAYER);
+      this.gameCanvas = this.babylonCanvas.getGameCanvas();
+      this.gui.showCountdown(3, () => {
+        this.gameCanvas.startGame();
+        this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => {});
+      });
+    } else {
+      // Fluxo normal: mostra menus
+      this.setupMenuFlow();
+    }
 
     this.babylonCanvas.startRenderLoop();
 

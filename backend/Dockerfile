@@ -8,6 +8,7 @@ COPY package.json ./
 RUN npm install
 
 COPY src ./src
+COPY api ./api
 COPY ./database ./database
 
 RUN apk add --no-cache sqlite

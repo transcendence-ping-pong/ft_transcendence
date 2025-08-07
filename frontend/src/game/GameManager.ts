@@ -18,13 +18,33 @@ export class GameManager {
   public isGameOver = false;
   public level: GameLevel;
   private scoreMax: number = Number(GameScore.SCORE_MAX); // max score to win the game
+  private matchId: number | null = null; // <- ID da partida atual
+  
 
-  startGame() { this.isStarted = true; this.isGameOver = false; this.reset(); }
-  endGame() { this.isStarted = false; this.isGameOver = true; }
+  constructor(matchId?: number) {
+    this.matchId = matchId || null;
+  }
+
+  startGame(onFinish?: () => void) { 
+    this.isStarted = true; 
+    this.isGameOver = false; 
+    this.reset();
+    this._onFinish = onFinish;
+  }
+  private _onFinish?: () => void;
+
+  endGame()
+  { 
+    this.isStarted = false; 
+    this.isGameOver = true;
+     if (this._onFinish) this._onFinish();
+  }
+
   setLevel(level: GameLevel) {
     this.level = level;
     this.reset(); // reset game state when changing Level
   }
+
   getLevel() {
     return this.level;
   }
@@ -41,17 +61,34 @@ export class GameManager {
     return this.score.LEFT > this.score.RIGHT ? 'LEFT' : 'RIGHT';
   }
 
-    async saveMatchResult(winner: GameScore) {
+    private async saveMatchResult(winner: GameScore) {
+    const winnerName = winner === GameScore.LEFT ? 'Jogador 1' : 'Jogador 2';
     const payload = {
-      matchType: this.level || 'undefined',
-      creatorUserId: 1, // TODO: Substituir com ID real do usuário logado
-      player1DisplayName: 'Jogador 1',
-      player2DisplayName: 'Bot',
-      winnerDisplayName: winner === GameScore.LEFT ? 'Jogador 1' : 'Bot',
+      winnerDisplayName: winnerName,
       scorePlayer1: this.score[GameScore.LEFT],
       scorePlayer2: this.score[GameScore.RIGHT],
-      forfeit: false
     };
+
+    if (!this.matchId) {
+      console.warn('⚠️ Nenhum matchId definido — resultado não será salvo.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/matches/${this.matchId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        console.error('Erro ao salvar partida:', await res.text());
+      } else {
+        console.log('✅ Resultado salvo com sucesso.');
+      }
+    } catch (err) {
+      console.error('Erro ao conectar à API:', err);
+    }
   }
 
  checkIsGameOver(player: GameScore): boolean {
@@ -67,12 +104,20 @@ export class GameManager {
       }
     });
     return this.isGameOver;
-  }
+  } 
 
   addScore(player: GameScore): void {
     this.score[player] += 1;
     if (this.checkIsGameOver(player)) return;
   }
 
-  reset() { }
+   setMatchId(id: number) {
+    this.matchId = id;
+  }
+
+  reset() {
+    this.score = { [GameScore.LEFT]: 0, [GameScore.RIGHT]: 0 };
+  }
+
+  //reset() { }
 }

@@ -46,6 +46,10 @@ export function renderGame(containerId: string) {
   }
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+  renderGame('id-do-container');
+});
+
 /*
 OBSOLETE NAVIGATION BAR VERSION
 <dynamic-dropdown>

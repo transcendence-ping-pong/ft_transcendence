@@ -4,7 +4,8 @@ import { state } from '@/state';
 export enum GameLevel {
   EASY = 'EASY',
   MEDIUM = 'MEDIUM',
-  HARD = 'HARD'
+  HARD = 'HARD',
+  TOURNAMENT = 'TOURNAMENT'
 }
 
 export enum PlayerMode {
