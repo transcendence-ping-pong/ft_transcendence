@@ -1,9 +1,10 @@
 import { BabylonCanvas } from '@/game/babylon/BabylonCanvas';
 import { BabylonGUI } from '@/game/babylon/BabylonGUI.js';
-// import GameCanvas for its type and to access its methods/control game state
 import { GameCanvas } from '@/game/GameCanvas.js';
-import { GameLevel, PlayerMode, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, VIRTUAL_BORDER_X, VIRTUAL_BORDER_BOTTOM, VIRTUAL_BORDER_TOP } from '@/utils/gameUtils/GameConstants.js';
+import { MultiplayerGameCanvas } from '@/game/MultiplayerGameCanvas.js';
+import { GameLevel, PlayerMode, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, VIRTUAL_BORDER_X, VIRTUAL_BORDER_TOP, VIRTUAL_BORDER_BOTTOM } from '@/utils/gameUtils/GameConstants.js';
 import { state } from '@/state';
+
 
 /*
   Game Orchestrator responsabilities:
@@ -18,15 +19,18 @@ import { state } from '@/state';
 export class gameOrchestrator {
   private babylonCanvas: BabylonCanvas;
   private gui: BabylonGUI;
-  private gameCanvas: GameCanvas;
-  // private gameManager: GameManager;
-  // TODO CONCEPT: should we have a GameManager here?
-  // instead of instantiating it in GameCanvas?
+  private gameCanvas: GameCanvas | MultiplayerGameCanvas;
+  private isMultiplayerMode: boolean = false;
+  private multiplayerKeyDownHandler?: (event: KeyboardEvent) => void;
+  private multiplayerKeyUpHandler?: (event: KeyboardEvent) => void;
+  
+
 
   constructor(containerId: string) {
     state.scaleFactor = this.getScaleFactor();
     this.babylonCanvas = new BabylonCanvas(containerId);
     this.gui = new BabylonGUI(this.babylonCanvas.getScene());
+    this.setupMultiplayerEvents();
     this.setupMenuFlow();
 
     this.babylonCanvas.startRenderLoop();
@@ -38,6 +42,8 @@ export class gameOrchestrator {
       window.location.reload();
     });
   }
+
+
 
   getScaleFactor() {
     // calculate scale factor based on the virtual dimensions and the actual window size
@@ -70,7 +76,88 @@ export class gameOrchestrator {
     };
   }
 
+  setupMultiplayerEvents() {
+    window.addEventListener('game-start', (e: CustomEvent) => {
+      this.isMultiplayerMode = true;
+      this.babylonCanvas.createMultiplayerGameCanvas();
+      this.gameCanvas = this.babylonCanvas.getGameCanvas();
+      
+      // Set multiplayer mode in the canvas
+      if (this.gameCanvas instanceof MultiplayerGameCanvas) {
+        (this.gameCanvas as any).isMultiplayerMode = true;
+        (this.gameCanvas as any).currentRoomId = e.detail.room?.id || null;
+        (this.gameCanvas as any).playerIndex = (this.gameCanvas as any).getPlayerIndex();
+        (this.gameCanvas as any).startGame();
+      }
+      
+      this.gui.hideAllGUI();
+      window.dispatchEvent(new CustomEvent('hide-multiplayer-ui'));
+      this.setupMultiplayerInput();
+    });
+
+    window.addEventListener('game-end', (e: CustomEvent) => {
+      this.isMultiplayerMode = false;
+      window.dispatchEvent(new CustomEvent('show-multiplayer-ui'));
+      this.removeMultiplayerInput();
+      this.gui.showGameOver();
+      setTimeout(() => {
+        this.gui.clearGUI();
+        this.babylonCanvas.initPlaneMaterial();
+      }, 3000);
+    });
+
+    // Handle player disconnection during game
+    window.addEventListener('player-disconnected', (e: CustomEvent) => {
+      if (this.isMultiplayerMode) {
+        console.log('👋 Player disconnected during game, ending session');
+        this.isMultiplayerMode = false;
+        this.removeMultiplayerInput();
+        this.gui.showGameOver();
+        this.gui.clearGUI();
+        this.babylonCanvas.initPlaneMaterial();
+        window.dispatchEvent(new CustomEvent('show-multiplayer-ui'));
+      }
+    });
+  }
+
+  private setupMultiplayerInput() {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (this.isMultiplayerMode && this.gameCanvas instanceof MultiplayerGameCanvas) {
+        this.gameCanvas.handleMultiplayerKeyDown(event);
+      }
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (this.isMultiplayerMode && this.gameCanvas instanceof MultiplayerGameCanvas) {
+        this.gameCanvas.handleMultiplayerKeyUp(event);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    // Store references for cleanup
+    this.multiplayerKeyDownHandler = handleKeyDown;
+    this.multiplayerKeyUpHandler = handleKeyUp;
+  }
+
+  private removeMultiplayerInput() {
+    if (this.multiplayerKeyDownHandler) {
+      window.removeEventListener('keydown', this.multiplayerKeyDownHandler);
+    }
+    if (this.multiplayerKeyUpHandler) {
+      window.removeEventListener('keyup', this.multiplayerKeyUpHandler);
+    }
+  }
+
+
+
   setupMenuFlow() {
+    // Only show single-player menu if not in multiplayer mode
+    if (this.isMultiplayerMode) {
+      return;
+    }
+
     this.gui.showStartButton(() => {
       this.gui.showPlayerSelector((mode) => {
         this.gui.showDifficultySelector((level) => {

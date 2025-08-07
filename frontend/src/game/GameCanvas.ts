@@ -53,6 +53,7 @@ export class GameCanvas extends EventTarget {
     }
 
     this.gameManager = new GameManager();
+    this.gameManager.setLevel(level); // Set level before creating Ball
 
     const initialX = VIRTUAL_WIDTH / 2;
     const initialY = VIRTUAL_HEIGHT / 2;
@@ -148,6 +149,28 @@ export class GameCanvas extends EventTarget {
 
   public getLevel(): GameLevel {
     return this.gameManager.getLevel();
+  }
+
+  // Public methods for multiplayer to access ball and paddles
+  public getBall() {
+    return this.ball;
+  }
+
+  public getPaddles() {
+    return this.paddles;
+  }
+
+  // Public methods for multiplayer rendering
+  public getCtx() {
+    return this.ctx;
+  }
+
+  public getCanvas() {
+    return this.canvas;
+  }
+
+  public getCourtBounds() {
+    return this.courtBounds;
   }
 
   public startGame() {

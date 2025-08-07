@@ -2,6 +2,8 @@ const path = require('path');
 const fastify = require('fastify')({ logger: true });
 const fastifyStatic = require('@fastify/static');
 const fastifyCors = require('@fastify/cors');
+const WebSocketServer = require('./websocketServer.js');
+
 
 const sqlite3 = require('sqlite3').verbose();
 const speakeasy = require('speakeasy');
@@ -18,6 +20,7 @@ fastify.register(fastifyStatic, {
 });
 
 const port = 4000;
+const wsPort = 4001;
 
 const client = new OAuth2Client(
 	process.env.GOOGLE_CLIENT_ID,
@@ -577,6 +580,19 @@ fastify.post('/change-password', { preHandler: authenticateToken }, (request, re
 
 // --- MISC ---
 fastify.get('/favicon.ico', (req, res) => res.status(204));
+
+// Debug endpoint to read game logs
+fastify.get('/debug/logs', (request, reply) => {
+	try {
+		reply.send({ logs: 'Logs disabled - using console.log instead' });
+	} catch (error) {
+		reply.status(500).send({ error: 'Failed to read logs' });
+	}
+});
+
+// Start WebSocket server
+const wsServer = new WebSocketServer(wsPort);
+wsServer.start();
 
 fastify.listen({ port: port, host: '0.0.0.0' }, () => {
 	console.log(`Server running at http://localhost:${port}`);

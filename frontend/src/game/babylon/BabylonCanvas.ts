@@ -1,4 +1,5 @@
 import { GameCanvas } from '@/game/GameCanvas.js';
+import { MultiplayerGameCanvas } from '@/game/MultiplayerGameCanvas.js';
 import { crtFragmentShader } from '@/utils/gameUtils/CrtFragmentShader.js';
 import { GameLevel, PlayerMode, VIRTUAL_BORDER_TOP, VIRTUAL_BORDER_X, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, VIRTUAL_BORDER_BOTTOM } from '@/utils/gameUtils/GameConstants.js';
 import { getThemeColors, ThemeColors } from '@/utils/gameUtils/BabylonColors.js';
@@ -26,7 +27,7 @@ import { state } from '@/state.js';
 // ground.material = createPBRMaterial(scene, PBRMaterialLibrary.asphalt, { invertNormalMap: true });
 export class BabylonCanvas {
   private canvas: HTMLCanvasElement;
-  private gameCanvas: GameCanvas;
+  private gameCanvas: GameCanvas | MultiplayerGameCanvas;
   private engine: Engine;
   private scene: Scene;
   private dynamicTexture?: any;
@@ -122,6 +123,48 @@ export class BabylonCanvas {
     this.gameCanvas = new GameCanvas(level, "", this.canvas.width, this.canvas.height);
     this.gameCanvas.setLevel(level);
     this.applyDynamicTextureToMesh("gameScreen", this.gameCanvas.getCanvasElement());
+  }
+
+  public createMultiplayerGameCanvas() {
+    		// Creating multiplayer game canvas
+    try {
+      // Create with explicit level to avoid Ball constructor error
+      const level = GameLevel.MEDIUM; // Use valid GameLevel enum value
+      this.gameCanvas = new MultiplayerGameCanvas(level, "", this.canvas.width, this.canvas.height);
+      
+      // Ensure level is set properly
+      this.gameCanvas.setLevel(level);
+      
+      this.applyDynamicTextureToMesh("gameScreen", this.gameCanvas.getCanvasElement());
+      		// Multiplayer game canvas created successfully
+    } catch (error) {
+      console.error('❌ Error creating multiplayer canvas:', error);
+      // Fallback: create a simple canvas without the game objects
+      this.createFallbackCanvas();
+    }
+  }
+
+  private createFallbackCanvas() {
+    		// Creating fallback canvas
+    // Create a simple canvas that just shows "Multiplayer Game"
+    const canvas = document.createElement('canvas');
+    canvas.width = this.canvas.width;
+    canvas.height = this.canvas.height;
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'white';
+      ctx.font = '24px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Multiplayer Game Active', canvas.width / 2, canvas.height / 2);
+    }
+    
+    this.applyDynamicTextureToMesh("gameScreen", canvas);
   }
 
   // constantly update the scene, i.e. animations

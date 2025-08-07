@@ -276,4 +276,10 @@ export class BabylonGUI {
     this.playerSelectorButtons = [];
     this.gameOverText = null;
   }
+
+  hideAllGUI() {
+    // Hide all GUI elements for multiplayer mode
+    this.clearGUI();
+    console.log('🎮 All GUI elements hidden for multiplayer mode');
+  }
 }

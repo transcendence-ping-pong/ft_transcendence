@@ -4,6 +4,11 @@ services:
     command: npm run dev -- --host
     depends_on:
       - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
 
   backend:
     build: ./backend
@@ -14,6 +19,8 @@ services:
     env_file:
       - ./backend/src/.env
     volumes:
+      - ./backend:/app
+      - /app/node_modules
       - db_data:/app/database
 
   nginx:
@@ -25,8 +32,6 @@ services:
     depends_on:
       - frontend
       - backend
-    # env_file:
-    #   - ./backend/src/.env
 
 volumes:
   db_data:

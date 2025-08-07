@@ -29,6 +29,13 @@ export function initRouter(
   function renderRoute(path: string) {
     const { render, params } = matchRoute(path);
     const contentDiv = document.getElementById(renderTargetId);
+    
+    // Clean up previous page if cleanup function exists
+    if ((window as any).cleanupGame) {
+      (window as any).cleanupGame();
+      (window as any).cleanupGame = undefined;
+    }
+    
     if (render && contentDiv) {
       render(renderTargetId, params);
     } else if (contentDiv) {

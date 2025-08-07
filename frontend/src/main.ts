@@ -69,6 +69,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.key === 'ArrowRight') window.history.forward();
   });
 
-  // Connect to WebSocket
+  // connects to websocket server
   websocketService.connect(`http://${window.location.hostname}:4001`);
 });
