@@ -25,7 +25,9 @@
     },
     "error": {
       "network": "Network error. Please try again.",
-      "notFound": "Page not found."
+      "notFound": "Page not found.",
+      "emptyFields": "Please enter both email and password.",
+      "alreadyExists": "An account with this email already exists."
     },
     "game": {
       "start": "START GAME",
@@ -96,7 +98,9 @@
     },
     "error": {
       "network": "Erreur réseau. Veuillez réessayer.",
-      "notFound": "Page non trouvée."
+      "notFound": "Page non trouvée.",
+      "emptyFields": "Veuillez saisir l'email et le mot de passe.",
+      "alreadyExists": "Un compte avec cet email existe déjà."
     },
     "game": {
       "start": "COMMENCER LE JEU",
@@ -167,7 +171,9 @@
     },
     "error": {
       "network": "Erro de rede. Por favor, tente novamente.",
-      "notFound": "Página não encontrada."
+      "notFound": "Página não encontrada.",
+      "emptyFields": "Por favor, insira o email e a senha.",
+      "alreadyExists": "Já existe uma conta com este email."
     },
     "game": {
       "start": "INICIAR JOGO",
@@ -238,7 +244,9 @@
     },
     "error": {
       "network": "ネットワークエラー。もう一度お試しください。",
-      "notFound": "ページが見つかりません。"
+      "notFound": "ページが見つかりません。",
+      "emptyFields": "メールアドレスとパスワードを入力してください。",
+      "alreadyExists": "このメールアドレスは既に登録されています。"
     },
     "game": {
       "start": "ゲーム開始",

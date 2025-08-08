@@ -1,3 +1,6 @@
+import '@/components/ThemeToggle.js';
+import '@/components/LanguagesDropdown.js';
+import '@/components/TopBar.js';
 import '@/components/UserLogin.js';
 import '@/components/UserSignup.js';
 import '@/components/GenericModal.js';
@@ -13,6 +16,14 @@ export function renderLogin(containerId: string) {
         alt="Login Background"
         class="absolute top-0 left-0 w-full h-full z-20 pointer-events-none"
       />
+
+      <top-bar>
+        <img slot="logo" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=octopus" alt="Logo" />
+        <span slot="title">FOUR PING TWO PONG</span>
+        <theme-toggle slot="toggle"></theme-toggle>
+        <languages-dropdown slot="language"></languages-dropdown>
+      </top-bar>
+
       <generic-modal dismissible="false" appear-delay="1000">
         <div slot="body" class="p-4" id="auth-modal-content"></div>
       </generic-modal>

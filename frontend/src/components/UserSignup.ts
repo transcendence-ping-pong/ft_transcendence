@@ -1,12 +1,15 @@
-import { t } from '@/locales/Translations.js';
+import { t, err } from '@/locales/Translations.js';
 import * as authService from '@/services/authService.js';
 
+// TODO IMPROVEMENT: signin and signup can be abstracted
+// there are too many similarities and repetition
 const template = document.createElement('template');
 template.innerHTML = `
   <style>
     :host {
       display: block;
       min-width: 400px;
+      min-width: 465px;
       margin: 0 auto;
     }
     .form-title {
@@ -32,6 +35,10 @@ template.innerHTML = `
     }
     input:focus {
       border-color: var(--border);
+    }
+    .input-error:focus,
+    .input-error {
+      border-color:var(--warning);
     }
     button {
       padding: 1rem 0;
@@ -73,9 +80,12 @@ template.innerHTML = `
       text-decoration: underline;
     }
     .error {
-      color: red;
-      text-align: center;
-      margin-bottom: 0.5em;
+      font-size: 0.75rem;
+      color: var(--warning);
+      text-align: start;
+      margin-top: -0.5rem;
+      min-height: 1.25rem;
+      display: block;
     }
   </style>
 
@@ -83,9 +93,9 @@ template.innerHTML = `
   <form id="signupForm" autocomplete="off">
     <input id="username" name="username" type="text" required autocomplete="username" placeholder="${t('auth.username')}" />
     <input id="email" name="email" type="email" required autocomplete="email" placeholder="${t('auth.email')}" />
-    <input id="password" name="password" type="password" minlength=7 required autocomplete="new-password" placeholder="${t('auth.password')}" />
+    <input id="password" name="password" type="password" minlength=6 required autocomplete="new-password" placeholder="${t('auth.password')}" />
+    <p id="error" class="error"></p>
     <button id="signup" type="submit">${t('auth.signup')}</button>
-    <div id="error" class="error"></div>
   </form>
   <div class="footer">
     ${t('auth.alreadyHaveAccount')}
@@ -94,6 +104,10 @@ template.innerHTML = `
 `;
 
 export class UserSignup extends HTMLElement {
+  emailInput!: HTMLInputElement;
+  passwordInput!: HTMLInputElement;
+  usernameInput!: HTMLInputElement;
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
@@ -101,40 +115,52 @@ export class UserSignup extends HTMLElement {
 
   connectedCallback() {
     const shadow = this.shadowRoot;
+    this.emailInput = shadow.getElementById('email') as HTMLInputElement;
+    this.passwordInput = shadow.getElementById('password') as HTMLInputElement;
+    this.usernameInput = shadow.getElementById('username') as HTMLInputElement;
     shadow.getElementById('signupForm').onsubmit = this._onSignup.bind(this);
     shadow.getElementById('loginBtn').onclick = this._onLoginClick.bind(this);
+
+    this.emailInput.addEventListener('input', () => this._clearError());
+    this.passwordInput.addEventListener('input', () => this._clearError());
+    this.usernameInput.addEventListener('input', () => this._clearError());
   }
 
-  async _onSignup(e) {
+  async _onSignup(e: Event) {
     e.preventDefault();
-    const email = this.shadowRoot.getElementById('email').value.trim();
-    const password = this.shadowRoot.getElementById('password').value;
-    if (!email || !password) {
-      this._setError('Please enter both email and password');
-      return;
-    }
+    const email = this.emailInput.value.trim();
+    const username = this.usernameInput.value.trim();
+    const password = this.passwordInput.value;
+
     const res = await authService.signup(email, password);
     if (res.error) {
-      this._setError(res.error);
+      this.emailInput.classList.add('input-error');
+      this.usernameInput.classList.add('input-error');
+      this.passwordInput.classList.add('input-error');
+      this._setError(err(res.error));
+      return;
     } else {
+      // remove error styles if signup is successful and trigger event
+      this._clearError();
       this._setError('');
-      alert('Signup successful! Please log in.');
       this.dispatchEvent(new CustomEvent('switch-to-login', { bubbles: true, composed: true }));
     }
   }
 
-  async _onGoogleLogin(e) {
-    e.preventDefault();
-    await authService.googleLogin();
-  }
-
-  _onLoginClick(e) {
+  _onLoginClick(e: Event) {
     e.preventDefault();
     this.dispatchEvent(new CustomEvent('switch-to-login', { bubbles: true, composed: true }));
   }
 
-  _setError(msg) {
+  _setError(msg: string) {
     this.shadowRoot.getElementById('error').textContent = msg;
+  }
+
+  _clearError() {
+    this._setError('');
+    this.emailInput.classList.remove('input-error');
+    this.passwordInput.classList.remove('input-error');
+    this.usernameInput.classList.remove('input-error');
   }
 }
 

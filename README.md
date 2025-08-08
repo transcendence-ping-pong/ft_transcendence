@@ -169,6 +169,11 @@ docker volume ls
 docker volume rm ft_transcendence_db_data
 docker images
 docker image rm ft_transcendence-backend
+
+docker-compose down
+docker system prune -af
+docker volume prune -f
+docker-compose up --build
 ```
 ```
 ubuntu@pong-vm:~/ft_transcendence$ docker exec -it backend /bin/sh

@@ -1,14 +1,17 @@
-import { t } from '@/locales/Translations.js';
+import { t, err } from '@/locales/Translations.js';
 import * as authService from '@/services/authService.js';
 import { state } from '@/state';
 import { UserData } from '@/utils/playerUtils/types';
 
+// TODO IMPROVEMENT: signin and signup can be abstracted
+// there are too many similarities and repetition
 const template = document.createElement('template');
 template.innerHTML = `
   <style>
     :host {
       display: block;
       min-width: 400px;
+      min-width: 465px;
       margin: 0 auto;
     }
     .form-title {
@@ -34,6 +37,9 @@ template.innerHTML = `
     }
     input:focus {
       border-color: var(--border);
+    }
+    .input-error {
+      border-color:var(--warning);
     }
     button {
       padding: 1rem 0;
@@ -84,9 +90,12 @@ template.innerHTML = `
       text-decoration: underline;
     }
     .error {
+      font-size: 0.75rem;
       color: var(--warning);
-      text-align: center;
-      margin-bottom: 0.5em;
+      text-align: start;
+      margin-top: -0.5rem;
+      min-height: 1.25rem;
+      display: block;
     }
   </style>
 
@@ -116,6 +125,9 @@ template.innerHTML = `
 `;
 
 export class UserLogin extends HTMLElement {
+  emailInput!: HTMLInputElement;
+  passwordInput!: HTMLInputElement;
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
@@ -123,9 +135,14 @@ export class UserLogin extends HTMLElement {
 
   connectedCallback() {
     const shadow = this.shadowRoot;
+    this.emailInput = shadow.getElementById('email') as HTMLInputElement;
+    this.passwordInput = shadow.getElementById('password') as HTMLInputElement;
     shadow.getElementById('loginForm').onsubmit = this._onLogin.bind(this);
     shadow.getElementById('google').onclick = this._onGoogleLogin.bind(this);
     shadow.getElementById('signupBtn').onclick = this._onSignupClick.bind(this);
+
+    this.emailInput.addEventListener('input', () => this._clearError());
+    this.passwordInput.addEventListener('input', () => this._clearError());
   }
 
   // private method, set user data in state in a more structured way
@@ -142,15 +159,19 @@ export class UserLogin extends HTMLElement {
 
   async _onLogin(e: Event) {
     e.preventDefault();
-    const s = this.shadowRoot!;
-    const email = (s.getElementById('email') as HTMLInputElement).value.trim();
-    const password = (s.getElementById('password') as HTMLInputElement).value;
-
-    if (!email || !password) return this._setError(t('auth.errorMissingFields'));
+    const email = this.emailInput.value.trim();
+    const password = this.passwordInput.value;
 
     const res = await authService.login(email, password);
-    if (res.error) return this._setError(res.error);
+    if (res.error) {
+      this.emailInput.classList.add('input-error');
+      this.passwordInput.classList.add('input-error');
+      this._setError(err(res.error));
+      return;
+    }
 
+    // remove error styles if login is successful and trigger event
+    this._clearError();
     this._setError('');
     this.#setUserData(res, email);
     this.dispatchEvent(new CustomEvent('login-success', { bubbles: true, composed: true }));
@@ -168,6 +189,12 @@ export class UserLogin extends HTMLElement {
 
   _setError(msg: string) {
     this.shadowRoot.getElementById('error').textContent = msg;
+  }
+
+  _clearError() {
+    this._setError('');
+    this.emailInput.classList.remove('input-error');
+    this.passwordInput.classList.remove('input-error');
   }
 }
 
