@@ -26,7 +26,7 @@ export class Paddle {
 
   private setPaddleSpeed() {
     const { paddleSpeed } = BallLevelConfig[this.level];
-    console.log("paddle.speed", paddleSpeed, this.level);
+    		// Paddle speed set
     this.speed = paddleSpeed;
   }
 

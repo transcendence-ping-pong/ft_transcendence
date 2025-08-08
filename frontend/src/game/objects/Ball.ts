@@ -20,8 +20,8 @@ export class Ball {
   // ball moves px/sec horizontally, -px/sec vertically
   private vx: number; // velocity: x axis direction (positive or negative) + step for jumping pixels (speed) 
   private vy: number; // idem, but for y axis
-  private virtualX: number = VIRTUAL_WIDTH;
-  private virtualY: number = VIRTUAL_HEIGHT;
+  private virtualX: number;
+  private virtualY: number;
   public scoringPlayer: GameScore; // which player scored last, or DRAW if no one scored yet
 
   constructor(
@@ -32,6 +32,8 @@ export class Ball {
     private courtBounds: GameCourtBounds,
     public color: string = "white",
   ) {
+    this.virtualX = x;
+    this.virtualY = y;
     this.setInitialVelocity();
   }
 
