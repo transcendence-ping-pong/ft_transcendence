@@ -13,7 +13,7 @@ template.innerHTML = `
       background: var(--video-transition-bg);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      z-index: 3000;
+      z-index: 9999;
       box-shadow: 0 2px 12px #0002;
       padding: 0 2rem;
       box-sizing: border-box;

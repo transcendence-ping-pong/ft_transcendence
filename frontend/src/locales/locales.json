@@ -1,16 +1,17 @@
 {
   "GB": {
     "auth": {
-      "login": "Login",
+      "signin": "Sign In",
+      "signup": "Sign Up",
       "logout": "Logout",
       "username": "Username",
       "email": "Email",
       "password": "Password",
-      "createAccount": "Create Account",
+      "createAccount": "Don't have an account?",
       "forgotPassword": "Forgot Password?",
       "resetPassword": "Reset Password",
-      "continueWithGoogle": "Continue with Google",
-      "alreadyHaveAccount": "Already have an account"
+      "signinWithGoogle": "Sign in with Google",
+      "alreadyHaveAccount": "Already have an account?"
     },
     "nav": {
       "home": "Home",
@@ -24,7 +25,9 @@
     },
     "error": {
       "network": "Network error. Please try again.",
-      "notFound": "Page not found."
+      "notFound": "Page not found.",
+      "emptyFields": "Please enter both email and password.",
+      "alreadyExists": "An account with this email already exists."
     },
     "game": {
       "start": "START GAME",
@@ -71,16 +74,17 @@
   },
   "FR": {
     "auth": {
-      "login": "Connexion",
+      "signin": "Se connecter",
+      "signup": "S'inscrire",
       "logout": "Déconnexion",
       "username": "Nom d'utilisateur",
       "email": "Email",
       "password": "Mot de passe",
-      "createAccount": "Créer un compte",
+      "createAccount": "Vous n'avez pas de compte ?",
       "forgotPassword": "Mot de passe oublié ?",
       "resetPassword": "Réinitialiser le mot de passe",
-      "continueWithGoogle": "Continuer avec Google",
-      "alreadyHaveAccount": "Vous avez déjà un compte"
+      "signinWithGoogle": "Se connecter avec Google",
+      "alreadyHaveAccount": "Vous avez déjà un compte?"
     },
     "nav": {
       "home": "Accueil",
@@ -94,7 +98,9 @@
     },
     "error": {
       "network": "Erreur réseau. Veuillez réessayer.",
-      "notFound": "Page non trouvée."
+      "notFound": "Page non trouvée.",
+      "emptyFields": "Veuillez saisir l'email et le mot de passe.",
+      "alreadyExists": "Un compte avec cet email existe déjà."
     },
     "game": {
       "start": "COMMENCER LE JEU",
@@ -141,16 +147,17 @@
   },
   "PT": {
     "auth": {
-      "login": "Entrar",
+      "signin": "Iniciar sessão",
+      "signup": "Registrar-se",
       "logout": "Sair",
       "username": "Nome de usuário",
       "email": "Email",
       "password": "Senha",
-      "createAccount": "Criar Conta",
+      "createAccount": "Não tem uma conta?",
       "forgotPassword": "Esqueceu a Senha?",
       "resetPassword": "Redefinir Senha",
-      "continueWithGoogle": "Continuar com o Google",
-      "alreadyHaveAccount": "Já tem uma conta"
+      "signinWithGoogle": "Entrar com o Google",
+      "alreadyHaveAccount": "Já tem uma conta?"
     },
     "nav": {
       "home": "Início",
@@ -164,7 +171,9 @@
     },
     "error": {
       "network": "Erro de rede. Por favor, tente novamente.",
-      "notFound": "Página não encontrada."
+      "notFound": "Página não encontrada.",
+      "emptyFields": "Por favor, insira o email e a senha.",
+      "alreadyExists": "Já existe uma conta com este email."
     },
     "game": {
       "start": "INICIAR JOGO",
@@ -211,16 +220,17 @@
   },
   "JP": {
     "auth": {
-      "login": "ログイン",
+      "signin": "サインイン",
+      "signup": "新規登録",
       "logout": "ログアウト",
       "username": "ユーザー名",
       "email": "メールアドレス",
       "password": "パスワード",
-      "createAccount": "アカウント作成",
+      "createAccount": "アカウントをお持ちでないですか？",
       "forgotPassword": "パスワードをお忘れですか？",
       "resetPassword": "パスワードをリセット",
-      "continueWithGoogle": "Googleで続行",
-      "alreadyHaveAccount": "すでにアカウントをお持ちですか"
+      "signinWithGoogle": "Googleでサインイン",
+      "alreadyHaveAccount": "すでにアカウントをお持ちですか？"
     },
     "nav": {
       "home": "ホーム",
@@ -234,7 +244,9 @@
     },
     "error": {
       "network": "ネットワークエラー。もう一度お試しください。",
-      "notFound": "ページが見つかりません。"
+      "notFound": "ページが見つかりません。",
+      "emptyFields": "メールアドレスとパスワードを入力してください。",
+      "alreadyExists": "このメールアドレスは既に登録されています。"
     },
     "game": {
       "start": "ゲーム開始",
