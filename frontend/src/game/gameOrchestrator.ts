@@ -1,7 +1,7 @@
 import { BabylonCanvas } from '@/game/babylon/BabylonCanvas';
 import { BabylonGUI } from '@/game/babylon/BabylonGUI.js';
 import { GameCanvas } from '@/game/GameCanvas.js';
-import { MultiplayerGameCanvas } from '@/game/MultiplayerGameCanvas.js';
+import { MultiplayerGameCanvas } from '@/multiplayer/MultiplayerGameCanvas.js';
 import { GameLevel, PlayerMode, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, VIRTUAL_BORDER_X, VIRTUAL_BORDER_TOP, VIRTUAL_BORDER_BOTTOM } from '@/utils/gameUtils/GameConstants.js';
 import { state } from '@/state';
 
@@ -82,7 +82,6 @@ export class gameOrchestrator {
       this.babylonCanvas.createMultiplayerGameCanvas();
       this.gameCanvas = this.babylonCanvas.getGameCanvas();
       
-      // Set multiplayer mode in the canvas
       if (this.gameCanvas instanceof MultiplayerGameCanvas) {
         (this.gameCanvas as any).isMultiplayerMode = true;
         (this.gameCanvas as any).currentRoomId = e.detail.room?.id || null;
@@ -106,10 +105,9 @@ export class gameOrchestrator {
       }, 3000);
     });
 
-    // Handle player disconnection during game
+	// TODO: think its somewhat buggy
     window.addEventListener('player-disconnected', (e: CustomEvent) => {
       if (this.isMultiplayerMode) {
-        console.log('👋 Player disconnected during game, ending session');
         this.isMultiplayerMode = false;
         this.removeMultiplayerInput();
         this.gui.showGameOver();
@@ -136,7 +134,7 @@ export class gameOrchestrator {
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
-    // Store references for cleanup
+    // Store references for cleanup TODO: remove?
     this.multiplayerKeyDownHandler = handleKeyDown;
     this.multiplayerKeyUpHandler = handleKeyUp;
   }
@@ -153,7 +151,6 @@ export class gameOrchestrator {
 
 
   setupMenuFlow() {
-    // Only show single-player menu if not in multiplayer mode
     if (this.isMultiplayerMode) {
       return;
     }

@@ -1,6 +1,7 @@
 import { GameCanvas } from '@/game/GameCanvas.js';
 import { GameLevel, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, GameSize } from '@/utils/gameUtils/GameConstants.js';
 import { websocketService } from '@/services/websocketService.js';
+import { GameState, Player } from '@/multiplayer/types.js';
 
 export class MultiplayerGameCanvas extends GameCanvas {
 	private isMultiplayerMode: boolean = false;
@@ -63,7 +64,7 @@ export class MultiplayerGameCanvas extends GameCanvas {
 		return room.players.findIndex(p => p.socketId === socketId);
 	}
 
-	private updateFromServerState(gameState: any) {
+	private updateFromServerState(gameState: GameState) {
 		// Update scores
 		if (gameState.paddles) {
 			this.gameManager.score.LEFT = gameState.paddles.left?.score || 0;
@@ -78,7 +79,7 @@ export class MultiplayerGameCanvas extends GameCanvas {
 				(ball as any).virtualY = gameState.ball.y;
 				(ball as any).vx = gameState.ball.velocityX;
 				(ball as any).vy = gameState.ball.velocityY;
-				(ball as any).size = gameState.ball.size;
+				(ball as any).size = gameState.ball.size; // Use size directly
 			}
 		}
 

@@ -35,7 +35,7 @@ export interface Ball {
   y: number;
   velocityX: number;
   velocityY: number;
-  radius: number;
+  size: number;
 }
 
 export interface Paddles {

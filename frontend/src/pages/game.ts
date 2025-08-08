@@ -1,5 +1,5 @@
 import { gameOrchestrator } from '@/game/gameOrchestrator.js';
-import { multiplayerToggle } from '@/components/MultiplayerToggle.js';
+import { multiplayerToggle } from '@/multiplayer/MultiplayerToggle.js';
 import '@/components/PlaySummary.js';
 
 // TODO FIX: use scale-100 if want to scale down border image
@@ -24,15 +24,14 @@ export function renderGame(containerId: string) {
     // Create game orchestrator instance and store it for cleanup
     const orchestrator = new gameOrchestrator('game-screen');
     
-    // Add multiplayer toggle
+    // multiplayer test toggle
     const toggleContainer = document.getElementById('multiplayer-toggle-container');
     if (toggleContainer) {
       multiplayerToggle.render(toggleContainer);
     }
 
-    // Store cleanup function for when page is destroyed
+    // Store cleanup function for when page is destroyed TODO: remove?
     (window as any).cleanupGame = () => {
-      orchestrator.cleanup();
       multiplayerToggle.destroy();
       document.body.classList.remove('overflow-hidden');
     };

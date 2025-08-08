@@ -1,21 +1,22 @@
-import { io } from 'socket.io-client';
+import io from 'socket.io-client';
 import { state } from '../state.js';
 
-export interface GameRoom {
-  id: string;
-  players: any[];
-  maxPlayers: number;
-  status: 'waiting' | 'playing';
-  gameState: any;
-}
+import {
+  GameRoom,
+  Player,
+  GameState,
+  GameInput,
+  RoomEvent,
+  GameStartEvent,
+  GameUpdateEvent,
+  GamePhase
+} from '../multiplayer/types.js';
 
-export interface GameState {
-  ball: { x: number; y: number; velocityX: number; velocityY: number };
-  paddles: {
-    left: { y: number; score: number };
-    right: { y: number; score: number };
-  };
-  gameStarted: boolean;
+interface PlayerEventWithRoom {
+  player: Player;
+  players: Player[];
+  roomId: string;
+  room?: GameRoom;
 }
 
 class WebSocketService {
@@ -32,14 +33,14 @@ class WebSocketService {
     });
 
     this.socket.on('connect', () => {
-      // Authenticate if we have a token
+      // auth if we have a token, later with other backend
       if (this.authToken) {
         this.authenticate(this.authToken);
       }
     });
 
     this.socket.on('disconnect', () => {
-      // Connection lost
+      // connection lost - TODO: notify user
     });
 
     this.socket.on('authenticated', (data: { success: boolean; error?: string; username?: string }) => {
@@ -50,13 +51,13 @@ class WebSocketService {
       }
     });
 
-    this.socket.on('roomCreated', (data: { roomId: string; room: GameRoom }) => {
+    this.socket.on('roomCreated', (data: RoomEvent) => {
       this.currentRoom = data.room;
       this.currentRoomId = data.roomId;
       window.dispatchEvent(new CustomEvent('room-created', { detail: data }));
     });
 
-    this.socket.on('playerJoined', (data: { player: any; players: any[]; roomId: string; room?: any }) => {
+    this.socket.on('playerJoined', (data: PlayerEventWithRoom) => {
       this.currentRoom = data.room || this.currentRoom;
       this.currentRoomId = data.roomId;
       
@@ -74,7 +75,7 @@ class WebSocketService {
       }));
     });
 
-    this.socket.on('gameStart', (data: { gameState: GameState; players: any[] }) => {
+    this.socket.on('gameStart', (data: GameStartEvent) => {
       if (this.currentRoom) {
         this.currentRoom.status = 'playing';
         this.currentRoom.players = data.players;
@@ -87,6 +88,7 @@ class WebSocketService {
       }));
     });
 
+	// TODO: add proper countdown UI
     this.socket.on('countdown', (data: { countdown: number }) => {
       window.dispatchEvent(new CustomEvent('game-countdown', { detail: data }));
     });
@@ -95,11 +97,11 @@ class WebSocketService {
       window.dispatchEvent(new CustomEvent('game-started', { detail: data }));
     });
 
-    this.socket.on('gameUpdate', (data: { gameState: GameState; timestamp: number }) => {
+    this.socket.on('gameUpdate', (data: GameUpdateEvent) => {
       window.dispatchEvent(new CustomEvent('game-update', { detail: data }));
     });
 
-    this.socket.on('playerReady', (data: { player: any; players: any[]; room?: any }) => {
+    this.socket.on('playerReady', (data: PlayerEventWithRoom) => {
       if (this.currentRoom && data.room) {
         this.currentRoom.players = data.players;
         this.currentRoom = data.room;
@@ -114,11 +116,13 @@ class WebSocketService {
       }));
     });
 
-    this.socket.on('gameEnd', (data: { gameState: GameState; winner: any; players: any[] }) => {
+	// TODO: add proper end game UI
+    this.socket.on('gameEnd', (data: { gameState: GameState; winner: Player; players: Player[] }) => {
       window.dispatchEvent(new CustomEvent('game-end', { detail: data }));
     });
 
-    this.socket.on('playerLeft', (data: { player: any; players: any[] }) => {
+	// TODO: add proper player left notification
+    this.socket.on('playerLeft', (data: PlayerEventWithRoom) => {
       if (this.currentRoom) {
         this.currentRoom.players = data.players;
       }
@@ -127,12 +131,6 @@ class WebSocketService {
 
     this.socket.on('error', (data: { message: string }) => {
       window.dispatchEvent(new CustomEvent('websocket-error', { detail: data }));
-    });
-
-    // Test endpoint
-    this.socket.emit('test', 'Hello from frontend!');
-    this.socket.on('test', (data: any) => {
-      // Test message received
     });
   }
 
@@ -161,7 +159,7 @@ class WebSocketService {
     }
   }
 
-  sendGameInput(roomId: string, type: string, data: any) {
+  sendGameInput(roomId: string, type: GameInput['type'], data: any) {
     if (this.socket) {
       this.socket.emit('gameInput', { roomId, type, ...data });
     }
@@ -179,13 +177,12 @@ class WebSocketService {
     this.sendGameInput(roomId, 'ready', {});
   }
 
-  // Send browser console logs to backend for debugging
+  // sends browser console logs to backend for debugging
   sendBrowserLog(level: string, message: string, data?: any) {
     if (this.socket) {
       this.socket.emit('browserLog', { level, message, data, timestamp: Date.now() });
     }
   }
-
 
   getCurrentRoom(): GameRoom | null {
     return this.currentRoom;
@@ -206,6 +203,7 @@ class WebSocketService {
     }
   }
 
+  // on message TODO: later
   onMessage(cb: (data: any) => void) {
     if (this.socket) {
       this.socket.on('message', cb);
