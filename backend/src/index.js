@@ -169,11 +169,10 @@ fastify.post('/token', async (req, res) => {
         jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
             if (err) return res.status(403).send({ error: 'Invalid refresh token' });
             
-            // Add email to the access token
             const accessToken = generateAccessToken({ 
                 username: tokenData.username, 
                 user_id: tokenData.user_id,
-                email: tokenData.email  // Add this line
+                email: tokenData.email
             });
             res.send({ accessToken: accessToken });
         });
@@ -191,7 +190,6 @@ fastify.post('/generate', { preHandler: authenticateToken }, (request, reply) =>
         return reply.status(400).send({ error: 'Email is required' });
     }
 
-    // Use the email from the authenticated token if not provided
     const userEmail = email || request.user.email;
 
     if (request.user.email !== userEmail) {
@@ -313,10 +311,14 @@ fastify.get('/current-token', { preHandler: authenticateToken }, (req, res) => {
 
 // --- SIGNUP ---
 fastify.post('/signup', (req, res) => {
-    const { email, password } = req.body;
+    const { username, email, password } = req.body;
 
-    if (!email || !password) {
-        return res.status(400).send({ error: 'Email and password are required' });
+    if (!username || !email || !password) {
+        return res.status(400).send({ error: 'Username, email and password are required' });
+    }
+
+    if (!isValidUsername(username)) {
+        return res.status(400).send({ error: 'Username must be 3-20 characters and contain only letters and numbers' });
     }
 
     if (!isValidEmail(email)) {
@@ -329,27 +331,45 @@ fastify.post('/signup', (req, res) => {
         });
     }
 
-    const username = email.split('@')[0];
-
-    bcrypt.hash(password, 13, (err, hashedPassword) => {
-        if (err) {
-            return res.status(500).send({ error: 'Error hashing password' });
-        }
-
-        db.run(
-            `INSERT INTO users (email, username, password, secret) VALUES (?, ?, ?, ?)`,
-            [email, username, hashedPassword, ''],
-            function (dbErr) {
-                if (dbErr) {
-                    if (dbErr.code === 'SQLITE_CONSTRAINT') {
-                        return res.status(400).send({ error: 'Email or username already exists' });
-                    }
-                    return res.status(500).send({ error: 'Error saving user to database' });
-                }
-                res.send({ message: 'Signup successful' });
+    // Check for existing username or email
+    db.get(
+        `SELECT username, email FROM users WHERE username = ? OR email = ?`,
+        [username, email],
+        (err, existingUser) => {
+            if (err) {
+                return res.status(500).send({ error: 'Error checking existing users' });
             }
-        );
-    });
+
+            if (existingUser) {
+                if (existingUser.username === username) {
+                    return res.status(400).send({ error: 'Username already exists' });
+                }
+                if (existingUser.email === email) {
+                    return res.status(400).send({ error: 'Email already exists' });
+                }
+            }
+
+            bcrypt.hash(password, 13, (hashErr, hashedPassword) => {
+                if (hashErr) {
+                    return res.status(500).send({ error: 'Error hashing password' });
+                }
+
+                db.run(
+                    `INSERT INTO users (username, email, password, secret) VALUES (?, ?, ?, ?)`,
+                    [username, email, hashedPassword, ''],
+                    function (dbErr) {
+                        if (dbErr) {
+                            if (dbErr.code === 'SQLITE_CONSTRAINT') {
+                                return res.status(400).send({ error: 'Username or email already exists' });
+                            }
+                            return res.status(500).send({ error: 'Error saving user to database' });
+                        }
+                        res.send({ message: 'Signup successful' });
+                    }
+                );
+            });
+        }
+    );
 });
 
 // --- LOGIN ---
@@ -530,26 +550,6 @@ fastify.get('/auth/google/callback', async (req, res) => {
 });
 
 // --- PROFILE MANAGEMENT ---
-fastify.post('/change-username', { preHandler: authenticateToken }, (request, reply) => {
-    const { newUsername } = request.body;
-    if (!newUsername || !isValidUsername(newUsername)) {
-        return reply.status(400).send({ error: 'Invalid new username.' });
-    }
-    db.run(
-        `UPDATE users SET username = ? WHERE user_id = ?`,
-        [newUsername, request.user.user_id],
-        function (err) {
-            if (err) {
-                if (err.code === 'SQLITE_CONSTRAINT') {
-                    return reply.status(400).send({ error: 'Username already exists.' });
-                }
-                return reply.status(500).send({ error: 'Database error.' });
-            }
-            reply.send({ message: 'Username updated successfully.' });
-        }
-    );
-});
-
 fastify.post('/change-password', { preHandler: authenticateToken }, (request, reply) => {
     const { newPassword } = request.body;
     if (!newPassword || !isValidPassword(newPassword)) {
