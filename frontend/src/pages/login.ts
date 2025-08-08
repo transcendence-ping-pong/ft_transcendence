@@ -19,7 +19,7 @@ export function renderLogin(containerId: string) {
     </div>
   `;
 
-  let mode = 'login'; // or 'signup'
+  let mode = 'login';
   const content = container.querySelector('#auth-modal-content');
 
   function showSpinner() {
@@ -30,35 +30,28 @@ export function renderLogin(containerId: string) {
     `;
   }
 
+  function transitionTo(newMode: string) {
+    mode = newMode;
+    showSpinner();
+    setTimeout(renderAuthComponent, 400);
+  }
+
   function renderAuthComponent() {
     content.innerHTML = '';
-    let el;
-    if (mode === 'login') {
-      el = document.createElement('user-login');
-      el.addEventListener('switch-to-signup', () => {
-        mode = 'signup';
-        showSpinner();
-        setTimeout(renderAuthComponent, 800);
-      });
-      el.addEventListener('login-success', () => {
-        showSpinner();
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 1200);
-      });
-    } else {
-      el = document.createElement('user-signup');
-      el.addEventListener('switch-to-login', () => {
-        mode = 'login';
-        showSpinner();
-        setTimeout(renderAuthComponent, 800);
-      });
-      el.addEventListener('signup-success', () => {
-        mode = 'login';
-        showSpinner();
-        setTimeout(renderAuthComponent, 800);
-      });
+    let el: HTMLElement;
+
+    switch (mode) {
+      case 'login':
+        el = document.createElement('user-login');
+        el.addEventListener('switch-to-signup', () => transitionTo('signup'));
+        break;
+      case 'signup':
+        el = document.createElement('user-signup');
+        el.addEventListener('switch-to-login', () => transitionTo('login'));
+        el.addEventListener('signup-success', () => transitionTo('login'));
+        break;
     }
+
     content.appendChild(el);
   }
 

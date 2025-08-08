@@ -1,11 +1,13 @@
 export interface AuthResponse {
   error?: string;
   message?: string;
-  username?: { id: string; username: string; email?: string };
+  username?: string;
+  email?: string;
   requiresToken?: boolean;
   has2FA?: boolean;
   qrCodeUrl?: string;
-  secret?: string;
+  accessToken?: string;
+  refreshToken?: string;
 }
 
 const BASE_URL = "http://localhost:4000";
@@ -19,18 +21,22 @@ export async function signup(email: string, password: string) {
   return await res.json();
 }
 
-// const response = await fetch('/login', {
-//               method: 'POST',
-//               headers: { 'Content-Type': 'application/json' },
-//               body: JSON.stringify({ email, password, token })
-//           });
 export async function login(email: string, password: string, token?: string): Promise<AuthResponse> {
-  const res = await fetch(`${BASE_URL}/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, token }),
-  });
-  return await res.json();
+  try {
+    const res = await fetch(`${BASE_URL}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, token }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Login failed');
+    }
+    return data;
+  } catch (error: any) {
+    return { error: error.message || 'Network error' };
+  }
 }
 
 export async function googleLogin(): Promise<void> {

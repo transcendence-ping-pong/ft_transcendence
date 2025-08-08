@@ -94,6 +94,7 @@ template.innerHTML = `
   <form id="loginForm" autocomplete="off">
     <input id="email" name="email" type="email" required autocomplete="email" placeholder="${t('auth.email')}" />
     <input id="password" name="password" type="password" minlength=7 required autocomplete="current-password" placeholder="${t('auth.password')}" />
+    <div id="error" class="error"></div>
     <button id="login" type="submit">${t('auth.signin')}</button>
     <button id="google" type="button" class="google-btn">
       <svg class="google-btn-icon" viewBox="0 0 48 48">
@@ -107,7 +108,6 @@ template.innerHTML = `
       </svg>
       ${t('auth.signinWithGoogle')}
     </button>
-    <div id="error" class="error"></div>
   </form>
   <div class="footer">
     ${t('auth.createAccount')}
@@ -128,80 +128,33 @@ export class UserLogin extends HTMLElement {
     shadow.getElementById('signupBtn').onclick = this._onSignupClick.bind(this);
   }
 
-  // TODO: where to retrieve the token from?
-  // const token = document.getElementById('loginToken').value; ???
-  async _onLogin(e: Event) {
-    e.preventDefault();
-    const email = (this.shadowRoot.getElementById('email') as HTMLInputElement).value.trim();
-    const password = (this.shadowRoot.getElementById('password') as HTMLInputElement).value;
-    // const token = (this.shadowRoot.getElementById('loginToken') as HTMLInputElement).value;
-    console.log('Login attempt with email:', email, password);
-    if (!email || !password) {
-      this._setError(t('auth.errorMissingFields'));
-      return;
-    }
-
-    let res;
-    try {
-      res = await authService.login(email, password);
-    } catch (error) {
-      this._setError(res.error);
-      console.error('Login error:', error);
-    } finally {
-      console.log('Login response:', res);
-      this._setError('');
-      // save user data in global state
-      state.userData = {
-        username: res.username || '',
-        email: email || '',
-        accessToken: res.accessToken || '',
-        refreshToken: res.refreshToken || '',
-        // expiresAt: res.expiresAt || undefined
-      } as UserData;
-      console.log('User data saved in state:', state.userData);
-      // dispatch event for successful login
-      this.dispatchEvent(new CustomEvent('login-success', { bubbles: true, composed: true }));
-    }
+  // private method, set user data in state in a more structured way
+  // method is not part of the public API
+  // _ prefix indicates it's intended for internal use only, but not enforced
+  #setUserData(res: authService.AuthResponse, email: string) {
+    state.userData = {
+      username: res.username || '',
+      email,
+      accessToken: res.accessToken || '',
+      refreshToken: res.refreshToken || '',
+    } as UserData;
   }
 
-  // async function login() {
-  //           const email = document.getElementById('email').value;
-  //           const password = document.getElementById('password').value;
-  //           const token = document.getElementById('loginToken').value;
+  async _onLogin(e: Event) {
+    e.preventDefault();
+    const s = this.shadowRoot!;
+    const email = (s.getElementById('email') as HTMLInputElement).value.trim();
+    const password = (s.getElementById('password') as HTMLInputElement).value;
 
-  //           if (!email || !password) {
-  //               alert('Please enter both email and password');
-  //               return;
-  //           }
+    if (!email || !password) return this._setError(t('auth.errorMissingFields'));
 
-  //           const response = await fetch('/login', {
-  //               method: 'POST',
-  //               headers: { 'Content-Type': 'application/json' },
-  //               body: JSON.stringify({ email, password, token })
-  //           });
+    const res = await authService.login(email, password);
+    if (res.error) return this._setError(res.error);
 
-  //           const data = await response.json();
-
-  //           if (data.error) {
-  //               alert(data.error);
-
-  //               if (data.requiresToken) {
-  //                   document.getElementById('tokenSection').style.display = 'block';
-  //               }
-  //           } else {
-  //               loggedInUser = data.username;
-  //               userEmail = email; // Store the email
-  //               localStorage.setItem('loggedInUser', data.username);
-  //               localStorage.setItem('userEmail', email);
-  //               localStorage.setItem('accessToken', data.accessToken);
-  //               localStorage.setItem('refreshToken', data.refreshToken);
-  //               updateLoginStatus(loggedInUser);
-  //               document.getElementById('tokenSection').style.display = 'none';
-  //               alert('Login successful!');
-  //               check2FAStatus();
-  //               fetchUsers();
-  //           }
-  //       }
+    this._setError('');
+    this.#setUserData(res, email);
+    this.dispatchEvent(new CustomEvent('login-success', { bubbles: true, composed: true }));
+  }
 
   async _onGoogleLogin(e: Event) {
     e.preventDefault();

@@ -4,6 +4,7 @@ import { renderHome } from './pages/home.js';
 import { renderLogin } from '@/pages/login.js';
 import { renderGame } from '@/pages/game.js';
 import { renderProfile } from '@/pages/profile.js';
+import { renderLoading } from '@/pages/loading.js';
 import { initRouter } from '@/utils/Router.js';
 import { notificationService } from "@/services/notificationService";
 import { startMockNotifications } from "@/services/mockNotifications.js";
@@ -42,7 +43,7 @@ notificationService.listen((notif) => {
 startMockNotifications();
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // TODO: translations by default will be in english. Apply switching to other languages later
+  // translations by default will be in english
   // TODO: populate state, watch for changes? (?)
   state.translations = await getTranslations(state.language);
   // set style theme according to toggle state
@@ -51,13 +52,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   navigate = initRouter(routes, 'app');
 
+  window.addEventListener('login-success', () => {
+    renderLoading('app'); // render loading state, transition between pages
+    setTimeout(() => {
+      navigate('/');
+    }, 1200);
+  });
+
   window.addEventListener('languagechange', async (e: Event) => {
     const newLang = (e as CustomEvent).detail.language;
     state.translations = await getTranslations(newLang);
 
     const render = routes[window.location.pathname];
     if (render) render('app');
-  })
+  });
 
   // handle back/forward navigation - history API
   // https://developer.mozilla.org/en-US/docs/Web/API/History_API
