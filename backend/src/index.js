@@ -365,7 +365,7 @@ fastify.post('/signup', (req, res) => {
                     function (dbErr) {
                         if (dbErr) {
                             if (dbErr.code === 'SQLITE_CONSTRAINT') {
-                                return res.status(400).send({ error: MSG.USER_EXISTS });
+                                return res.status(400).send({ error: MSG.EMAIL_OR_USERNAME_EXISTS });
                             }
                             return res.status(500).send({ error: MSG.ERROR_SAVING_USER });
                         }
@@ -558,7 +558,7 @@ fastify.get('/auth/google/callback', async (req, res) => {
 fastify.post('/change-username', { preHandler: authenticateToken }, (request, reply) => {
     const { newUsername } = request.body;
     if (!newUsername || !isValidUsername(newUsername)) {
-        return reply.status(400).send({ error: 'Invalid new username.' });
+        return reply.status(400).send({ error: MSG.INVALID_NEW_USERNAME });
     }
     db.run(
         `UPDATE users SET username = ? WHERE user_id = ?`,
@@ -566,9 +566,9 @@ fastify.post('/change-username', { preHandler: authenticateToken }, (request, re
         function (err) {
             if (err) {
                 if (err.code === 'SQLITE_CONSTRAINT') {
-                    return reply.status(400).send({ error: 'Username already exists.' });
+                    return reply.status(400).send({ error: MSG.USERNAME_EXISTS });
                 }
-                return reply.status(500).send({ error: 'Database error.' });
+                return reply.status(500).send({ error: MSG.DATABASE_ERROR });
             }
             reply.send({ message: 'Username updated successfully.' });
         }

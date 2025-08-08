@@ -5,11 +5,12 @@ module.exports = {
   USER_NO_LONGER_EXISTS: 'USER_NO_LONGER_EXISTS', // "User no longer exists"
   INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR', // "Internal server error"
   EMAIL_REQUIRED: 'EMAIL_REQUIRED', // "Email is required"
+  EMAIL_EXISTS: 'EMAIL_EXISTS', // "Email already exists"
   EMAIL_AND_PASSWORD_REQUIRED: 'EMAIL_AND_PASSWORD_REQUIRED', // "Email and password are required"
   INVALID_EMAIL_FORMAT: 'INVALID_EMAIL_FORMAT', // "Invalid email format"
   PASSWORD_TOO_SHORT: 'PASSWORD_TOO_SHORT', // "Password must be longer than 6 characters"
   ERROR_HASHING_PASSWORD: 'ERROR_HASHING_PASSWORD', // "Error hashing password"
-  USER_EXISTS: 'USER_EXISTS', // "Email or username already exists"
+  EMAIL_OR_USERNAME_EXISTS: 'EMAIL_OR_USERNAME_EXISTS', // "Email or username already exists"
   ERROR_SAVING_USER: 'ERROR_SAVING_USER', // "Error saving user to database"
   INVALID_CREDENTIALS: 'INVALID_CREDENTIALS', // "Invalid email or password"
   ERROR_VERIFYING_PASSWORD: 'ERROR_VERIFYING_PASSWORD', // "Error verifying password"
@@ -30,6 +31,9 @@ module.exports = {
   AUTHORIZATION_CODE_EXPIRED: 'AUTHORIZATION_CODE_EXPIRED', // "Authorization code expired or invalid. Please try logging in again."
   AUTHENTICATION_FAILED: 'AUTHENTICATION_FAILED', // "Authentication failed. Please try again."
   ERROR_FETCHING_USERS: 'ERROR_FETCHING_USERS', // "Error fetching users from database"
+  INVALID_USERNAME: 'INVALID_USERNAME', // "Invalid username. Must be 3-20 characters and contain only letters and numbers."
+  ERROR_CHECKING_EXISTING_USERS: 'ERROR_CHECKING_EXISTING_USERS', // "Error checking existing users"
+
 
   // CHECK - doesnt need to send anything to FE? meaning: not visible in terms of UI
   ERROR_DELETING_REFRESH_TOKEN: 'ERROR_DELETING_REFRESH_TOKEN', // "Error deleting refresh token"
