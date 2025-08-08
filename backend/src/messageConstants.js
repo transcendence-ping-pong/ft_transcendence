@@ -34,7 +34,6 @@ module.exports = {
   INVALID_USERNAME: 'INVALID_USERNAME', // "Invalid username. Must be 3-20 characters and contain only letters and numbers."
   ERROR_CHECKING_EXISTING_USERS: 'ERROR_CHECKING_EXISTING_USERS', // "Error checking existing users"
 
-
   // CHECK - doesnt need to send anything to FE? meaning: not visible in terms of UI
   ERROR_DELETING_REFRESH_TOKEN: 'ERROR_DELETING_REFRESH_TOKEN', // "Error deleting refresh token"
   ERROR_LOGGING_OUT_ALL: 'ERROR_LOGGING_OUT_ALL', // "Error logging out from all devices"

@@ -132,19 +132,19 @@ export class UserSignup extends HTMLElement {
     const username = this.usernameInput.value.trim();
     const password = this.passwordInput.value;
 
-    const res = await authService.signup(email, password);
+    const res = await authService.signup(username, email, password);
     if (res.error) {
       this.emailInput.classList.add('input-error');
       this.usernameInput.classList.add('input-error');
       this.passwordInput.classList.add('input-error');
       this._setError(err(res.error));
       return;
-    } else {
-      // remove error styles if signup is successful and trigger event
-      this._clearError();
-      this._setError('');
-      this.dispatchEvent(new CustomEvent('switch-to-login', { bubbles: true, composed: true }));
     }
+
+    // remove error styles if signup is successful and trigger event
+    this._clearError();
+    this._setError('');
+    this.dispatchEvent(new CustomEvent('switch-to-login', { bubbles: true, composed: true }));
   }
 
   _onLoginClick(e: Event) {
