@@ -68,3 +68,10 @@ export function renderLogin(containerId: string) {
 
   renderAuthComponent();
 }
+
+/*
+this.addEventListener('switch-to-login', (e: CustomEvent) => {
+  if (e.detail?.email) this.emailInput.value = e.detail.email;
+  if (e.detail?.password) this.passwordInput.value = e.detail.password;
+});
+*/

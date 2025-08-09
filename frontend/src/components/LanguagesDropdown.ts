@@ -6,13 +6,13 @@ template.innerHTML = `
   <style>
     .select-locale {
       width: 100%;
-      height: 32px;
+      height: --var(--topbar-height);
       cursor: pointer;
       background: var(--body);
       border: 2px solid var(--border);
       padding: 0 1rem;
       border-radius: 0;
-      font-size: 1rem;
+      font-size: var(--main-font-size);
       font-weight: bold;
       color: var(--text);
       text-align: center;

@@ -62,7 +62,7 @@ template.innerHTML = `
 
     .top-bar__logout {
       display: flex;
-      height: 32px;
+      height: var(--topbar-height);
       align-items: center;
       gap: 0.5em;
       cursor: pointer;

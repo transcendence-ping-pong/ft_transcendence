@@ -144,7 +144,12 @@ export class UserSignup extends HTMLElement {
     // remove error styles if signup is successful and trigger event
     this._clearError();
     this._setError('');
-    this.dispatchEvent(new CustomEvent('switch-to-login', { bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent('switch-to-login',
+      {
+        detail: { email, password },
+        bubbles: true,
+        composed: true
+      }));
   }
 
   _onLoginClick(e: Event) {
