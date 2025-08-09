@@ -1,3 +1,11 @@
+import * as authService from '@/services/authService.js';
+import { state } from '@/state';
+import { err } from '@/locales/Translations.js';
+import { navigate } from "@/main.js";
+import { renderLoading } from '@/pages/loading';
+import { actionIcons } from '@/utils/Constants.js';
+import { t } from '@/locales/Translations.js';
+
 const template = document.createElement('template');
 template.innerHTML = `
   <style>
@@ -19,7 +27,7 @@ template.innerHTML = `
       box-sizing: border-box;
       user-select: none;
     }
-    .topbar-inner {
+    .top-bar__inner {
       width: 100%;
       max-width: 1440px;
       display: flex;
@@ -28,16 +36,16 @@ template.innerHTML = `
       margin: 0 auto;
       height: 100%;
     }
-    .topbar-left, .topbar-right {
+    .top-bar__left, .top-bar__right {
       display: flex;
       align-items: center;
       gap: 1.2rem;
       height: 100%;
     }
-    .topbar-left {
+    .top-bar__left {
       gap: 0.7rem;
     }
-    .topbar-title {
+    .top-bar__title {
       font-size: 1.05rem;
       font-weight: 600;
       color: #fff;
@@ -48,10 +56,36 @@ template.innerHTML = `
       white-space: nowrap;
       margin-left: 0.1rem;
     }
-    .topbar-center {
+    .top-bar__center {
       flex: 1;
-      /* empty, for spacing */
     }
+
+    .top-bar__logout {
+      display: flex;
+      height: 32px;
+      align-items: center;
+      gap: 0.5em;
+      cursor: pointer;
+      background: var(--body);
+      border-color: var(--border);
+      color: var(--text);
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 0 1rem;
+    }
+    .top-bar__logout:hover {
+      background: var(--accent);
+    }
+    .top-bar__logout img {
+      filter: invert(var(--invert));
+    }
+    .top-bar__logout-icon {
+      width: 22px;
+      height: 22px;
+      vertical-align: middle;
+      margin-right: 0.25rem;
+    }
+
     ::slotted([slot="logo"]) {
       width: 40px;
       height: 40px;
@@ -71,44 +105,61 @@ template.innerHTML = `
       background: #fff2;
       margin-left: 0.5rem;
     }
-    ::slotted([slot="logout"]) {
-      margin-left: 0.5rem;
-      cursor: pointer;
-      background: none;
-      border: none;
-      color: #fff;
-      font-size: 1.2rem;
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-      padding: 0 0.7rem;
-      border-radius: 6px;
-      transition: background 0.15s;
-    }
-    ::slotted([slot="logout"]:hover) {
-      background: rgba(255,255,255,0.08);
-    }
   </style>
-  <div class="topbar-inner">
-    <div class="topbar-left">
+
+  <div class="top-bar__inner">
+    <div class="top-bar__left">
       <slot name="logo"></slot>
-      <span class="topbar-title"><slot name="title">FOUR PING TWO PONG</slot></span>
+      <span class="top-bar__title"><slot name="title">FOUR PING TWO PONG</slot></span>
     </div>
-    <div class="topbar-center"></div>
-    <div class="topbar-right">
+    <div class="top-bar__center"></div>
+    <div class="top-bar__right">
       <slot name="avatar"></slot>
       <slot name="toggle"></slot>
       <slot name="language"></slot>
-      <slot name="logout"></slot>
+
+      <button id="logout" class="top-bar__logout">
+        <span class="top-bar__logout-icon">${actionIcons.logout}</span>
+        ${t('nav.logout')}
+      </button>
     </div>
   </div>
 `;
 
 export class TopBar extends HTMLElement {
+  logoutButton: HTMLButtonElement | null = null;
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
   }
+
+  connectedCallback() {
+    const shadow = this.shadowRoot;
+    this.logoutButton = shadow?.getElementById('logout') as HTMLButtonElement;
+    this.logoutButton.onclick = this._onLogout.bind(this);
+  }
+
+  _showLogoutButton() {
+    if (state.userData?.accessToken) {
+      this.logoutButton?.classList.remove('hidden');
+      return;
+    }
+
+    this.logoutButton?.classList.add('hidden');
+  }
+
+  async _onLogout(e: Event) {
+    e.preventDefault();
+    const res = await authService.logout(state.userData.refreshToken);
+    if (res.error) console.error(err(res.error));
+
+    state.userData = null; // clear user data in state
+    renderLoading('app'); // render loading state, transition between pages
+    setTimeout(() => {
+      navigate('login');
+    }, 1200);
+  };
 }
 
 customElements.define('top-bar', TopBar);

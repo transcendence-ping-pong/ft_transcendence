@@ -20,10 +20,6 @@ export function renderHome(containerId: string) {
         <theme-toggle slot="toggle"></theme-toggle>
         <languages-dropdown slot="language"></languages-dropdown>
         <img slot="avatar" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=robot" alt="Avatar" />
-        <button slot="logout" onclick="/* your logout logic */">
-          <img src="https://unpkg.com/pixelarticons@1.8.1/svg/logout.svg" alt="Logout" style="width:22px;height:22px;filter:invert(1);" />
-          Logout
-        </button>
       </top-bar>
 
       <notifications-bar></notifications-bar>

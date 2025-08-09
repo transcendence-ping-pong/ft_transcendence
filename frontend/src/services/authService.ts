@@ -19,7 +19,13 @@ export async function signup(username: string, email: string, password: string) 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, email, password })
   });
-  return await res.json();
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Signup failed');
+  }
+
+  return data;
 }
 
 export async function login(email: string, password: string, token?: string): Promise<AuthResponse> {
@@ -32,7 +38,7 @@ export async function login(email: string, password: string, token?: string): Pr
 
     const data = await res.json();
     if (!res.ok) {
-      throw new Error(data.error || 'Login failed');
+      throw new Error(data.error || 'Signin failed');
     }
     return data;
   } catch (error: any) {
@@ -50,7 +56,13 @@ export async function logout(refreshToken: string): Promise<AuthResponse> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token: refreshToken }),
   });
-  return await res.json();
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Logout failed');
+  }
+
+  return data;
 }
 
 export async function checkServerLoginStatus(accessToken: string): Promise<AuthResponse> {
