@@ -5,7 +5,6 @@ export enum GameLevel {
   EASY = 'EASY',
   MEDIUM = 'MEDIUM',
   HARD = 'HARD',
-  TOURNAMENT = 'TOURNAMENT'
 }
 
 export enum PlayerMode {

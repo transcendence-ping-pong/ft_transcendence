@@ -126,7 +126,7 @@ export class GameCanvas extends EventTarget {
     // move paddles if direction is set
     for (let i = 0; i < this.paddles.length; i++) {
        if (this.bots[i]) {
-        if (this.gameManager.isStarted){ //Para garantir que so e atualizado quando o jogo comeca
+        if (this.gameManager.isStarted){ //To be sure the bot is update when the game start
            this.bots[i]!.update(deltaTime);
         }
       } else {
@@ -178,16 +178,16 @@ export class GameCanvas extends EventTarget {
   }
 
   public enableBotForPlayer(playerIndex: 0 | 1): void {
-    this.bots[playerIndex] = new BotPlayer(this.paddles[playerIndex], this.ball, this.canvas.height, this.getLevel());
+    this.bots[playerIndex] = new BotPlayer(this.paddles[playerIndex], this.ball, this.getLevel());
   }
 
   public reset() {
-    this.gameManager.getLevel();
+    this.getLevel();
     // Reset ball and paddles to initial positions
     this.ball.resetPosition();
     this.paddles[0].resetPosition();
     this.paddles[1].resetPosition();
-     // Recria bot (para garantir que ele pegue o paddle centralizado)
+    // Recreate bot (To be sure the paddle will be centralized)
     if (this.isBotEnable) {
       if (this.bots[0]) this.enableBotForPlayer(0);
       if (this.bots[1]) this.enableBotForPlayer(1);

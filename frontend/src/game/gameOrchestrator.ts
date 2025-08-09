@@ -19,6 +19,7 @@ export class gameOrchestrator {
   private babylonCanvas: BabylonCanvas;
   private gui: BabylonGUI;
   private gameCanvas: GameCanvas;
+  private isTournament: boolean;
   // private gameManager: GameManager;
   // TODO CONCEPT: should we have a GameManager here?
   // instead of instantiating it in GameCanvas?
@@ -27,20 +28,13 @@ export class gameOrchestrator {
     state.scaleFactor = this.getScaleFactor();
     this.babylonCanvas = new BabylonCanvas(containerId);
     this.gui = new BabylonGUI(this.babylonCanvas.getScene());
-     // Detecta se veio de torneio pela query string
+
     const params = new URLSearchParams(window.location.search);
-    const isTournament = params.get('tournament') === '1';
+    this.isTournament = params.get('tournament') === '1';
     
-   if (isTournament) {
-    // Cria o jogo direto no nível médio, modo 2 jogadores locais
-      this.babylonCanvas.createGameCanvas(GameLevel.MEDIUM, PlayerMode.TWO_PLAYER);
-      this.gameCanvas = this.babylonCanvas.getGameCanvas();
-      this.gui.showCountdown(3, () => {
-        this.gameCanvas.startGame();
-        this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => {});
-      });
+    if (this.isTournament) {
+      this.setupTournamentFlow();
     } else {
-      // Fluxo normal: mostra menus
       this.setupMenuFlow();
     }
 
@@ -85,6 +79,23 @@ export class gameOrchestrator {
     };
   }
 
+   private setupTournamentFlow() {
+    this.babylonCanvas.createGameCanvas(GameLevel.MEDIUM, PlayerMode.TWO_PLAYER);
+    this.gameCanvas = this.babylonCanvas.getGameCanvas();
+
+    this.gui.showCountdown(3, () => {
+      this.gameCanvas.startGame();
+      this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => {});
+    });
+
+    this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
+      const { winner, score } = e.detail;
+      const winnerName = winner === 'LEFT' ? 'Player 1' : 'Player 2';
+      const message = `${winnerName} Win!\nFinal Score: ${score.LEFT} x ${score.RIGHT}`;
+      this.gui.showGameOver(winnerName, score);
+    });
+  }
+
   setupMenuFlow() {
     this.gui.showStartButton(() => {
       this.gui.showPlayerSelector((mode) => {
@@ -112,8 +123,7 @@ export class gameOrchestrator {
             //console.log('Received gameOver', e.detail);
             const { winner, score } = e.detail;
             const winnerName = winner === 'LEFT' ? 'Player 1' : 'Player 2';
-            const message = `🏆 ${winnerName} venceu!\nPlacar final: ${score.LEFT} x ${score.RIGHT}`;
-            alert(message);
+            const message = `$${winnerName} Win!\nFinal Score: ${score.LEFT} x ${score.RIGHT}`;
 
             this.gui.showGameOver(winnerName, score);
 

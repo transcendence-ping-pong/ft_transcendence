@@ -68,15 +68,6 @@ export class Paddle {
     this.y = Math.min(this.y + this.speed * dt, (bottom - this.height) - (this.width * PADDLE_TO_COURT_GAP));
   }
 
-   //bot
-  public setY(y: number) {
-    this.y = y;
-  }
-
-  public getLevel(): GameLevel {
-    return  this.level;
-  }
-
   public getState() {
     return {
       x: this.x,

@@ -251,7 +251,7 @@ export class BabylonGUI {
     this.clearGUI();
     this.fadeBackground(0, 0.8);
 
-    const resultText = `🏆 ${winnerName} venceu!\nPlacar final: ${score.LEFT} x ${score.RIGHT}`;
+    const resultText = `🏆 ${winnerName} won!\nFinal Score: ${score.LEFT} x ${score.RIGHT}`;
 
     this.gameOverText = new TextBlock();
     this.gameOverText.text = resultText;

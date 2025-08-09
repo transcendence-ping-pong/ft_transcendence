@@ -1,9 +1,6 @@
 const path = require('path');
 const fastify = require('fastify')({ logger: true });
 const fastifyStatic = require('@fastify/static');
-fastify.register(require('@fastify/cors'), {
-  origin: true, // permite qualquer origem (use com cuidado em produção!)
-});
 
 const sqlite3 = require('sqlite3').verbose();
 const speakeasy = require('speakeasy');

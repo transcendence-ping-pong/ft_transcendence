@@ -18,10 +18,8 @@ export function renderGame(containerId: string) {
         />
       </div>
     `;
-      // Wait for DOM update before initializing the orchestrator
-    setTimeout(() => {
-      new gameOrchestrator('game-screen');
-    }, 0);
+  
+    new gameOrchestrator('game-screen');
 
     window.addEventListener('openSummary', (e: CustomEvent) => {
       console.log('openSummary event received', e.detail);
@@ -45,10 +43,6 @@ export function renderGame(containerId: string) {
     });
   }
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-  renderGame('id-do-container');
-});
 
 /*
 OBSOLETE NAVIGATION BAR VERSION
