@@ -16,7 +16,7 @@ services:
     ports:
       - "4000:4000"
     env_file:
-      - ./backend/src/.env
+      - ./backend/.env
     #volumes:
       # - db_data:/app/database
 

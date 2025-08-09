@@ -11,7 +11,8 @@ export interface AuthResponse {
 }
 
 // const BASE_URL = "http://localhost:4000";
-const BASE_URL = "http://192.168.64.26:4000";
+// const BASE_URL = "http://192.168.64.26:4000";
+const BASE_URL = "/api";
 
 export async function signup(username: string, email: string, password: string) {
   const res = await fetch(`${BASE_URL}/signup`, {
