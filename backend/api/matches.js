@@ -84,7 +84,7 @@ async function matchRoutes(fastify, options) {
 			scorePlayer2,
 		} = request.body;
 
-		await db.run(`UPDATE matches SET winnerDisplayName = ?, scorePlayer1 = ?, scorePlayer2 = ? WHERE matchId = ?`, [winnerDisplayName, scorePlayer1, scorePlayer2, matchId], (err, rows) => {
+		await db.run(`UPDATE matchStats SET winnerDisplayName = ?, scorePlayer1 = ?, scorePlayer2 = ? WHERE matchId = ?`, [winnerDisplayName, scorePlayer1, scorePlayer2, matchId], (err, rows) => {
 			if (err) {
 				return reply.status(500).send({ error: 'Error updating match' });
 			}
