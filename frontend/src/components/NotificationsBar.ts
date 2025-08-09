@@ -1,6 +1,7 @@
 import { NotificationPayload, NotificationAction, notificationService } from "@/services/notificationService";
 import { mapNotification, getWelcomeNotification } from "@/utils/Notifications.js";
 import { t } from "@/locales/Translations.js";
+import { state } from "@/state";
 import "./NotificationCard.js";
 
 const TOPBAR_HEIGHT = 64; // px
@@ -167,8 +168,7 @@ export class NotificationsBar extends HTMLElement {
   detailsClose: HTMLElement;
   detailsTitle: HTMLElement;
 
-  // TODO: get username, this value is mocked for now
-  username = "SHINCKEL";
+  username = state.userData?.username || 'GUEST';
 
   constructor() {
     super();

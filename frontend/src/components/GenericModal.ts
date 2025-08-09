@@ -4,22 +4,44 @@ template.innerHTML = `
     .overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.6);
+      background: transparent;
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 9999;
+      z-index: 9998;
+      transition: background 400ms cubic-bezier(.4,2,.3,1);
+    }
+    .overlay.show {
+      background: rgba(0,0,0,0.6);
     }
     .modal {
       background: var(--body);
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
       padding: 24px;
-      max-width: 400px;
-      min-width: 320px;
-      max-height: 80vh;
+      min-width: 500px;
+      max-width: 800px;
+      min-height: 450px;
+      max-height: 700px;
       position: relative;
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(60px);
+      transition: opacity 400ms cubic-bezier(.4,2,.3,1), transform 400ms cubic-bezier(.4,2,.3,1);
+    }
+    .modal.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+    .body-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
     }
     .close-btn {
       position: absolute;
@@ -39,9 +61,9 @@ template.innerHTML = `
   </style>
   <div class="overlay">
     <div class="modal">
-      <slot name="header"></slot>
-      <slot name="body"></slot>
-      <slot name="footer"></slot>
+      <div class="body-center">
+        <slot name="body"></slot>
+      </div>
       <button class="close-btn" title="Close" style="display:none;">&times;</button>
     </div>
   </div>
@@ -49,7 +71,7 @@ template.innerHTML = `
 
 export class GenericModal extends HTMLElement {
   static get observedAttributes() {
-    return ['dismissible'];
+    return ['dismissible', 'appear-delay'];
   }
 
   constructor() {
@@ -61,11 +83,29 @@ export class GenericModal extends HTMLElement {
   connectedCallback() {
     this.updateDismissible();
     this.setupEvents();
+    this.triggerAppear();
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
     if (name === 'dismissible') {
       this.updateDismissible();
+    }
+    if (name === 'appear-delay') {
+      this.triggerAppear();
+    }
+  }
+
+  triggerAppear() {
+    const delay = parseInt(this.getAttribute('appear-delay') || '0', 10);
+    const modal = this.shadowRoot.querySelector('.modal');
+    const overlay = this.shadowRoot.querySelector('.overlay');
+    if (modal && overlay) {
+      modal.classList.remove('show');
+      overlay.classList.remove('show');
+      setTimeout(() => {
+        modal.classList.add('show');
+        overlay.classList.add('show');
+      }, isNaN(delay) ? 0 : delay);
     }
   }
 
@@ -80,13 +120,12 @@ export class GenericModal extends HTMLElement {
   setupEvents() {
     const closeBtn = this.shadowRoot.querySelector('.close-btn');
     const overlay = this.shadowRoot.querySelector('.overlay');
-    const modal = this.shadowRoot.querySelector('.modal');
     const dismissible = this.getAttribute('dismissible') === 'true';
 
     if (closeBtn && dismissible) {
       closeBtn.onclick = () => this.dismiss();
     }
-    if (overlay && modal && dismissible) {
+    if (overlay && dismissible) {
       overlay.addEventListener('click', (e) => {
         if (e.target === overlay) this.dismiss();
       });
@@ -100,4 +139,3 @@ export class GenericModal extends HTMLElement {
 }
 
 customElements.define('generic-modal', GenericModal);
-

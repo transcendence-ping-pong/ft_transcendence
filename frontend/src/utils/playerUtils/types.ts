@@ -1,3 +1,11 @@
+export type UserData = {
+  username: string;
+  email: string;
+  accessToken: string;
+  refreshToken: string;
+  expiresAt?: number; // optional, for token expiry
+};
+
 export interface PlayerDataType {
   name: string;
   nickname: string; // player's nickname or display name

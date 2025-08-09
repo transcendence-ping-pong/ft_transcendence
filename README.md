@@ -163,8 +163,34 @@ frontend/
 <!-- build docker image && start container, add -d for detached mode -->
 sudo docker-compose up --build frontend
 <!-- FE available at http://localhost:3000 -->
-```
 
+docker-compose down
+docker volume ls
+docker volume rm ft_transcendence_db_data
+docker images
+docker image rm ft_transcendence-backend
+
+docker-compose down
+docker system prune -af
+docker volume prune -f
+docker-compose up --build
+```
+```
+ubuntu@pong-vm:~/ft_transcendence$ docker exec -it backend /bin/sh
+/app # ls
+database           node_modules       package-lock.json  package.json       src
+/app # cd database/
+/app/database # sqlite3
+SQLite version 3.48.0 2025-01-14 11:05:00
+Enter ".help" for usage hints.
+Connected to a transient in-memory database.
+Use ".open FILENAME" to reopen on a persistent database.
+sqlite> .open database.db
+sqlite> .tables
+friend_list    match_history  match_stats    user_stats     users        
+sqlite> .quit
+exit
+```
 
 ## Concepts
 
