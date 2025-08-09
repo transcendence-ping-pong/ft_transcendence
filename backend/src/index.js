@@ -17,9 +17,9 @@ fastify.register(fastifyStatic, {
     prefix: '/',
 });
 
-fastify.register(fastifyCors, {
-    origin: true, // or specify frontend: 'http://localhost:3000'
-});
+// fastify.register(fastifyCors, {
+//     origin: true, // or specify frontend: 'http://localhost:3000'
+// });
 
 const port = 4000;
 
