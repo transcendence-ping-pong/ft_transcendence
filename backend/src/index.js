@@ -3,6 +3,10 @@ const fastify = require('fastify')({ logger: true });
 const fastifyStatic = require('@fastify/static');
 const fastifyCors = require('@fastify/cors');
 
+fastify.register(fastifyCors, {
+    origin: true, // or specify frontend: 'http://localhost:3000'
+});
+
 const sqlite3 = require('sqlite3').verbose();
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
@@ -11,15 +15,11 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const MSG = require('./messageConstants');
 
-require('dotenv').config({ path: './backend/src/.env' });
+require('dotenv').config();
 
 fastify.register(fastifyStatic, {
     root: path.join(__dirname, 'public'),
     prefix: '/',
-});
-
-fastify.register(fastifyCors, {
-    origin: true, // or specify frontend: 'http://localhost:3000'
 });
 
 const port = 4000;
