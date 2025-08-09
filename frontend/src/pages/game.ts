@@ -18,6 +18,7 @@ export function renderGame(containerId: string) {
         />
       </div>
     `;
+  
     new gameOrchestrator('game-screen');
 
     window.addEventListener('openSummary', (e: CustomEvent) => {

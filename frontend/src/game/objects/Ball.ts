@@ -61,6 +61,14 @@ export class Ball {
     );
   };
 
+  public getY(): number {
+    return this.virtualY;
+  }
+
+  public getX(): number {
+    return this.virtualX;
+  }
+
   isOutOfBounds = (left: number, right: number) => {
     return (
       this.virtualX - this.size / 2 < left || // left side wall courtBounds
