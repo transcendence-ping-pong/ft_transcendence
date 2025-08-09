@@ -42,8 +42,7 @@ export class BotPlayer {
   }
 }
 
-// TO DO: SEE IF IS POSSIBLE TO USE THIS CODE FOR IMPLEMENTING SOME CARACTERISTICS OF AI MODULE
-
+// TODO: SEE IF IS POSSIBLE TO USE THIS CODE FOR IMPLEMENTING SOME CARACTERISTICS OF AI MODULE
 
 // // frontend/src/game/BotPlayer.ts
 // import type { Paddle } from './objects/Paddle';
