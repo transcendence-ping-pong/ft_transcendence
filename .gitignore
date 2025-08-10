@@ -31,4 +31,4 @@ docker-compose.override.yml
 .vscode/
 
 # temporary debug files (backend)
-backend/api
+# backend/api

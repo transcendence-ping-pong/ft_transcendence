@@ -34,3 +34,16 @@ export const state = new Proxy(initialState, {
     return true;
   }
 });
+
+export interface Match {
+  matchId: number;
+  player1DisplayName: string;
+  player2DisplayName: string;
+  winnerDisplayName: string | null;
+  scorePlayer1: number | null;
+  scorePlayer2: number | null;
+}
+
+export let currentMatches: Match[] = [];
+export let tournamentId: number | null = null;
+

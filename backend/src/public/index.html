@@ -49,7 +49,7 @@
                 return;
             }
 
-            const response = await fetch('/signup', {
+            const response = await fetch('/api/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, email, password })
@@ -165,7 +165,7 @@
             const currentUser = users.find(user => user.username === loggedInUser);
 
             // If user has a Google ID, don't show 2FA options
-            if (currentUser && currentUser.google_id) {
+            if (currentUser && currentUser.googleID) {
                 document.getElementById('tokenSection').style.display = 'none';
                 document.getElementById('verifyTokenSection').style.display = 'none';
                 document.getElementById('generateSecretSection').style.display = 'none';
@@ -214,7 +214,7 @@
             if (Array.isArray(users) && users.length > 0) {
                 users.forEach(user => {
                     const listItem = document.createElement('li');
-                    listItem.textContent = `ID: ${user.user_id}, Username: ${user.username}, Has 2FA: ${user.secret ? 'Yes' : 'No'}, Google ID: ${user.google_id || 'N/A'}, Email: ${user.email || 'N/A'}`;
+                    listItem.textContent = `ID: ${user.userId}, Username: ${user.username}, Has 2FA: ${user.secret ? 'Yes' : 'No'}, Google ID: ${user.googleID || 'N/A'}, Email: ${user.email || 'N/A'}`;
                     userList.appendChild(listItem);
                 });
             }

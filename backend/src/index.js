@@ -48,19 +48,19 @@ function saveRefreshToken(token, userId) {
     return new Promise((resolve, reject) => {
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7);
-        db.run(`INSERT INTO refresh_tokens (token, user_id, expires_at) VALUES (?, ?, ?)`,
-            [token, userId, expiresAt.toISOString()], function (err) {
-                if (err) reject(err);
-                else resolve(this.lastID);
-            });
+        db.run(`INSERT INTO refresh_tokens (token, userId, expires_at) VALUES (?, ?, ?)`, 
+            [token, userId, expiresAt.toISOString()], function(err) {
+            if (err) reject(err);
+            else resolve(this.lastID);
+        });
     });
 }
 
 function findRefreshToken(token) {
     return new Promise((resolve, reject) => {
         db.get(`SELECT rt.*, u.username, u.email FROM refresh_tokens rt 
-                JOIN users u ON rt.user_id = u.user_id 
-                WHERE rt.token = ? AND rt.expires_at > datetime('now')`,
+                JOIN users u ON rt.userId = u.userId 
+                WHERE rt.token = ? AND rt.expires_at > datetime('now')`, 
             [token], (err, row) => {
                 if (err) reject(err);
                 else resolve(row);
@@ -79,7 +79,7 @@ function deleteRefreshToken(token) {
 
 function deleteAllUserRefreshTokens(userId) {
     return new Promise((resolve, reject) => {
-        db.run(`DELETE FROM refresh_tokens WHERE user_id = ?`, [userId], function (err) {
+        db.run(`DELETE FROM refresh_tokens WHERE userId = ?`, [userId], function(err) {
             if (err) reject(err);
             else resolve(this.changes);
         });
@@ -100,7 +100,7 @@ function authenticateToken(request, reply, done) {
             reply.status(403).send({ error: MSG.INVALID_OR_EXPIRED_TOKEN });
             return;
         }
-        db.get(`SELECT user_id, username, email FROM users WHERE user_id = ?`, [user.user_id], (dbErr, row) => {
+        db.get(`SELECT userId, username, email FROM users WHERE userId = ?`, [user.userId], (dbErr, row) => {
             if (dbErr || !row) {
                 reply.status(403).send({ error: MSG.USER_NO_LONGER_EXISTS });
                 return;
@@ -176,7 +176,7 @@ fastify.post('/token', async (req, res) => {
             
             const accessToken = generateAccessToken({ 
                 username: tokenData.username, 
-                user_id: tokenData.user_id,
+                userId: tokenData.userId,
                 email: tokenData.email
             });
             res.send({ accessToken: accessToken });
@@ -216,6 +216,7 @@ fastify.post('/generate', { preHandler: authenticateToken }, (request, reply) =>
                 return reply.status(500).send({ error: MSG.ERROR_GENERATING_QR });
             }
             reply.send({ qrCodeUrl, secret: secret.base32 });
+            return;
         });
     });
 });
@@ -315,126 +316,126 @@ fastify.get('/current-token', { preHandler: authenticateToken }, (req, res) => {
 });
 
 // --- SIGNUP ---
-fastify.post('/signup', (req, res) => {
-    const { username, email, password } = req.body;
+// fastify.post('/signup', (req, res) => {
+//     const { username, email, password } = req.body;
 
-    if (!username || !email || !password) {
-        return res.status(400).send({ error: MSG.EMAIL_AND_PASSWORD_REQUIRED });
-    }
+//     if (!username || !email || !password) {
+//         return res.status(400).send({ error: MSG.EMAIL_AND_PASSWORD_REQUIRED });
+//     }
 
-    if (!isValidUsername(username)) {
-        return res.status(400).send({ error: MSG.INVALID_USERNAME });
-    }
+//     if (!isValidUsername(username)) {
+//         return res.status(400).send({ error: MSG.INVALID_USERNAME });
+//     }
 
-    if (!isValidEmail(email)) {
-        return res.status(400).send({ error: MSG.INVALID_EMAIL_FORMAT });
-    }
+//     if (!isValidEmail(email)) {
+//         return res.status(400).send({ error: MSG.INVALID_EMAIL_FORMAT });
+//     }
 
-    if (!isValidPassword(password)) {
-        return res.status(400).send({
-            error: MSG.PASSWORD_TOO_SHORT
-        });
-    }
+//     if (!isValidPassword(password)) {
+//         return res.status(400).send({
+//             error: MSG.PASSWORD_TOO_SHORT
+//         });
+//     }
 
-    // Check for existing username or email
-    db.get(
-        `SELECT username, email FROM users WHERE username = ? OR email = ?`,
-        [username, email],
-        (err, existingUser) => {
-            if (err) {
-                return res.status(500).send({ error: MSG.ERROR_CHECKING_EXISTING_USERS });
-            }
+//     // Check for existing username or email
+//     db.get(
+//         `SELECT username, email FROM users WHERE username = ? OR email = ?`,
+//         [username, email],
+//         (err, existingUser) => {
+//             if (err) {
+//                 return res.status(500).send({ error: MSG.ERROR_CHECKING_EXISTING_USERS });
+//             }
 
-            if (existingUser) {
-                if (existingUser.username === username) {
-                    return res.status(400).send({ error: MSG.USERNAME_EXISTS });
-                }
-                if (existingUser.email === email) {
-                    return res.status(400).send({ error: MSG.EMAIL_EXISTS });
-                }
-            }
+//             if (existingUser) {
+//                 if (existingUser.username === username) {
+//                     return res.status(400).send({ error: MSG.USERNAME_EXISTS });
+//                 }
+//                 if (existingUser.email === email) {
+//                     return res.status(400).send({ error: MSG.EMAIL_EXISTS });
+//                 }
+//             }
 
-            bcrypt.hash(password, 13, (hashErr, hashedPassword) => {
-                if (hashErr) {
-                    return res.status(500).send({ error: MSG.ERROR_HASHING_PASSWORD });
-                }
+//             bcrypt.hash(password, 13, (hashErr, hashedPassword) => {
+//                 if (hashErr) {
+//                     return res.status(500).send({ error: MSG.ERROR_HASHING_PASSWORD });
+//                 }
 
-                db.run(
-                    `INSERT INTO users (username, email, password, secret) VALUES (?, ?, ?, ?)`,
-                    [username, email, hashedPassword, ''],
-                    function (dbErr) {
-                        if (dbErr) {
-                            if (dbErr.code === 'SQLITE_CONSTRAINT') {
-                                return res.status(400).send({ error: MSG.EMAIL_OR_USERNAME_EXISTS });
-                            }
-                            return res.status(500).send({ error: MSG.ERROR_SAVING_USER });
-                        }
-                        res.send({ message: 'Signup successful' });
-                    }
-                );
-            });
-        }
-    );
-});
+//                 db.run(
+//                     `INSERT INTO users (username, email, password, secret) VALUES (?, ?, ?, ?)`,
+//                     [username, email, hashedPassword, ''],
+//                     function (dbErr) {
+//                         if (dbErr) {
+//                             if (dbErr.code === 'SQLITE_CONSTRAINT') {
+//                                 return res.status(400).send({ error: MSG.EMAIL_OR_USERNAME_EXISTS });
+//                             }
+//                             return res.status(500).send({ error: MSG.ERROR_SAVING_USER });
+//                         }
+//                         res.send({ message: 'Signup successful' });
+//                     }
+//                 );
+//             });
+//         }
+//     );
+// });
 
 // --- LOGIN ---
-fastify.post('/login', (req, res) => {
-    const { email, password, token } = req.body;
+// fastify.post('/login', (req, res) => {
+//     const { email, password, token } = req.body;
 
-    if (!email || !password) {
-        return res.status(400).send({ error: 'Email and password are required' });
-    }
+//     if (!email || !password) {
+//         return res.status(400).send({ error: 'Email and password are required' });
+//     }
 
-    if (!isValidEmail(email)) {
-        return res.status(400).send({ error: 'Invalid email format' });
-    }
+//     if (!isValidEmail(email)) {
+//         return res.status(400).send({ error: 'Invalid email format' });
+//     }
 
-    db.get(`SELECT * FROM users WHERE email = ?`, [email], async (err, row) => {
-        if (err) {
-            return res.status(500).send({ error: MSG.ERROR_FETCHING_USER });
-        }
-        if (!row) {
-            return res.status(404).send({ error: MSG.INVALID_CREDENTIALS });
-        }
-        bcrypt.compare(password, row.password, async (bcryptErr, passwordMatch) => {
-            if (bcryptErr) {
-                return res.status(500).send({ error: MSG.ERROR_VERIFYING_PASSWORD });
-            }
-            if (!passwordMatch) {
-                return res.status(404).send({ error: MSG.INVALID_CREDENTIALS });
-            }
-            if (row.secret) {
-                if (!token) {
-                    return res.status(400).send({ error: MSG.AUTHENTICATOR_TOKEN_REQUIRED, requiresToken: true });
-                }
-                const verified = speakeasy.totp.verify({
-                    secret: row.secret,
-                    encoding: 'base32',
-                    token: token
-                });
-                if (!verified) {
-                    return res.status(403).send({ error: MSG.INVALID_AUTHENTICATOR_TOKEN, requiresToken: true });
-                }
-            }
-            currentLoggedInUser = row.username;
-            try {
-                const user = { username: row.username, user_id: row.user_id, email: row.email };
-                const accessToken = generateAccessToken(user);
-                const refreshToken = generateRefreshToken(user);
-                await saveRefreshToken(refreshToken, row.user_id);
-                res.send({
-                    message: 'Login successful',
-                    username: row.username,
-                    accessToken: accessToken,
-                    refreshToken: refreshToken
-                });
-            } catch (tokenError) {
-                console.error('Error saving refresh token:', tokenError);
-                res.status(500).send({ error: MSG.ERROR_CREATING_SESSION });
-            }
-        });
-    });
-});
+//     db.get(`SELECT * FROM users WHERE email = ?`, [email], async (err, row) => {
+//         if (err) {
+//             return res.status(500).send({ error: MSG.ERROR_FETCHING_USER });
+//         }
+//         if (!row) {
+//             return res.status(404).send({ error: MSG.INVALID_CREDENTIALS });
+//         }
+//         bcrypt.compare(password, row.password, async (bcryptErr, passwordMatch) => {
+//             if (bcryptErr) {
+//                 return res.status(500).send({ error: MSG.ERROR_VERIFYING_PASSWORD });
+//             }
+//             if (!passwordMatch) {
+//                 return res.status(404).send({ error: MSG.INVALID_CREDENTIALS });
+//             }
+//             if (row.secret) {
+//                 if (!token) {
+//                     return res.status(400).send({ error: MSG.AUTHENTICATOR_TOKEN_REQUIRED, requiresToken: true });
+//                 }
+//                 const verified = speakeasy.totp.verify({
+//                     secret: row.secret,
+//                     encoding: 'base32',
+//                     token: token
+//                 });
+//                 if (!verified) {
+//                     return res.status(403).send({ error: MSG.INVALID_AUTHENTICATOR_TOKEN, requiresToken: true });
+//                 }
+//             }
+//             currentLoggedInUser = row.username;
+//             try {
+//                 const user = { username: row.username, userId: row.userId, email: row.email };
+//                 const accessToken = generateAccessToken(user);
+//                 const refreshToken = generateRefreshToken(user);
+//                 await saveRefreshToken(refreshToken, row.userId);
+//                 res.send({
+//                     message: 'Login successful',
+//                     username: row.username,
+//                     accessToken: accessToken,
+//                     refreshToken: refreshToken
+//                 });
+//             } catch (tokenError) {
+//                 console.error('Error saving refresh token:', tokenError);
+//                 res.status(500).send({ error: MSG.ERROR_CREATING_SESSION });
+//             }
+//         });
+//     });
+// });
 
 // --- LOGOUT ---
 fastify.post('/logout', async (req, res) => {
@@ -456,7 +457,7 @@ fastify.post('/logout', async (req, res) => {
 // --- LOGOUT ALL ---
 fastify.post('/logout-all', { preHandler: authenticateToken }, async (req, res) => {
     try {
-        await deleteAllUserRefreshTokens(req.user.user_id);
+        await deleteAllUserRefreshTokens(req.user.userId);
         res.send({ message: 'Logged out from all devices' });
     } catch (error) {
         console.error('Error logging out from all devices:', error);
@@ -466,12 +467,12 @@ fastify.post('/logout-all', { preHandler: authenticateToken }, async (req, res) 
 
 // --- CURRENT USER ---
 fastify.get('/current-user', { preHandler: authenticateToken }, (req, res) => {
-    res.send({ username: req.user.username, user_id: req.user.user_id, email: req.user.email });
+    res.send({ username: req.user.username, userId: req.user.userId, email: req.user.email });
 });
 
 // --- USERS LIST ---
 fastify.get('/users', { preHandler: authenticateToken }, (req, res) => {
-    db.all(`SELECT user_id, username, secret, google_id, email FROM users`, (err, rows) => {
+    db.all(`SELECT userId, username, secret, googleID, email FROM users`, (err, rows) => {
         if (err) {
             console.error('Database error in /users endpoint:', err);
             return res.status(500).send({ error: MSG.ERROR_FETCHING_USERS });
@@ -524,23 +525,23 @@ fastify.get('/auth/google/callback', async (req, res) => {
             });
         }
 
-        let user = await dbGet(`SELECT * FROM users WHERE google_id = ?`, [googleId]);
-        let username, user_id;
+        let user = await dbGet(`SELECT * FROM users WHERE googleID = ?`, [googleId]);
+        let username, userId;
 
         if (!user) {
-            user_id = await dbRun(
-                `INSERT INTO users (username, password, secret, google_id, email) VALUES (?, ?, ?, ?, ?)`,
+            userId = await dbRun(
+                `INSERT INTO users (username, password, secret, googleID, email) VALUES (?, ?, ?, ?, ?)`,
                 [name, '', '', googleId, email]
             );
             username = name;
         } else {
             username = user.username;
-            user_id = user.user_id;
+            userId = user.userId;
         }
 
-        const accessToken = generateAccessToken({ username, user_id, email });
-        const refreshToken = generateRefreshToken({ username, user_id, email });
-        await saveRefreshToken(refreshToken, user_id);
+        const accessToken = generateAccessToken({ username, userId, email });
+        const refreshToken = generateRefreshToken({ username, userId, email });
+        await saveRefreshToken(refreshToken, userId);
 
         const redirectUrl = `/?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}&username=${encodeURIComponent(username)}`;
         return res.redirect(redirectUrl);
@@ -561,8 +562,8 @@ fastify.post('/change-username', { preHandler: authenticateToken }, (request, re
         return reply.status(400).send({ error: MSG.INVALID_NEW_USERNAME });
     }
     db.run(
-        `UPDATE users SET username = ? WHERE user_id = ?`,
-        [newUsername, request.user.user_id],
+        `UPDATE users SET username = ? WHERE userId = ?`,
+        [newUsername, request.user.userId],
         function (err) {
             if (err) {
                 if (err.code === 'SQLITE_CONSTRAINT') {
@@ -571,6 +572,7 @@ fastify.post('/change-username', { preHandler: authenticateToken }, (request, re
                 return reply.status(500).send({ error: MSG.DATABASE_ERROR });
             }
             reply.send({ message: 'Username updated successfully.' });
+            return;
         }
     );
 });
@@ -585,13 +587,15 @@ fastify.post('/change-password', { preHandler: authenticateToken }, (request, re
             return reply.status(500).send({ error: MSG.ERROR_HASHING_PASSWORD });
         }
         db.run(
-            `UPDATE users SET password = ? WHERE user_id = ?`,
-            [hashedPassword, request.user.user_id],
+            `UPDATE users SET password = ? WHERE userId = ?`,
+            [hashedPassword, request.user.userId],
             function (err) {
                 if (err) {
-                    return reply.status(500).send({ error: 'Database error.' });
+                    reply.status(500).send({ error: 'Database error.' });
+                    return;
                 }
                 reply.send({ message: 'Password updated successfully.' });
+                return;
             }
         );
     });
@@ -599,6 +603,12 @@ fastify.post('/change-password', { preHandler: authenticateToken }, (request, re
 
 // --- MISC ---
 fastify.get('/favicon.ico', (req, res) => res.status(204));
+
+const userRoutes = require('../api/users');
+fastify.decorate('db', db);
+fastify.register(userRoutes, { prefix: '/api' });
+const matchRoutes = require('../api/matches');
+fastify.register(matchRoutes, { prefix: '/api' });
 
 fastify.listen({ port: port, host: '0.0.0.0' }, () => {
     console.log(`Server running at http://localhost:${port}`);
