@@ -22,6 +22,7 @@
     <form id="postMatchForm">
       <input type="number" name="creatorUserId" placeholder="Creator User ID" required>
       <input type="number" name="remoteUserId" placeholder="Remote User ID (optional)">
+      <input type="number" name="tournId" placeholder="Tournament ID (optional)">
       <input type="text" name="player1DisplayName" placeholder="Player 1 Display Name" required>
       <input type="text" name="player2DisplayName" placeholder="Player 2 Display Name (optional)">
       <button type="submit">Submit Match</button>
@@ -73,6 +74,26 @@
     <pre id="tournamentResult"></pre>
   </section>
 
+  <!-- GET /tournament/:tournId/semi -->
+  <section>
+    <h2>Get Semifinals by ID (`GET /tournament/:tournId/semi`)</h2>
+    <form id="getSemiForm">
+      <input type="number" name="tournId" placeholder="Tournament ID" required>
+      <button type="submit">Fetch Semi</button>
+    </form>
+    <pre id="getSemiResult"></pre>
+  </section>
+
+    <!-- GET /tournament/:tournId/final -->
+  <section>
+    <h2>Get Final by ID (`GET /tournament/:tournId/final`)</h2>
+    <form id="getFinalForm">
+      <input type="number" name="tournId" placeholder="Tournament ID" required>
+      <button type="submit">Fetch Final</button>
+    </form>
+    <pre id="getFinalResult"></pre>
+  </section>
+
   <script>
     async function handleForm(formId, resultId, method, endpointBuilder, bodyBuilder = null) {
       document.getElementById(formId).addEventListener("submit", async (e) => {
@@ -95,6 +116,7 @@
     handleForm("postMatchForm", "postMatchResult", "POST", "/matches", (fd) => ({
       creatorUserId: Number(fd.get("creatorUserId")),
       remoteUserId: fd.get("remoteUserId") ? Number(fd.get("remoteUserId")) : null,
+      tournId: fd.get("tournId") ? Number(fd.get("tournId")) : null,
       player1DisplayName: fd.get("player1DisplayName"),
       player2DisplayName: fd.get("player2DisplayName") || "Bot"
     }));
@@ -102,8 +124,14 @@
     // GET /matches/:matchId
     handleForm("getMatchForm", "getMatchResult", "GET", (fd) => `/matches/${fd.get("matchId")}`);
 
+    // GET /tournament/:tournId/semi
+    handleForm("getSemiForm", "getSemiResult", "GET", (fd) => `/tournament/${fd.get("tournId")}/semi`);
+
+	// GET /tournament/:tournId/final
+    handleForm("getFinalForm", "getFinalResult", "GET", (fd) => `/tournament/${fd.get("tournId")}/final`);
+
     // PATCH /matches/:matchId
-    handleForm("patchMatchForm", "patchMatchResult", "PATCH", (fd) => `/matches/${fd.get("matchId")}`, (fd) => ({
+    handleForm("patchMatchForm", "patchMatchResult", "POST", (fd) => `/matches/${fd.get("matchId")}`, (fd) => ({
       winnerDisplayName: fd.get("winnerDisplayName"),
       scorePlayer1: Number(fd.get("scorePlayer1")),
       scorePlayer2: Number(fd.get("scorePlayer2"))

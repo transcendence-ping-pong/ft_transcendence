@@ -44,11 +44,12 @@ CREATE TABLE IF NOT EXISTS matchHistory (
 	userId INTEGER NOT NULL,
 	matchId INTEGER NOT NULL,
 	FOREIGN KEY (userId) REFERENCES users (userId),
-	FOREIGN KEY (matchId) REFERENCES matchStats (matchId)
+	FOREIGN KEY (matchId) REFERENCES matches (matchId)
 );
 
-CREATE TABLE IF NOT EXISTS matchStats (
+CREATE TABLE IF NOT EXISTS matches (
 	matchId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	tournamentId INTEGER,
 	creatorUserId INTEGER NOT NULL,
 	remoteUserId INTEGER,
 	player1DisplayName TEXT NOT NULL,
@@ -63,24 +64,17 @@ CREATE TABLE IF NOT EXISTS matchStats (
 );
 
 -- TODO: Change this table. Only saying it's ugly and badly organised, is being nice.
-CREATE TABLE IF NOT EXISTS tournament (
+CREATE TABLE IF NOT EXISTS tournaments (
 	tournamentId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	creatorId INTEGER NOT NULL,
-	quarterfinalId1 INTEGER,
-	quarterfinalId2 INTEGER,
-	quarterfinalId3 INTEGER,
-	quarterfinalId4 INTEGER,
-	semifinalId1 INTEGER,
-	semifinalId2 INTEGER,
+	quarterId1 INTEGER,
+	quarterId2 INTEGER,
+	quarterId3 INTEGER,
+	quarterId4 INTEGER,
+	semiId1 INTEGER,
+	semiId2 INTEGER,
 	finalId INTEGER,
-	FOREIGN KEY (creatorId) REFERENCES users (userId),
-	FOREIGN KEY (quarterfinalId1) REFERENCES matchStats (matchId),
-	FOREIGN KEY (quarterfinalId2) REFERENCES matchStats (matchId),
-	FOREIGN KEY (quarterfinalId3) REFERENCES matchStats (matchId),
-	FOREIGN KEY (quarterfinalId4) REFERENCES matchStats (matchId),
-	FOREIGN KEY (semifinalId1) REFERENCES matchStats (matchId),
-	FOREIGN KEY (semifinalId2) REFERENCES matchStats (matchId),
-	FOREIGN KEY (finalId) REFERENCES matchStats (matchId)
+	FOREIGN KEY (creatorId) REFERENCES users (userId)
 );
 
 CREATE TABLE IF NOT EXISTS refresh_tokens (
