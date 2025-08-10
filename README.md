@@ -169,11 +169,22 @@ docker volume ls
 docker volume rm ft_transcendence_db_data
 docker images
 docker image rm ft_transcendence-backend
+docker image rm 37b94da43c8b 97d16dd2387f 89c006ea7db8 -f
+docker network ls
+docker network rm ft_transcendence_default
 
 docker-compose down
 docker system prune -af
 docker volume prune -f
+docker volume rm $(docker volume ls -q)
 docker-compose up --build
+
+// check port mapping then kill the process
+sudo lsof -i :80
+sudo kill -9 <PID>
+
+docker-compose logs nginx
+docker-compose exec nginx cat /etc/nginx/conf.d/default.conf
 ```
 ```
 ubuntu@pong-vm:~/ft_transcendence$ docker exec -it backend /bin/sh
