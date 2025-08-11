@@ -1,4 +1,3 @@
-const { splitIntoRandomPairs } = require('./utils');
 
 const { splitIntoRandomPairs } = require('./utils');
 const { dbRun } = require('./utils');
@@ -12,11 +11,9 @@ async function matchRoutes(fastify, options) {
 		db.all(`SELECT * FROM matches`, (err, rows) => {
 
 			if (err) {
-				reply.status(500).send({ error: 'Error fetching matches from database' });
-				return;
+				return reply.status(500).send({ error: 'Error fetching matches from database' });
 			}
 			reply.send(rows);
-			return;
 		});
 	});
 
@@ -104,26 +101,11 @@ async function matchRoutes(fastify, options) {
 
 		db.all(`SELECT matchId FROM matches WHERE creatorUserId = ? OR remoteUserId = ?`, [userId, userId], (err, rows) => {
 			if (err) {
-				reply.status(500).send({ error: 'Error fetching user history from database' });
-				return;
+				return reply.status(500).send({ error: 'Error fetching user history from database' });
 			}
 			reply.send(rows);
-			return;
 		});
 	});
-
-    fastify.get('/tournament', async (request, reply) => {
-	const db = fastify.db;
-
-	db.all(`SELECT * FROM tournament`, (err, rows) => {
-		if (err) {
-			reply.status(500).send({ error: 'Error fetching tournaments from database' });
-			return;
-		}
-		reply.send(rows);
-		return;
-	});
-});
 
 	fastify.post('/tournament', async (request, reply) => {
 		const { userId, players } = request.body;
