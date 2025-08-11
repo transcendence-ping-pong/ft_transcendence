@@ -6,7 +6,7 @@ template.innerHTML = `
   <style>
     :host {
       display: inline-block;
-      width: 56px;
+      width: var(--toogle-width);
       height: var(--toogle-height);
       vertical-align: middle;
     }
@@ -25,8 +25,8 @@ template.innerHTML = `
       outline: none;
     }
     .knob {
-      width: 24px;
-      height: 24px;
+      width: var(--toogle-knob-height);
+      height: var(--toogle-knob-height);
       background: var(--accent);
       position: absolute;
       top: 2px;
@@ -48,6 +48,18 @@ template.innerHTML = `
       left: 0;
       pointer-events: none;
       transition: background 0.2s;
+    }
+
+    /* Responsive knob movement */
+    @media (max-width: 1400px) {
+      :host([data-theme="secondary"]) .knob {
+        left: 24px;
+      }
+    }
+    @media (min-width: 1920px) {
+      :host([data-theme="secondary"]) .knob {
+        left: 32px;
+      }
     }
   </style>
 

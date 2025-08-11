@@ -7,27 +7,45 @@
   --header-font-size: 1.25rem;
   --main-font-size: 1rem;
   --secondary-font-size: 0.85rem;
+
+  --topbar-gap: 1rem;
   --topbar-height: 64px;
   --select-height: 32px;
+
   --toogle-height: 32px;
-  --avatar-size: 32px;
+  --toogle-knob-height: 24px;
+  --toogle-width: 56px;
+
+  --logo-size: 40px;
+  --avatar-size: 40px;
+  --icon-size: 20px;
   /* 16px horizontal padding */
-  --component-padding: 0 1rem;
+  --component-h-padding: 0 1rem;
+  --sidebar-width: 30vw;
 }
 
 @media (max-width: 1400px) {
 
   /* 14" screens */
   :root {
-    --header-font-size: 1.15rem;
-    --main-font-size: 0.95rem;
-    --secondary-font-size: 0.8rem;
+    --header-font-size: 1rem;
+    --main-font-size: 0.85rem;
+    --secondary-font-size: 0.7rem;
+
+    --topbar-gap: 0.5rem;
     --topbar-height: 56px;
     --select-height: 28px;
+
     --toogle-height: 28px;
-    --avatar-size: 28px;
+    --toogle-knob-height: 20px;
+    --toogle-width: 48px;
+
+    --logo-size: 32px;
+    --avatar-size: 32px;
+    --icon-size: 16px;
     /* 12px horizontal padding */
-    --component-padding: 0 0.75rem;
+    --component-h-padding: 0 0.75rem;
+    --sidebar-width: 30vw;
   }
 }
 
@@ -38,12 +56,21 @@
     --header-font-size: 1.5rem;
     --main-font-size: 1.1rem;
     --secondary-font-size: 0.95rem;
+
+    --topbar-gap: 1rem;
     --topbar-height: 72px;
     --select-height: 36px;
+
     --toogle-height: 36px;
-    --avatar-size: 40px;
+    --toogle-knob-height: 28px;
+    --toogle-width: 64px;
+
+    --logo-size: 48px;
+    --avatar-size: 48px;
+    --icon-size: 24px;
     /* 20px horizontal padding */
-    --component-padding: 0 1.25rem;
+    --component-h-padding: 0 1.25rem;
+    --sidebar-width: 30vw;
   }
 }
 

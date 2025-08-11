@@ -19,7 +19,6 @@ export function renderHome(containerId: string) {
         <span slot="title">FOUR PING TWO PONG</span>
         <theme-toggle slot="toggle"></theme-toggle>
         <languages-dropdown slot="language"></languages-dropdown>
-        <img slot="avatar" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=robot" alt="Avatar" />
       </top-bar>
 
       <notifications-bar></notifications-bar>
@@ -30,6 +29,8 @@ export function renderHome(containerId: string) {
     `;
   }
 }
+
+// <img slot="avatar" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=robot" alt="Avatar" />
 
 /*
 TODO:

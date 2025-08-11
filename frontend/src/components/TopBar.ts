@@ -23,13 +23,12 @@ template.innerHTML = `
       -webkit-backdrop-filter: blur(12px);
       z-index: 9999;
       box-shadow: 0 2px 12px #0002;
-      padding: 0 2rem;
+      // padding: 0 2rem;
       box-sizing: border-box;
       user-select: none;
     }
     .top-bar__inner {
       width: 100%;
-      // max-width: 1440px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -39,14 +38,21 @@ template.innerHTML = `
     .top-bar__left, .top-bar__right {
       display: flex;
       align-items: center;
-      gap: 1.2rem;
+      gap: var(--topbar-gap);
       height: 100%;
     }
+    .top-bar__right {
+      flex: 0 0 var(--sidebar-width, 25vh);
+      min-width: var(--sidebar-width, 25vh);
+      max-width: var(--sidebar-width, 25vh);
+      justify-content: flex-end;
+      padding-right: 2rem;
+    }
     .top-bar__left {
-      gap: 0.7rem;
+      padding-left: 2rem;
     }
     .top-bar__title {
-      font-size: 1.05rem;
+      font-size: var(--header-font-size);
       font-weight: 600;
       color: #fff;
       letter-spacing: 1px;
@@ -60,16 +66,38 @@ template.innerHTML = `
       flex: 1;
     }
 
+    .top-bar__avatar {
+      width: var(--avatar-size);
+      height: var(--avatar-size);
+      border-radius: 50%;
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      box-shadow: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .top-bar__avatar img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #fff2;
+    }
+
     .top-bar__logout {
       display: flex;
-      height: var(--topbar-height);
+      height: var(--toogle-height);
       align-items: center;
       gap: 0.5em;
       cursor: pointer;
       background: var(--body);
       border-color: var(--border);
       color: var(--text);
-      font-size: 0.75rem;
+      font-size: var(--main-font-size);
       font-weight: bold;
       padding: 0 1rem;
     }
@@ -80,30 +108,20 @@ template.innerHTML = `
       filter: invert(var(--invert));
     }
     .top-bar__logout-icon {
-      width: 22px;
-      height: 22px;
+      width: var(--icon-size);
+      height: var(--icon-size);
       vertical-align: middle;
       margin-right: 0.25rem;
     }
+    .hidden {
+      display: none !important;
+    }
 
     ::slotted([slot="logo"]) {
-      width: 40px;
-      height: 40px;
+      width: var(--logo-size);
+      height: var(--logo-size);
       object-fit: contain;
       display: block;
-    }
-    ::slotted([slot="toggle"]),
-    ::slotted([slot="language"]),
-    ::slotted([slot="avatar"]),
-    ::slotted([slot="logout"]) {
-      // height: 40px;
-    }
-    ::slotted([slot="avatar"]) {
-      width: 40px;
-      border-radius: 50%;
-      object-fit: cover;
-      background: #fff2;
-      margin-left: 0.5rem;
     }
   </style>
 
@@ -112,9 +130,13 @@ template.innerHTML = `
       <slot name="logo"></slot>
       <span class="top-bar__title"><slot name="title">FOUR PING TWO PONG</slot></span>
     </div>
+
     <div class="top-bar__center"></div>
+
     <div class="top-bar__right">
-      <slot name="avatar"></slot>
+      <button class="top-bar__avatar" id="avatar" type="button">
+        <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=robot" alt="Avatar" />
+      </button>
       <slot name="toggle"></slot>
       <slot name="language"></slot>
 
@@ -128,6 +150,7 @@ template.innerHTML = `
 
 export class TopBar extends HTMLElement {
   logoutButton: HTMLButtonElement | null = null;
+  profileButton: HTMLButtonElement | null = null;
 
   constructor() {
     super();
@@ -137,29 +160,44 @@ export class TopBar extends HTMLElement {
   connectedCallback() {
     const shadow = this.shadowRoot;
     this.logoutButton = shadow?.getElementById('logout') as HTMLButtonElement;
-    this.logoutButton.onclick = this._onLogout.bind(this);
+    this.profileButton = shadow?.getElementById('avatar') as HTMLButtonElement;
+
+    this.logoutButton.addEventListener('click', (e) => this.handleLogout(e));
+    this.profileButton.addEventListener('click', (e) => this.handleProfile(e));
+
+    // check logout visibility on mount
+    this.showLogoutButton();
   }
 
-  _showLogoutButton() {
+  private showLogoutButton() {
     if (state.userData?.accessToken) {
       this.logoutButton?.classList.remove('hidden');
+      this.profileButton?.classList.remove('hidden');
+    } else {
+      this.logoutButton?.classList.add('hidden');
+      this.profileButton?.classList.add('hidden');
+    }
+  }
+
+  private async handleLogout(e: Event) {
+    e.preventDefault();
+    const res = await authService.logout(state.userData?.refreshToken);
+    if (res?.error) {
+      console.error(err(res.error));
       return;
     }
 
-    this.logoutButton?.classList.add('hidden');
+    state.userData = null;
+    renderLoading('app');
+    this.showLogoutButton();
+    setTimeout(() => navigate('login'), 1200);
   }
 
-  async _onLogout(e: Event) {
+  private handleProfile(e: Event) {
     e.preventDefault();
-    const res = await authService.logout(state.userData.refreshToken);
-    if (res.error) console.error(err(res.error));
-
-    state.userData = null; // clear user data in state
-    renderLoading('app'); // render loading state, transition between pages
-    setTimeout(() => {
-      navigate('login');
-    }, 1200);
-  };
+    const username = state.userData?.username;
+    if (username) navigate(`/profile/${username}`);
+  }
 }
 
 customElements.define('top-bar', TopBar);

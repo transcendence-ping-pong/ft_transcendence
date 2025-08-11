@@ -437,22 +437,22 @@ fastify.get('/current-token', { preHandler: authenticateToken }, (req, res) => {
 //     });
 // });
 
-// --- LOGOUT ---
-fastify.post('/logout', async (req, res) => {
-    const { token } = req.body;
-    currentLoggedInUser = null;
-    req.session = null;
+// // --- LOGOUT ---
+// fastify.post('/logout', async (req, res) => {
+//     const { token } = req.body;
+//     currentLoggedInUser = null;
+//     req.session = null;
 
-    if (token) {
-        try {
-            await deleteRefreshToken(token);
-        } catch (error) {
-            console.error('Error deleting refresh token:', error);
-        }
-    }
+//     if (token) {
+//         try {
+//             await deleteRefreshToken(token);
+//         } catch (error) {
+//             console.error('Error deleting refresh token:', error);
+//         }
+//     }
 
-    res.send({ message: MSG.LOGOUT_SUCCESS });
-});
+//     res.send({ message: MSG.LOGOUT_SUCCESS });
+// });
 
 // --- LOGOUT ALL ---
 fastify.post('/logout-all', { preHandler: authenticateToken }, async (req, res) => {

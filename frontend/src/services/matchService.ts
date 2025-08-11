@@ -11,6 +11,7 @@ export async function getPlaySummary(gameId: string) {
 // @ts-ignore
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
+// TODO: remove PORTUGUESE from BE error response
 export async function createTournament(userId: number, players: string[]) {
   const res = await fetch(`${BASE_URL}/tournament`, {
     method: 'POST',
