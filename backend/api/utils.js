@@ -149,14 +149,15 @@ function authenticateToken(req, reply, done) {
     });
 }
 
-function dbRun(db, sql, params) {
-	return new Promise((resolve, reject) => {
-		db.run(sql, params, function (err) {
-			if (err) return reject(err);
-			resolve({ lastID: this.lastID });
-		});
-	});
-};
+// function dbRun(db, sql, params) {
+// 	return new Promise((resolve, reject) => {
+// 		db.run(sql, params, function (err) {
+// 			if (err) return reject(err);
+// 			resolve({ lastID: this.lastID });
+// 		});
+// 	});
+// };
+// TO DO: DB MATCH RUN
 
 function getWinner(db, params) {
 	return new Promise((resolve, reject) => {
@@ -187,7 +188,6 @@ module.exports = {
     dbGet,
     dbRun,
     dbAll,
-    authenticateToken
-	dbRun,
-	getWinner
+    authenticateToken,
+    getWinner
 };
