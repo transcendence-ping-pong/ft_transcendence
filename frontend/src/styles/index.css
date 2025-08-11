@@ -4,49 +4,30 @@
 
 :root {
   /* 16" screens */
+  --header-font-size: 1.25rem;
   --main-font-size: 1rem;
-  /* 16px, standard base */
   --secondary-font-size: 0.85rem;
-  /* 13.6px, for smaller text */
   --topbar-height: 64px;
-  /* Default for 16" screens */
   --select-height: 32px;
-  /* Default for 16" screens */
+  --toogle-height: 32px;
   --avatar-size: 32px;
-  /* Default for 16" screens */
-  --component-padding: 0 1rem;
   /* 16px horizontal padding */
+  --component-padding: 0 1rem;
 }
 
 @media (max-width: 1400px) {
 
   /* 14" screens */
   :root {
+    --header-font-size: 1.15rem;
     --main-font-size: 0.95rem;
-    /* 15.2px */
     --secondary-font-size: 0.8rem;
-    /* 12.8px */
     --topbar-height: 56px;
     --select-height: 28px;
+    --toogle-height: 28px;
     --avatar-size: 28px;
-    --component-padding: 0 0.75rem;
     /* 12px horizontal padding */
-  }
-}
-
-@media (max-width: 1600px) {
-
-  /* 16" screens */
-  :root {
-    --main-font-size: 1rem;
-    /* 16px */
-    --secondary-font-size: 0.85rem;
-    /* 13.6px */
-    --topbar-height: 64px;
-    --select-height: 32px;
-    --avatar-size: 32px;
-    --component-padding: 0 1rem;
-    /* 16px horizontal padding */
+    --component-padding: 0 0.75rem;
   }
 }
 
@@ -54,15 +35,15 @@
 
   /* Large desktop */
   :root {
+    --header-font-size: 1.5rem;
     --main-font-size: 1.1rem;
-    /* 17.6px */
     --secondary-font-size: 0.95rem;
-    /* 15.2px */
     --topbar-height: 72px;
     --select-height: 36px;
+    --toogle-height: 36px;
     --avatar-size: 40px;
-    --component-padding: 0 1.25rem;
     /* 20px horizontal padding */
+    --component-padding: 0 1.25rem;
   }
 }
 

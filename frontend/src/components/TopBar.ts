@@ -14,7 +14,7 @@ template.innerHTML = `
       top: 0;
       left: 0;
       width: 100vw;
-      height: 64px;
+      height: var(--topbar-height);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -29,7 +29,7 @@ template.innerHTML = `
     }
     .top-bar__inner {
       width: 100%;
-      max-width: 1440px;
+      // max-width: 1440px;
       display: flex;
       align-items: center;
       justify-content: space-between;

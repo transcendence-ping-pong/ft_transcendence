@@ -7,7 +7,7 @@ template.innerHTML = `
     :host {
       display: inline-block;
       width: 56px;
-      height: var(--topbar-height);
+      height: var(--toogle-height);
       vertical-align: middle;
     }
     button {

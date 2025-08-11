@@ -1,11 +1,13 @@
 frontend-install:
 	cd frontend && npm install
 
+# set environment variable directly in Makefile
+# it will be used only for local development (i.e. for running on port 3000, vite hot reload)
 frontend-dev:
-	cd frontend && npm run dev -- --host
+	@cd frontend && VITE_API_BASE_URL="http://localhost:4000/api" npm run dev -- --host
 
-frontend-build:
-	cd frontend && npm run build
+# frontend-build:
+# 	@cd frontend && VITE_API_BASE_URL="/api" npm run build
 
 frontend-preview:
 	cd frontend && npm run preview
@@ -17,7 +19,7 @@ backend-initdb:
 	cd backend && sh ./database/script.sh
 
 backend-dev: backend-initdb
-	cd backend && npm run dev
+	@cd backend && npm run dev
 
 # backend-test:
 # 	cd backend && npm test
