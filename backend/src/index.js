@@ -1,6 +1,11 @@
 const path = require('path');
 const fastify = require('fastify')({ logger: true });
 const fastifyStatic = require('@fastify/static');
+const fastifyCors = require('@fastify/cors');
+
+fastify.register(fastifyCors, {
+    origin: true, // or specify frontend: 'http://localhost:3000'
+});
 
 const sqlite3 = require('sqlite3').verbose();
 const speakeasy = require('speakeasy');
@@ -16,10 +21,6 @@ fastify.register(fastifyStatic, {
     root: path.join(__dirname, 'public'),
     prefix: '/',
 });
-
-// fastify.register(fastifyCors, {
-//     origin: true, // or specify frontend: 'http://localhost:3000'
-// });
 
 const port = 4000;
 
@@ -436,22 +437,22 @@ fastify.get('/current-token', { preHandler: authenticateToken }, (req, res) => {
 //     });
 // });
 
-// --- LOGOUT ---
-fastify.post('/logout', async (req, res) => {
-    const { token } = req.body;
-    currentLoggedInUser = null;
-    req.session = null;
+// // --- LOGOUT ---
+// fastify.post('/logout', async (req, res) => {
+//     const { token } = req.body;
+//     currentLoggedInUser = null;
+//     req.session = null;
 
-    if (token) {
-        try {
-            await deleteRefreshToken(token);
-        } catch (error) {
-            console.error('Error deleting refresh token:', error);
-        }
-    }
+//     if (token) {
+//         try {
+//             await deleteRefreshToken(token);
+//         } catch (error) {
+//             console.error('Error deleting refresh token:', error);
+//         }
+//     }
 
-    res.send({ message: MSG.LOGOUT_SUCCESS });
-});
+//     res.send({ message: MSG.LOGOUT_SUCCESS });
+// });
 
 // --- LOGOUT ALL ---
 fastify.post('/logout-all', { preHandler: authenticateToken }, async (req, res) => {

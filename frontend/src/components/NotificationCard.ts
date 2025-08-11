@@ -8,12 +8,12 @@ template.innerHTML = `
       position: relative;
       background: var(--body);
       color: var(--text);
-      box-shadow: 0 1px 4px #0001;
       padding: 0.4rem 1rem;
       font-size: 0.98rem;
       margin-bottom: 0.2em;
       width: 100%;
       border: 2px solid var(--border);
+      box-shadow: 0 2px 12px #0002;
       box-sizing: border-box;
       position: relative;
       transition: background 0.2s, color 0.2s;

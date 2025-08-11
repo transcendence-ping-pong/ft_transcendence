@@ -41,10 +41,19 @@ export function renderLogin(containerId: string) {
     `;
   }
 
-  function transitionTo(newMode: string) {
+  let loginPrefill: { email?: string; password?: string } = {};
+
+  function transitionTo(newMode: string, detail?: { email: string, password: string }) {
     mode = newMode;
+    console.log(detail);
+    if (detail) loginPrefill = detail;
     showSpinner();
     setTimeout(renderAuthComponent, 400);
+  }
+
+  interface UserLoginElement extends HTMLElement {
+    emailInput: HTMLInputElement;
+    passwordInput: HTMLInputElement;
   }
 
   function renderAuthComponent() {
@@ -55,11 +64,18 @@ export function renderLogin(containerId: string) {
       case 'login':
         el = document.createElement('user-login');
         el.addEventListener('switch-to-signup', () => transitionTo('signup'));
+
+        // prefill fields if details (aka email and password) are present
+        setTimeout(() => {
+          const loginEl = el as unknown as UserLoginElement;
+          if (loginPrefill.email) loginEl.emailInput.value = loginPrefill.email;
+          if (loginPrefill.password) loginEl.passwordInput.value = loginPrefill.password;
+          loginPrefill = {};
+        }, 0);
         break;
       case 'signup':
         el = document.createElement('user-signup');
-        el.addEventListener('switch-to-login', () => transitionTo('login'));
-        el.addEventListener('signup-success', () => transitionTo('login'));
+        el.addEventListener('switch-to-login', (e: CustomEvent) => transitionTo('login', e.detail));
         break;
     }
 
