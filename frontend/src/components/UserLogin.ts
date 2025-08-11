@@ -143,13 +143,6 @@ export class UserLogin extends HTMLElement {
 
     this.emailInput.addEventListener('input', () => this._clearError());
     this.passwordInput.addEventListener('input', () => this._clearError());
-
-    // listen for switch-to-login event and fill fields if detail is present
-    this.addEventListener('switch-to-login', (e: CustomEvent) => {
-      console.log('switch-to-login event received', e.detail);
-      if (e.detail?.email) this.emailInput.value = e.detail.email;
-      if (e.detail?.password) this.passwordInput.value = e.detail.password;
-    });
   }
 
   // private method, set user data in state in a more structured way

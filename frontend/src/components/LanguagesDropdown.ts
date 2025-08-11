@@ -10,6 +10,7 @@ template.innerHTML = `
       cursor: pointer;
       background: var(--body);
       border: 2px solid var(--border);
+      box-shadow: 0 2px 12px #0002;
       padding: var(--component-h-padding);
       border-radius: 0;
       font-size: var(--main-font-size);
