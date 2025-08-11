@@ -226,6 +226,23 @@ async function userRoutes(fastify, options) {
             }
         );
     });
+
+    // --- LOGOUT ---
+    fastify.post('/logout', async (req, res) => {
+        const { token } = req.body;
+        currentLoggedInUser = null;
+        req.session = null;
+
+        if (token) {
+            try {
+                await deleteRefreshToken(token);
+            } catch (error) {
+                console.error('Error deleting refresh token:', error);
+            }
+        }
+
+        res.send({ message: MSG.LOGOUT_SUCCESS });
+    });
 };
 
 module.exports = userRoutes;

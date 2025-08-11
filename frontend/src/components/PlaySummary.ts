@@ -1,4 +1,4 @@
-import { getPlaySummary } from '@/services/api';
+import { getPlaySummary } from '@/services/matchService';
 
 const template = document.createElement('template');
 template.innerHTML = `

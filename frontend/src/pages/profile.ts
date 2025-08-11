@@ -1,7 +1,7 @@
 import '@/components/ThemeToggle.js'; // This registers <toggle-switch>
 import '@/components/UserLogin.js';
 
-export function renderProfile(containerId: string, params = {}) {
+export function renderProfile(containerId: string, params: Record<string, string> = {}) {
   const container = document.getElementById(containerId);
   const username = params.username;
   if (container) {

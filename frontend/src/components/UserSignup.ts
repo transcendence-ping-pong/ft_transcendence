@@ -113,6 +113,9 @@ export class UserSignup extends HTMLElement {
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
   }
 
+  // arrow functions automatically bind `this` to the class instance
+  // so we can use them as event handlers without binding
+  // e.g. this._onSignup = () => { ... } versus this._onSignup.bind(this)
   connectedCallback() {
     const shadow = this.shadowRoot;
     this.emailInput = shadow.getElementById('email') as HTMLInputElement;
@@ -144,7 +147,12 @@ export class UserSignup extends HTMLElement {
     // remove error styles if signup is successful and trigger event
     this._clearError();
     this._setError('');
-    this.dispatchEvent(new CustomEvent('switch-to-login', { bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent('switch-to-login',
+      {
+        detail: { email, password },
+        bubbles: true,
+        composed: true
+      }));
   }
 
   _onLoginClick(e: Event) {
