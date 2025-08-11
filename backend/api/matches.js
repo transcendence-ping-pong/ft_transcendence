@@ -141,6 +141,10 @@ async function matchRoutes(fastify, options) {
 
 			const winners = await Promise.all(quarterIds.map(matchId => getWinner(db, matchId)));
 
+			if (winners.some(name => !name)) {
+  				return reply.status(500).send({ error: 'Quarterfinals incomplete' });
+			}
+
 			const result = [];
 			for (let i = 0; i < 4; i += 2) {
 				result.push([winners[i], winners[i + 1]]);
@@ -165,9 +169,22 @@ async function matchRoutes(fastify, options) {
 
 			const winners = await Promise.all(semiIds.map(matchId => getWinner(db, matchId)));
 
-			reply.send({ message: 'Semifinals players retrieved', players: winners});
+			reply.send({ message: 'Final players retrieved', players: winners});
 		});
 	});
+
+	// TODO: Check if it makes sense to also return creatorUserId
+	fastify.get('/tournament/:tournId', (request, reply) => {
+		const { tournId } = request.params;
+
+		db.get( `SELECT quarterId1, quarterId2, quarterId3, quarterId4, semiId1, semiId2, finalId FROM tournaments WHERE tournamentId = ?`, [tournId], (err, row) => {
+			if (err || !row) {
+				return reply.status(500).send({ error: 'Tournament not found'});
+			}
+			return reply.send(row);
+		});
+	});
+
 
 };
 

@@ -8,15 +8,6 @@ CREATE TABLE IF NOT EXISTS users (
 	email TEXT
 );
 
--- CREATE TABLE IF NOT EXISTS users (
--- 	userId INTEGER PRIMARY KEY AUTOINCREMENT,
--- 	username TEXT NOT NULL UNIQUE,
--- 	password TEXT NOT NULL,
--- 	secret TEXT NOT NULL,
--- 	googleId TEXT UNIQUE,
--- 	email TEXT
--- );
-
 -- TODO: Check if displayname can be same as username
 
 CREATE TABLE IF NOT EXISTS userStats (
@@ -58,12 +49,11 @@ CREATE TABLE IF NOT EXISTS matches (
 	scorePlayer1 INTEGER,
 	scorePlayer2 INTEGER,
 	date INTEGER,
-	time INTEGER, -- TODO: Maybe not needed
+	time INTEGER,
 	FOREIGN KEY (creatorUserId) REFERENCES users (userId),
 	FOREIGN KEY (remoteUserId) REFERENCES users (userId)
 );
 
--- TODO: Change this table. Only saying it's ugly and badly organised, is being nice.
 CREATE TABLE IF NOT EXISTS tournaments (
 	tournamentId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	creatorId INTEGER NOT NULL,

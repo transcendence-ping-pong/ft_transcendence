@@ -32,8 +32,12 @@ function getWinner(db, params) {
 		db.get('SELECT winnerDisplayName FROM matches WHERE matchId = ?', params, (err, row) => {
 			if (err) {
 				return reject(err);
-			} 
-			resolve({ name: row.winnerDisplayName });
+			}
+			if (row) {
+				resolve(row.winnerDisplayName);
+			} else {
+				resolve(null);
+			}
 		});
 	});
 };

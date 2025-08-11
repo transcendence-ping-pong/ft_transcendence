@@ -14,8 +14,6 @@ const db = new sqlite3.Database(db_path, sqlite3.OPEN_READWRITE);
 fastify.decorate('db', db);
 
 fastify.register(require('./api/matches')), { prefix: '/api' };
-// fastify.register(require('./api/remote')) , { prefix: '/api' };
-// fastify.register(require('./api/auth')) , { prefix: '/api' };
 // fastify.register(require('./api/users')) , { prefix: '/api' };
 
 const port = 4000;
