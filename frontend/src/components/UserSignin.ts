@@ -124,7 +124,7 @@ template.innerHTML = `
   </div>
 `;
 
-export class UserLogin extends HTMLElement {
+export class UserSignin extends HTMLElement {
   emailInput!: HTMLInputElement;
   passwordInput!: HTMLInputElement;
 
@@ -198,4 +198,4 @@ export class UserLogin extends HTMLElement {
   }
 }
 
-customElements.define('user-login', UserLogin);
+customElements.define('user-signin', UserSignin);

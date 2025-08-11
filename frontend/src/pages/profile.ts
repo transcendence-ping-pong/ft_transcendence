@@ -1,5 +1,6 @@
 import '@/components/ThemeToggle.js'; // This registers <toggle-switch>
-import '@/components/UserLogin.js';
+import '@/components/UserSignin.js';
+import '@/components/LanguagesDropdown.js';
 
 export function renderProfile(containerId: string, params: Record<string, string> = {}) {
   const container = document.getElementById(containerId);
