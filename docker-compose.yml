@@ -17,8 +17,8 @@ services:
       - "4000:4000"
     env_file:
       - ./backend/.env
-    #volumes:
-      # - db_data:/app/database
+    volumes:
+      - db_data:/app/database
 
   nginx:
     image: nginx:alpine
@@ -31,6 +31,6 @@ services:
       - frontend
       - backend
 
-#volumes:
-  #db_data:
-  #  driver: local
+volumes:
+  db_data:
+   driver: local
