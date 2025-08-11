@@ -7,12 +7,11 @@ COPY package.json ./
 
 RUN npm install
 
-COPY ./api ./api
-COPY ./temp ./temp
-COPY ./database ./database
+COPY src ./src
+COPY api ./api
+COPY database ./database
 COPY app.js app.js
 
-COPY src ./src
 
 RUN apk add --no-cache sqlite
 
