@@ -11,7 +11,11 @@ export interface AuthResponse {
   refreshToken?: string;
 }
 
-const BASE_URL = "/api";
+// VITE_API_BASE_URL variable is set in Makefile...
+// for running on port 3000 locally and taking advantage of vite hot reload
+// mainly used for local development
+// @ts-ignore
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 export async function signup(username: string, email: string, password: string) {
   const res = await fetch(`${BASE_URL}/signup`, {
@@ -19,7 +23,13 @@ export async function signup(username: string, email: string, password: string) 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, email, password })
   });
-  return await res.json();
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Signup failed');
+  }
+
+  return data;
 }
 
 export async function login(email: string, password: string, token?: string): Promise<AuthResponse> {
@@ -32,7 +42,7 @@ export async function login(email: string, password: string, token?: string): Pr
 
     const data = await res.json();
     if (!res.ok) {
-      throw new Error(data.error || 'Login failed');
+      throw new Error(data.error || 'Signin failed');
     }
     return data;
   } catch (error: any) {

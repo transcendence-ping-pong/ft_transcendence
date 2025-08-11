@@ -134,6 +134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const render = routes[window.location.pathname];
     if (render) render('app');
+    window.location.reload(); // TODO: improve it, a full reload is not necessary (?)
   });
 
   // handle back/forward navigation - history API
