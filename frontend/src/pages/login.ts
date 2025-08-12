@@ -1,7 +1,7 @@
 import '@/components/ThemeToggle.js';
 import '@/components/LanguagesDropdown.js';
 import '@/components/TopBar.js';
-import '@/components/UserLogin.js';
+import '@/components/UserSignin.js';
 import '@/components/UserSignup.js';
 import '@/components/GenericModal.js';
 
@@ -45,7 +45,6 @@ export function renderLogin(containerId: string) {
 
   function transitionTo(newMode: string, detail?: { email: string, password: string }) {
     mode = newMode;
-    console.log(detail);
     if (detail) loginPrefill = detail;
     showSpinner();
     setTimeout(renderAuthComponent, 400);
@@ -62,7 +61,7 @@ export function renderLogin(containerId: string) {
 
     switch (mode) {
       case 'login':
-        el = document.createElement('user-login');
+        el = document.createElement('user-signin');
         el.addEventListener('switch-to-signup', () => transitionTo('signup'));
 
         // prefill fields if details (aka email and password) are present

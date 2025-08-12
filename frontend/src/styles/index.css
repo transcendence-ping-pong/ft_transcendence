@@ -22,6 +22,14 @@
   /* 16px horizontal padding */
   --component-h-padding: 0 1rem;
   --sidebar-width: 30vw;
+
+  --button-circle-size: 2.5rem;
+  --button-default-height: 2.5rem;
+
+  --modal-height: 50vh;
+  --modal-width: 40vw;
+  --button-height: 2.5rem;
+  --button-min-width: 150px;
 }
 
 @media (max-width: 1400px) {
@@ -46,6 +54,11 @@
     /* 12px horizontal padding */
     --component-h-padding: 0 0.75rem;
     --sidebar-width: 30vw;
+
+    --modal-height: 50vh;
+    --modal-width: 40vw;
+    --button-height: 2rem;
+    --button-min-width: 120px;
   }
 }
 
@@ -71,6 +84,12 @@
     /* 20px horizontal padding */
     --component-h-padding: 0 1.25rem;
     --sidebar-width: 30vw;
+
+    --modal-height: 50vh;
+    --modal-width: 35vw;
+
+    --button-height: 3rem;
+    --button-min-width: 180px;
   }
 }
 

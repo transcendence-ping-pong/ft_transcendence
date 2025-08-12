@@ -12,6 +12,16 @@ export enum PlayerMode {
   TWO_PLAYER = 'TWO PLAYERS'
 }
 
+export enum GameMode {
+  LOCAL = 'LOCAL',
+  REMOTE = 'REMOTE'
+}
+
+export enum GameType {
+  ONE_MATCH = 'ONE MATCH',
+  TOURNAMENT = 'TOURNAMENT',
+}
+
 export enum GameScore {
   WIN = 1,
   LOSE = -1,
@@ -142,8 +152,8 @@ export function getGUIConstants(): GUIConstants {
     BUTTON_WIDTH: VIRTUAL_WIDTH / 5,
     BUTTON_GAP: VIRTUAL_HEIGHT / 40,
     BUTTON_FONT_SIZE: VIRTUAL_HEIGHT / 25,
-    BUTTON_FONT_WEIGHT: 'normal',
-    BUTTON_FONT_COLOR: "#000000",
+    BUTTON_FONT_WEIGHT: 'bold',
+    BUTTON_FONT_COLOR: colors.text,
     BUTTON_BORDER_COLOR: colors.border,
     BUTTON_CORNER_RADIUS: 0,
     BUTTON_THICKNESS: 4,
