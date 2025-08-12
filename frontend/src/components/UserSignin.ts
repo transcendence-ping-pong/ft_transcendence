@@ -99,7 +99,7 @@ template.innerHTML = `
     }
   </style>
 
-  <div class="form-title">${t('auth.signin')}</div>
+  <h1 class="form-title">${t('auth.signin')}</h1>
   <form id="loginForm" autocomplete="off">
     <input id="email" name="email" type="email" required autocomplete="email" placeholder="${t('auth.email')}" />
     <input id="password" name="password" type="password" minlength=7 required autocomplete="current-password" placeholder="${t('auth.password')}" />

@@ -45,7 +45,6 @@ export function renderLogin(containerId: string) {
 
   function transitionTo(newMode: string, detail?: { email: string, password: string }) {
     mode = newMode;
-    console.log(detail);
     if (detail) loginPrefill = detail;
     showSpinner();
     setTimeout(renderAuthComponent, 400);

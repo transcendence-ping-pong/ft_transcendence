@@ -1,5 +1,5 @@
 import { t } from '@/locales/Translations.js';
-import { GameLevel, GameScore, PlayerMode, getGUIConstants } from '@/utils/gameUtils/GameConstants.js';
+import { GameLevel, GameScore, GameMode, GameType, PlayerMode, getGUIConstants } from '@/utils/gameUtils/GameConstants.js';
 import { AdvancedDynamicTexture, Button, Control, TextBlock, Rectangle } from "@babylonjs/gui";
 import { state } from '@/state';
 
@@ -9,6 +9,8 @@ import { state } from '@/state';
 export class BabylonGUI {
   private advancedTexture: AdvancedDynamicTexture;
   private startButton: Button | null = null;
+  private modeSelectorButtons: Button[] = [];
+  private gameTypeButtons: Button[] = [];
   private difficultyButtons: Button[] = [];
   private playerSelectorButtons: Button[] = [];
   private tvOverlay: Rectangle | null = null;
@@ -41,6 +43,7 @@ export class BabylonGUI {
     // set top position based on number of buttons, i.e. how they are distributed vertically
     const offset = (((+this.GUIConstants.BUTTON_HEIGHT + this.GUIConstants.BUTTON_GAP) * state.scaleFactor.scaleY) * (idx - (arrayLength - 1) / 2));
     button.top = offset;
+    button.hoverCursor = "pointer";
   }
 
   hideButtons(arrayButtons: Button[]) {
@@ -49,11 +52,12 @@ export class BabylonGUI {
   }
 
   showStartButton(onStart: () => void) {
-    this.clearGUI();
+    // this.clearGUI();
 
     this.startButton = Button.CreateSimpleButton("startButton", t("game.start"));
     this.setButtonStyle(this.startButton, 0, 1); // only one button, so idx = 0, arrayLength = 1
 
+    // on button click event, trigger the onStart callback... then hide buttons
     this.startButton.onPointerUpObservable.add(() => {
       onStart();
       this.hideButtons([this.startButton]);
@@ -62,8 +66,50 @@ export class BabylonGUI {
     this.advancedTexture.addControl(this.startButton);
   }
 
+  showGameModeButton(onModeSelected: (mode: GameMode) => void) {
+    // this.clearGUI();
+
+    const modeKeys = [GameMode.LOCAL, GameMode.REMOTE];
+    this.modeSelectorButtons = [];
+
+    modeKeys.forEach((mode, idx) => {
+      const label = t(`game.mode${idx + 1}`);
+      const button = Button.CreateSimpleButton(mode + "Button", label);
+      this.setButtonStyle(button, idx, modeKeys.length);
+
+      button.onPointerUpObservable.add(() => {
+        onModeSelected(mode);
+        this.hideButtons(this.modeSelectorButtons);
+      });
+
+      this.advancedTexture.addControl(button);
+      this.modeSelectorButtons.push(button);
+    });
+  }
+
+  showGameTypeButton(onGameTypeSelected: (gameType: GameType) => void) {
+    // this.clearGUI();
+
+    const gameTypeKeys = [GameType.ONE_MATCH, GameType.TOURNAMENT];
+    this.gameTypeButtons = [];
+
+    gameTypeKeys.forEach((type: GameType, idx: number) => {
+      const label = t(`game.game${idx + 1}`);
+      const button = Button.CreateSimpleButton(type + "Button", label);
+      this.setButtonStyle(button, idx, gameTypeKeys.length);
+
+      button.onPointerUpObservable.add(() => {
+        onGameTypeSelected(type);
+        // this.hideButtons(this.gameTypeButtons);
+      });
+
+      this.advancedTexture.addControl(button);
+      this.gameTypeButtons.push(button);
+    });
+  }
+
   showPlayerSelector(onPlayerSelected: (playerCount: string) => void) {
-    this.clearGUI();
+    // this.clearGUI();
 
     const playersKeys = [PlayerMode.ONE_PLAYER, PlayerMode.TWO_PLAYER];
     this.playerSelectorButtons = [];

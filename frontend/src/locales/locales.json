@@ -33,11 +33,19 @@
       "start": "START GAME",
       "pause": "PAUSE",
       "over": "GAME OVER",
+      "startTournament": "Start a new tournament",
+      "addPlayers": "Add players to the tournament. Exactly 8 players are required.",
+      "maxPlayersReached": "Maximum number of players reached. You cannot add more than 8 players.",
+      "create": "Create",
       "player1": "ONE PLAYER",
       "player2": "TWO PLAYERS",
       "level1": "EASY",
       "level2": "MEDIUM",
-      "level3": "HARD"
+      "level3": "HARD",
+      "mode1": "LOCAL",
+      "mode2": "REMOTE",
+      "game1": "ONE MATCH",
+      "game2": "TOURNAMENT"
     },
     "notification": {
       "title": {
@@ -106,11 +114,19 @@
       "start": "COMMENCER LE JEU",
       "pause": "PAUSE",
       "over": "FIN DE PARTIE",
+      "startTournament": "Lancer un nouveau tournoi",
+      "addPlayers": "Ajoutez des joueurs au tournoi. Il faut exactement 8 joueurs.",
+      "maxPlayersReached": "Nombre maximum de joueurs atteint. Vous ne pouvez pas ajouter plus de 8 joueurs.",
+      "create": "Créer",
       "player1": "UN JOUEUR",
       "player2": "DEUX JOUEURS",
       "level1": "FACILE",
       "level2": "MOYEN",
-      "level3": "DIFFICILE"
+      "level3": "DIFFICILE",
+      "mode1": "LOCAL",
+      "mode2": "DISTANT",
+      "game1": "UN MATCH",
+      "game2": "TOURNOI"
     },
     "notification": {
       "title": {
@@ -179,11 +195,19 @@
       "start": "INICIAR JOGO",
       "pause": "PAUSA",
       "over": "FIM DE JOGO",
+      "startTournament": "Iniciar um novo torneio",
+      "addPlayers": "Adicione jogadores ao torneio. São necessários exatamente 8 jogadores.",
+      "maxPlayersReached": "Número máximo de jogadores atingido. Você não pode adicionar mais de 8 jogadores.",
+      "create": "Criar",
       "player1": "UM JOGADOR",
       "player2": "DOIS JOGADORES",
       "level1": "FÁCIL",
       "level2": "MÉDIO",
-      "level3": "DIFÍCIL"
+      "level3": "DIFÍCIL",
+      "mode1": "LOCAL",
+      "mode2": "REMOTO",
+      "game1": "UMA PARTIDA",
+      "game2": "TORNEIO"
     },
     "notification": {
       "title": {
@@ -252,11 +276,19 @@
       "start": "ゲーム開始",
       "pause": "一時停止",
       "over": "ゲームオーバー",
+      "startTournament": "新しいトーナメントを開始する",
+      "addPlayers": "トーナメントにプレイヤーを追加してください。8人ちょうど必要です。",
+      "maxPlayersReached": "参加できるプレイヤーは最大8人です。これ以上追加できません。",
+      "create": "作成",
       "player1": "１人プレイヤー",
       "player2": "２人プレイヤー",
       "level1": "簡単",
       "level2": "普通",
-      "level3": "難しい"
+      "level3": "難しい",
+      "mode1": "ローカル",
+      "mode2": "リモート",
+      "game1": "１試合",
+      "game2": "トーナメント"
     },
     "notification": {
       "title": {

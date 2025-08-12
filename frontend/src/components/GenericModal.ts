@@ -1,3 +1,5 @@
+import { actionIcons } from '@/utils/Constants';
+
 const template = document.createElement('template');
 template.innerHTML = `
   <style>
@@ -16,12 +18,11 @@ template.innerHTML = `
     }
     .modal {
       background: var(--body);
+      border: 2px solid var(--border);
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
       padding: 24px;
-      min-width: 500px;
-      max-width: 800px;
-      min-height: 450px;
-      max-height: 700px;
+      width: var(--modal-s-width);
+      height: var(--modal-s-height);
       position: relative;
       display: flex;
       align-items: center;
@@ -47,24 +48,37 @@ template.innerHTML = `
       position: absolute;
       top: 1rem;
       right: 1rem;
-      font-size: 1.5rem;
+      display: inline-flex;
+      align-items: center;
+      padding: 0.1em 0.3em;
+      justify-content: center;
       background: none;
       border: none;
-      color: #888;
       cursor: pointer;
-      z-index: 2;
+      width: var(--button-circle-size);
+      height: var(--button-circle-size);
+      border-radius: 50%;
       transition: color 0.2s;
     }
+    .close-btn span img {
+      width: 1.5rem;
+      height: 1.5rem;
+      display: block;
+      filter: invert(var(--invert));
+    }
     .close-btn:hover {
-      color: #222;
+      background: color-mix(in srgb, var(--hover), transparent 50%);
     }
   </style>
+
   <div class="overlay">
     <div class="modal">
       <div class="body-center">
         <slot name="body"></slot>
       </div>
-      <button class="close-btn" title="Close" style="display:none;">&times;</button>
+      <button class="close-btn" title="Close" style="display:none;">
+        <span>${actionIcons.close}</span>
+      </button>
     </div>
   </div>
 `;
