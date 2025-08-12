@@ -46,16 +46,9 @@ export class BabylonGUI {
     button.hoverCursor = "pointer";
   }
 
-  // hideButtons(arrayButtons: Button[]) {
-  //   arrayButtons.forEach(btn => this.advancedTexture.removeControl(btn));
-  //   arrayButtons = [];
-  // }
   hideButtons(arrayButtons: Button[]) {
-    arrayButtons
-      .filter(btn => btn) // only non-null buttons
-      .forEach(btn => this.advancedTexture.removeControl(btn));
+    arrayButtons.forEach(btn => this.advancedTexture.removeControl(btn));
     arrayButtons = [];
-    // arrayButtons.length = 0;
   }
 
   showStartButton(onStart: () => void) {

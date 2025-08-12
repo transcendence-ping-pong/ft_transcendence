@@ -25,7 +25,7 @@ export function renderLogin(containerId: string) {
       </top-bar>
 
       <generic-modal dismissible="false" appear-delay="1000">
-        <div slot="body" class="w-full h-full min-h-full flex justify-center items-center" id="auth-modal-content"></div>
+        <div slot="body" class="p-4" id="auth-modal-content"></div>
       </generic-modal>
     </div>
   `;
@@ -35,7 +35,9 @@ export function renderLogin(containerId: string) {
 
   function showSpinner() {
     content.innerHTML = `
-      <div class="w-12 h-12 border-8 border-[var(--loading)] border-t-[var(--accent-tertiary)] rounded-full animate-spin"></div>
+      <div class="flex justify-center items-center h-48">
+        <div class="w-12 h-12 border-8 border-[var(--loading)] border-t-[var(--accent-tertiary)] rounded-full animate-spin"></div>
+      </div>
     `;
   }
 
