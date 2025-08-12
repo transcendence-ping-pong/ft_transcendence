@@ -4,6 +4,7 @@ import '@/components/TopBar.js';
 import '@/components/NotificationsBar.js';
 import { websocketService } from '@/services/websocketService.js';
 import { initChat } from '@/chat/chatManager.js';
+import { logout } from '@/services/authService.js';
 
 export function renderHome(containerId: string) {
   const container = document.getElementById(containerId);
@@ -22,7 +23,7 @@ export function renderHome(containerId: string) {
         <theme-toggle slot="toggle"></theme-toggle>
         <languages-dropdown slot="language"></languages-dropdown>
         <img slot="avatar" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=robot" alt="Avatar" />
-        <button slot="logout" onclick="/* your logout logic */">
+        <button slot="logout" id="logoutBtn">
           <img src="https://unpkg.com/pixelarticons@1.8.1/svg/logout.svg" alt="Logout" style="width:22px;height:22px;filter:invert(1);" />
           Logout
         </button>
@@ -58,6 +59,18 @@ export function renderHome(containerId: string) {
         const panel = document.querySelector('chat-panel') as any;
         if (panel && typeof panel.setCurrentUser === 'function') {
           panel.setCurrentUser(username);
+        }
+      });
+    }
+
+    const logoutBtn = container.querySelector('#logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+          await logout(refreshToken);
+        } else {
+          window.dispatchEvent(new CustomEvent('logout', { bubbles: true, composed: true }));
         }
       });
     }

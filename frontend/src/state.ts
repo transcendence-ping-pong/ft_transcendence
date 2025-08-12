@@ -1,5 +1,6 @@
+import { UserData } from '@/utils/playerUtils/types';
 /*
-  States responsabilities:
+  State responsabilities:
   - persist state in localStorage
   - store user preferences (language, theme, sound, etc)
   - store game state (current level, score, etc)
@@ -31,11 +32,12 @@ const savedState = localStorage.getItem('appState');
 const initialState = savedState ? JSON.parse(savedState) : {
   language: 'en',
   translations: {} as any,
+  errorTranslations: {} as any,
   availableLanguages: [] as string[],
   theme: 'primary',
   soundEnabled: true,
   scaleFactor: {},
-  loggedInUser: null as { id: string; username: string; email?: string } | null,
+  userData: {} as UserData, // user data will be set after login
   // TODO: add other state properties that we need to persist
 };
 
@@ -52,3 +54,16 @@ export const state = new Proxy(initialState, {
     return true;
   }
 });
+
+export interface Match {
+  matchId: number;
+  player1DisplayName: string;
+  player2DisplayName: string;
+  winnerDisplayName: string | null;
+  scorePlayer1: number | null;
+  scorePlayer2: number | null;
+}
+
+export let currentMatches: Match[] = [];
+export let tournamentId: number | null = null;
+

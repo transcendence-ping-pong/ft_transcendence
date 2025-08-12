@@ -1,3 +1,5 @@
+import { state } from '@/state';
+
 type RouteRenderFn = (containerId: string, params?: Record<string, string>) => void;
 
 export function initRouter(
@@ -26,7 +28,22 @@ export function initRouter(
     return { render: undefined, params: {} };
   }
 
+  function isAuthenticated() {
+    return !!state?.userData?.accessToken;
+  }
+
   function renderRoute(path: string) {
+    // protect all routes except login
+    // TODO: in the future, we might want to leave home unprotected
+    if (!isAuthenticated() && path !== '/login') {
+      window.history.replaceState({}, '', '/login');
+      path = '/login';
+    }
+    if (isAuthenticated() && path === '/login') {
+      window.history.replaceState({}, '', '/');
+      path = '/';
+    }
+
     const { render, params } = matchRoute(path);
     const contentDiv = document.getElementById(renderTargetId);
     

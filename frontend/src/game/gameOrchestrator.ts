@@ -23,15 +23,26 @@ export class gameOrchestrator {
   private isMultiplayerMode: boolean = false;
   private multiplayerKeyDownHandler?: (event: KeyboardEvent) => void;
   private multiplayerKeyUpHandler?: (event: KeyboardEvent) => void;
-  
 
+  private isTournament: boolean;
+  // private gameManager: GameManager;
+  // TODO CONCEPT: should we have a GameManager here?
+  // instead of instantiating it in GameCanvas?
 
   constructor(containerId: string) {
     state.scaleFactor = this.getScaleFactor();
     this.babylonCanvas = new BabylonCanvas(containerId);
     this.gui = new BabylonGUI(this.babylonCanvas.getScene());
-    this.setupMultiplayerEvents();
+
+    const params = new URLSearchParams(window.location.search);
+    this.isTournament = params.get('tournament') === '1';
+    
+    if (this.isTournament) {
+      this.setupTournamentFlow();
+    } else {
+      this.setupMultiplayerEvents();
     this.setupMenuFlow();
+    }
 
     this.babylonCanvas.startRenderLoop();
 
@@ -150,6 +161,23 @@ export class gameOrchestrator {
 
 
 
+   private setupTournamentFlow() {
+    this.babylonCanvas.createGameCanvas(GameLevel.MEDIUM, PlayerMode.TWO_PLAYER);
+    this.gameCanvas = this.babylonCanvas.getGameCanvas();
+
+    this.gui.showCountdown(3, () => {
+      this.gameCanvas.startGame();
+      this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => {});
+    });
+
+    this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
+      const { winner, score } = e.detail;
+      const winnerName = winner === 'LEFT' ? 'Player 1' : 'Player 2';
+      const message = `${winnerName} Win!\nFinal Score: ${score.LEFT} x ${score.RIGHT}`;
+      this.gui.showGameOver(winnerName, score);
+    });
+  }
+
   setupMenuFlow() {
     if (this.isMultiplayerMode) {
       return;
@@ -161,28 +189,38 @@ export class gameOrchestrator {
           this.babylonCanvas.createGameCanvas(level as GameLevel, mode as PlayerMode);
           this.gameCanvas = this.babylonCanvas.getGameCanvas();
 
+          if (mode === PlayerMode.ONE_PLAYER) {
+            this.gameCanvas.enableBotForPlayer(1);
+          }
+
+
           this.gui.showCountdown(3, () => {
             this.gameCanvas.startGame();
-            this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => { });
+            this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => {});
           });
 
-          this.gameCanvas.addEventListener('scoreChanged', (e: CustomEvent) => {
-            console.log('Received scoreChanged', e.detail);
-            this.gui.clearGUI();
-            this.gui.showScoreBoard(e.detail, () => { });
-          });
+          // this.gameCanvas.addEventListener('scoreChanged', (e: CustomEvent) => {
+          //   console.log('Received scoreChanged', e.detail);
+          //   this.gui.clearGUI();
+          //   this.gui.showScoreBoard(e.detail, () => { });
+          // });
 
           this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
-            console.log('Received gameOver', e.detail);
-            this.gui.showGameOver();
-            setTimeout(() => {
-              this.gui.clearGUI();
-              this.babylonCanvas.initPlaneMaterial();
+            //console.log('Received gameOver', e.detail);
+            const { winner, score } = e.detail;
+            const winnerName = winner === 'LEFT' ? 'Player 1' : 'Player 2';
+            const message = `$${winnerName} Win!\nFinal Score: ${score.LEFT} x ${score.RIGHT}`;
 
-              window.dispatchEvent(new CustomEvent('openSummary', {
-                detail: { summary: true, match: e.detail }
-              }));
-            }, 2000);
+            this.gui.showGameOver(winnerName, score);
+
+            // setTimeout(() => {
+            //   this.gui.clearGUI();
+            //   this.babylonCanvas.initPlaneMaterial();
+
+            //   window.dispatchEvent(new CustomEvent('openSummary', {
+            //     detail: { summary: true, match: e.detail }
+            //   }));
+            // }, 2000);
           });
         });
       });

@@ -1,79 +1,76 @@
 import { state } from '@/state.js';
-import { t } from '@/locales/Translations.js'
 import emojiFlags from 'emoji-flags';
 
 const template = document.createElement('template');
 template.innerHTML = `
   <style>
-    label {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-      font-size: 1em;
-      color: var(--text-color);
-    }
-    select {
+    .select-locale {
       width: 100%;
-      padding: 0.5em;
-      border-radius: 4px;
-      border: 1px solid var(--border-color);
-      background-color: var(--background-color);
-      color: var(--text-color);
+      height: var(--select-height);
+      cursor: pointer;
+      background: var(--body);
+      border: 2px solid var(--border);
+      box-shadow: 0 2px 12px #0002;
+      padding: var(--component-h-padding);
+      border-radius: 0;
+      font-size: var(--main-font-size);
+      font-weight: bold;
+      color: var(--text);
+      text-align: center;
     }
-
-    // select:focus {
-    //   outline: none;
-    //   border-color: var(--accent-color);
-    // }
+    .select-locale:focus {
+      background: var(--accent);
+    }
+    label {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
   </style>
 
   <label>
-    <span id="labelText"></span>
-    <select id="selectLanguages"></select>
+    <select class="select-locale" id="selectLanguages"></select>
   </label>
 `;
 
-export class LanguagesDropdown extends HTMLElement {
-  languages: string[] = [];
+const LANGUAGE_NAMES: Record<string, string> = {
+  EN: 'English',
+  GB: 'English',
+  FR: 'Français',
+  PT: 'Português',
+  JP: '日本語'
+};
 
+export class LanguagesDropdown extends HTMLElement {
   constructor() {
     super();
-    const shadow = this.attachShadow({ mode: 'open' });
-    shadow.appendChild(template.content.cloneNode(true));
+    this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
   }
 
   connectedCallback() {
-    const label = this.shadowRoot?.getElementById('labelText') as HTMLLabelElement;
-    const selectLanguages = this.shadowRoot?.getElementById('selectLanguages') as HTMLSelectElement;
+    const select = this.shadowRoot?.getElementById('selectLanguages') as HTMLSelectElement;
+    if (!select) return;
 
-    // if (label) label.textContent = t('nav.languages');
-    // populate select array of languages
-    this.languages = state.availableLanguages;
+    select.innerHTML = '';
+    state.availableLanguages.forEach(lang => {
+      const flag = emojiFlags[lang]?.emoji || '';
+      const name = LANGUAGE_NAMES[lang.toUpperCase()] || lang;
+      const option = document.createElement('option');
+      option.value = lang;
+      option.textContent = `${flag} ${name}`;
+      select.appendChild(option);
+    });
+    select.value = state.language;
 
-    // TODO FIX: improve this. It is messy and a bit redundant
-    if (selectLanguages) {
-      selectLanguages.innerHTML = '';
-      this.languages.forEach((lang: string) => {
-        const flag = emojiFlags[lang]?.emoji || '';
-        const option = document.createElement('option');
-        option.value = lang;
-        const language = lang.toUpperCase() === 'GB' ? 'EN' : lang.toUpperCase();
-
-        option.textContent = `${language} ${flag}`;
-        selectLanguages.appendChild(option);
-      });
-      selectLanguages.value = state.language;
-
-      // listen for language change
-      selectLanguages.addEventListener('change', async (e) => {
-        const newLang = (e.target as HTMLSelectElement).value;
-        this.dispatchEvent(new CustomEvent('languagechange', {
-          detail: { language: newLang },
-          bubbles: true,
-          composed: true
-        }));
-      });
-    }
+    select.addEventListener('change', (e) => {
+      const newLang = (e.target as HTMLSelectElement).value;
+      this.dispatchEvent(new CustomEvent('languagechange', {
+        detail: { language: newLang },
+        bubbles: true,
+        composed: true
+      }));
+    });
   }
 }
 

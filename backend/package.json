@@ -2,6 +2,9 @@
   "name": "testingauthenticator",
   "version": "1.0.0",
   "main": "./src/index.js",
+  "scripts": {
+    "dev": "node src/index.js"
+  },
   "dependencies": {
     "@fastify/cors": "^11.0.0",
     "@fastify/static": "^8.2.0",

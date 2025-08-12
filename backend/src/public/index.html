@@ -40,18 +40,19 @@
                 return;
             }
 
+            const username = document.getElementById('username').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            if (!email || !password) {
-                alert('Please enter both email and password');
+            if (!email || !password || !username) {
+                alert('Please enter username, email and password');
                 return;
             }
 
-            const response = await fetch('/signup', {
+            const response = await fetch('/api/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ username, email, password })
             });
 
             const data = await response.json();
@@ -60,6 +61,10 @@
                 alert(data.error);
             } else {
                 alert('Signup successful! Please log in.');
+                // Clear the form fields after successful signup
+                document.getElementById('username').value = '';
+                document.getElementById('email').value = '';
+                document.getElementById('password').value = '';
             }
         }
 
@@ -160,7 +165,7 @@
             const currentUser = users.find(user => user.username === loggedInUser);
 
             // If user has a Google ID, don't show 2FA options
-            if (currentUser && currentUser.google_id) {
+            if (currentUser && currentUser.googleID) {
                 document.getElementById('tokenSection').style.display = 'none';
                 document.getElementById('verifyTokenSection').style.display = 'none';
                 document.getElementById('generateSecretSection').style.display = 'none';
@@ -168,7 +173,6 @@
                 return;
             }
             
-            // Use email instead of username for 2FA check
             const response = await fetch(`/check-2fa?email=${encodeURIComponent(userEmail)}`);
             const data = await response.json();
 
@@ -210,7 +214,7 @@
             if (Array.isArray(users) && users.length > 0) {
                 users.forEach(user => {
                     const listItem = document.createElement('li');
-                    listItem.textContent = `ID: ${user.user_id}, Username: ${user.username}, Has 2FA: ${user.secret ? 'Yes' : 'No'}, Google ID: ${user.google_id || 'N/A'}, Email: ${user.email || 'N/A'}`;
+                    listItem.textContent = `ID: ${user.userId}, Username: ${user.username}, Has 2FA: ${user.secret ? 'Yes' : 'No'}, Google ID: ${user.googleID || 'N/A'}, Email: ${user.email || 'N/A'}`;
                     userList.appendChild(listItem);
                 });
             }
@@ -281,40 +285,16 @@
             }
         }
 
-        // Add profile management functions
-        async function changeUsername() {
-            const newUsername = document.getElementById('newUsername').value;
-            if (!newUsername) {
-                alert('Please enter a new username');
+        async function changePassword() {
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value; // Get confirm password value
+            if (!newPassword || !confirmPassword) {
+                alert('Please enter and confirm your new password');
                 return;
             }
 
-            const accessToken = localStorage.getItem('accessToken');
-            const response = await fetch('/change-username', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${accessToken}`
-                },
-                body: JSON.stringify({ newUsername })
-            });
-
-            const data = await response.json();
-            if (data.error) {
-                alert(data.error);
-            } else {
-                alert(data.message);
-                loggedInUser = newUsername;
-                localStorage.setItem('loggedInUser', newUsername);
-                updateLoginStatus(newUsername);
-                fetchUsers();
-            }
-        }
-
-        async function changePassword() {
-            const newPassword = document.getElementById('newPassword').value;
-            if (!newPassword) {
-                alert('Please enter a new password');
+            if (newPassword !== confirmPassword) {
+                alert('Passwords do not match');
                 return;
             }
 
@@ -333,6 +313,8 @@
                 alert(data.error);
             } else {
                 alert(data.message);
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
             }
         }
 
@@ -342,8 +324,12 @@
             if (loggedInUser) {
                 loginStatus.textContent = `Logged in as: ${loggedInUser}`;
                 const emailDisplay = document.getElementById('userEmailDisplay');
+                const usernameDisplay = document.getElementById('userUsernameDisplay');
                 if (emailDisplay && userEmail) {
                     emailDisplay.textContent = userEmail;
+                }
+                if (usernameDisplay && loggedInUser) {
+                    usernameDisplay.textContent = loggedInUser;
                 }
             } else {
                 loginStatus.textContent = '';
@@ -361,7 +347,6 @@
                 updateLoginStatus(storedUser);
                 valid = await checkServerLoginStatus();
                 if (!valid) {
-                    // User/token invalid, clear everything
                     loggedInUser = null;
                     userEmail = null;
                     localStorage.removeItem('loggedInUser');
@@ -377,7 +362,6 @@
         };
     </script>
     <script>
-    // Parse tokens from URL after Google login
     (function() {
         const params = new URLSearchParams(window.location.search);
         const accessToken = params.get('accessToken');
@@ -387,10 +371,7 @@
             localStorage.setItem('accessToken', accessToken);
             localStorage.setItem('refreshToken', refreshToken);
             localStorage.setItem('loggedInUser', username);
-            // For Google login, extract email from username if needed
-            // Remove tokens from URL for cleanliness
             window.history.replaceState({}, document.title, "/");
-            // Optionally, reload to update UI
             window.location.reload();
         }
     })();
@@ -398,6 +379,9 @@
 </head>
 <body>
     <h1>Authenticator</h1>
+    <label for="username">Username:</label>
+    <input type="text" id="username" placeholder="Enter username">
+    <br>
     <label for="email">Email:</label>
     <input type="email" id="email" placeholder="Enter email">
     <br>
@@ -436,17 +420,15 @@
     <ul id="userList"></ul>
     <div id="profileSection" style="display:none; margin-top:30px;">
         <h2>Profile Settings</h2>
-        <label for="newUsername">New Username:</label>
-        <input type="text" id="newUsername" placeholder="Enter new username">
-        <button onclick="changeUsername()">Change Username</button>
-        <br><br>
+        <p><strong>Username: </strong><span id="userUsernameDisplay"></span> (Cannot be changed)</p>
         <p><strong>Email: </strong><span id="userEmailDisplay"></span> (Cannot be changed)</p>
         <br>
         <label for="newPassword">New Password:</label>
         <input type="password" id="newPassword" placeholder="Enter new password">
+        <label for="confirmPassword">Confirm New Password:</label>
+        <input type="password" id="confirmPassword" placeholder="Confirm new password">
+        <br>
         <button onclick="changePassword()">Change Password</button>
-        <br><br>
-        <button onclick="generateSecret()">Generate New 2FA QR Code</button>
     </div>
 </body>
 </html>

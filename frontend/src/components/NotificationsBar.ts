@@ -1,10 +1,8 @@
 import { NotificationPayload, NotificationAction, notificationService } from "@/services/notificationService";
 import { mapNotification, getWelcomeNotification } from "@/utils/Notifications.js";
 import { t } from "@/locales/Translations.js";
+import { state } from "@/state";
 import "./NotificationCard.js";
-
-const TOPBAR_HEIGHT = 64; // px
-const SIDEBAR_WIDTH = "25vw";
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -24,8 +22,8 @@ template.innerHTML = `
       position: fixed;
       right: 0;
       bottom: 0;
-      top: ${TOPBAR_HEIGHT}px;
-      width: ${SIDEBAR_WIDTH};
+      top: var(--topbar-height);
+      width: var(--sidebar-width);
       max-width: 100vw;
       display: flex;
       gap: 0.25rem;
@@ -36,11 +34,11 @@ template.innerHTML = `
     }
     .details-panel {
       position: fixed;
-      top: ${TOPBAR_HEIGHT}px;
+      top: var(--topbar-height);
       right: 0;
-      width: ${SIDEBAR_WIDTH};
+      width: var(--sidebar-width);
       max-width: 100vw;
-      height: calc(100vh - ${TOPBAR_HEIGHT}px);
+      height: calc(100vh - var(--topbar-height));
       background: var(--video-transition-bg);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
@@ -167,8 +165,7 @@ export class NotificationsBar extends HTMLElement {
   detailsClose: HTMLElement;
   detailsTitle: HTMLElement;
 
-  // TODO: get username, this value is mocked for now
-  username = "SHINCKEL";
+  username = state.userData?.username || 'GUEST';
 
   constructor() {
     super();

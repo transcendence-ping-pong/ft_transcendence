@@ -4,7 +4,7 @@ import { state } from '@/state';
 export enum GameLevel {
   EASY = 'EASY',
   MEDIUM = 'MEDIUM',
-  HARD = 'HARD'
+  HARD = 'HARD',
 }
 
 export enum PlayerMode {
@@ -18,8 +18,8 @@ export enum GameScore {
   DRAW = 0,
   POINT = 1,
   NO_POINT = 0,
-  // SCORE_MAX = 11,
-  SCORE_MAX = 5, // testing purposes
+  SCORE_MAX = 11,
+  // SCORE_MAX = 1, // testing purposes
   LEFT = 'LEFT',   // Player is on the left side
   RIGHT = 'RIGHT',  // Player is on the right side
 }
@@ -137,13 +137,13 @@ export function getGUIConstants(): GUIConstants {
   const colors: ThemeColors = getThemeColors(state.theme);
 
   return {
-    SCENE_BACKGROUND_COLOR: colors.body, // #000000
+    SCENE_BACKGROUND_COLOR: "#000000", // #000000
     BUTTON_HEIGHT: VIRTUAL_HEIGHT / 12,
     BUTTON_WIDTH: VIRTUAL_WIDTH / 5,
     BUTTON_GAP: VIRTUAL_HEIGHT / 40,
     BUTTON_FONT_SIZE: VIRTUAL_HEIGHT / 25,
     BUTTON_FONT_WEIGHT: 'normal',
-    BUTTON_FONT_COLOR: colors.border,
+    BUTTON_FONT_COLOR: "#000000",
     BUTTON_BORDER_COLOR: colors.border,
     BUTTON_CORNER_RADIUS: 0,
     BUTTON_THICKNESS: 4,

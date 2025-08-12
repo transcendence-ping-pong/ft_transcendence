@@ -163,8 +163,45 @@ frontend/
 <!-- build docker image && start container, add -d for detached mode -->
 sudo docker-compose up --build frontend
 <!-- FE available at http://localhost:3000 -->
-```
 
+docker-compose down
+docker volume ls
+docker volume rm ft_transcendence_db_data
+docker images
+docker image rm ft_transcendence-backend
+docker image rm 37b94da43c8b 97d16dd2387f 89c006ea7db8 -f
+docker network ls
+docker network rm ft_transcendence_default
+
+docker-compose down
+docker system prune -af
+docker volume prune -f
+docker volume rm $(docker volume ls -q)
+docker-compose up --build
+
+// check port mapping then kill the process
+sudo lsof -i :80
+sudo kill -9 <PID>
+
+docker-compose logs nginx
+docker-compose exec nginx cat /etc/nginx/conf.d/default.conf
+```
+```
+ubuntu@pong-vm:~/ft_transcendence$ docker exec -it backend /bin/sh
+/app # ls
+database           node_modules       package-lock.json  package.json       src
+/app # cd database/
+/app/database # sqlite3
+SQLite version 3.48.0 2025-01-14 11:05:00
+Enter ".help" for usage hints.
+Connected to a transient in-memory database.
+Use ".open FILENAME" to reopen on a persistent database.
+sqlite> .open database.db
+sqlite> .tables
+friend_list    match_history  match_stats    user_stats     users        
+sqlite> .quit
+exit
+```
 
 ## Concepts
 

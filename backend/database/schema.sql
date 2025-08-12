@@ -1,55 +1,77 @@
+
 CREATE TABLE IF NOT EXISTS users (
-	user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+	userId INTEGER PRIMARY KEY AUTOINCREMENT,
 	username TEXT NOT NULL UNIQUE,
 	password TEXT NOT NULL,
 	secret TEXT NOT NULL,
-	google_id TEXT UNIQUE,
+	googleID TEXT UNIQUE,
 	email TEXT
 );
 
-CREATE TABLE IF NOT EXISTS user_stats (
-	user_id INTEGER NOT NULL PRIMARY KEY,
-	username TEXT NOT NULL,
-	displayname TEXT,
+-- TODO: Check if displayname can be same as username
+
+CREATE TABLE IF NOT EXISTS userStats (
+	userId INTEGER NOT NULL PRIMARY KEY,
+	displayName TEXT,
 	avatar TEXT NOT NULL DEFAULT 'placeholder',
-	user_status INTEGER DEFAULT 0,
-	match_count INTEGER DEFAULT 0,
-	win_count INTEGER DEFAULT 0,
-	loss_count INTEGER DEFAULT 0,
-	tornament_win_count INTEGER DEFAULT 0
+	userStatus INTEGER DEFAULT 0,
+	matchCount INTEGER DEFAULT 0,
+	matchWinCount INTEGER DEFAULT 0,
+	matchLossCount INTEGER DEFAULT 0,
+	tournamentCount INTEGER DEFAULT 0,
+	tournamentWinCount INTEGER DEFAULT 0,
+	FOREIGN KEY (userId) REFERENCES users (userId)
 );
 
-CREATE TABLE IF NOT EXISTS friend_list (
-	user_id INTEGER NOT NULL,
-	friend_id INTEGER NOT NULL,
-	friendship_status TEXT,
-	FOREIGN KEY (user_id) REFERENCES users(user_id),
-	FOREIGN KEY (friend_id) REFERENCES users(user_id)
+CREATE TABLE IF NOT EXISTS friendList (
+	userId INTEGER NOT NULL,
+	friendId INTEGER NOT NULL,
+	friendStatus TEXT DEFAULT 'pending',
+	FOREIGN KEY (userId) REFERENCES users (userId),
+	FOREIGN KEY (friendId) REFERENCES users (userId)
 );
 
-CREATE TABLE IF NOT EXISTS match_history (
-	user_id INTEGER NOT NULL,
-	match_id INTEGER NOT NULL,
-	FOREIGN KEY (user_id) REFERENCES users(user_id),
-	FOREIGN KEY (match_id) REFERENCES match_stats(match_id)
+CREATE TABLE IF NOT EXISTS matchHistory (
+	userId INTEGER NOT NULL,
+	matchId INTEGER NOT NULL,
+	FOREIGN KEY (userId) REFERENCES users (userId),
+	FOREIGN KEY (matchId) REFERENCES matches (matchId)
 );
 
-CREATE TABLE IF NOT EXISTS match_stats (
-	match_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-	player1_id INTEGER NOT NULL,
-	player2_id INTEGER NOT NULL,
-	score_player1 INTEGER,
-	score_player2 INTEGER,
-	forfeit INTEGER,
-	winnerId INTEGER,
+CREATE TABLE IF NOT EXISTS matches (
+	matchId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	tournamentId INTEGER,
+	creatorUserId INTEGER NOT NULL,
+	remoteUserId INTEGER,
+	player1DisplayName TEXT NOT NULL,
+	player2DisplayName TEXT NOT NULL,
+	winnerDisplayName TEXT,
+	scorePlayer1 INTEGER,
+	scorePlayer2 INTEGER,
 	date INTEGER,
-	time INTEGER
+	time INTEGER,
+	FOREIGN KEY (creatorUserId) REFERENCES users (userId),
+	FOREIGN KEY (remoteUserId) REFERENCES users (userId)
 );
+
+CREATE TABLE IF NOT EXISTS tournaments (
+	tournamentId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	creatorId INTEGER NOT NULL,
+	quarterId1 INTEGER,
+	quarterId2 INTEGER,
+	quarterId3 INTEGER,
+	quarterId4 INTEGER,
+	semiId1 INTEGER,
+	semiId2 INTEGER,
+	finalId INTEGER,
+	FOREIGN KEY (creatorId) REFERENCES users (userId)
+);
+
 CREATE TABLE IF NOT EXISTS refresh_tokens (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     token TEXT UNIQUE NOT NULL,
-    user_id INTEGER NOT NULL,
+    userId INTEGER NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     expires_at DATETIME,
-    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+    FOREIGN KEY (userId) REFERENCES users (userId) ON DELETE CASCADE
 );
