@@ -20,9 +20,9 @@ template.innerHTML = `
       background: var(--body);
       border: 2px solid var(--border);
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-      padding: 24px;
-      width: var(--modal-s-width);
-      height: var(--modal-s-height);
+      padding: 2rem;
+      width: var(--modal-width);
+      height: var(--modal-height);
       position: relative;
       display: flex;
       align-items: center;
@@ -38,9 +38,7 @@ template.innerHTML = `
       transform: translateY(0);
     }
     .body-center {
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: block;
       width: 100%;
       height: 100%;
     }
@@ -125,14 +123,14 @@ export class GenericModal extends HTMLElement {
 
   updateDismissible() {
     const dismissible = this.getAttribute('dismissible') === 'true';
-    const closeBtn = this.shadowRoot.querySelector('.close-btn');
+    const closeBtn = this.shadowRoot.querySelector('.close-btn') as HTMLButtonElement;
     if (closeBtn) {
       closeBtn.style.display = dismissible ? '' : 'none';
     }
   }
 
   setupEvents() {
-    const closeBtn = this.shadowRoot.querySelector('.close-btn');
+    const closeBtn = this.shadowRoot.querySelector('.close-btn') as HTMLButtonElement;
     const overlay = this.shadowRoot.querySelector('.overlay');
     const dismissible = this.getAttribute('dismissible') === 'true';
 

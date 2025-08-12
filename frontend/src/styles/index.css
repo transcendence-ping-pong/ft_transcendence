@@ -85,8 +85,8 @@
     --component-h-padding: 0 1.25rem;
     --sidebar-width: 30vw;
 
-    --modal-s-height: 50vh;
-    --modal-s-width: 35vw;
+    --modal-height: 50vh;
+    --modal-width: 35vw;
 
     --button-height: 3rem;
     --button-min-width: 180px;
