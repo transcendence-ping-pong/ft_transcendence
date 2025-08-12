@@ -1,6 +1,5 @@
 import { t } from "@/locales/Translations";
 import { actionIcons } from '@/utils/Constants';
-import { createPBRClearCoatPlugin, QuadraticErrorSimplification } from "@babylonjs/core";
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -10,6 +9,7 @@ template.innerHTML = `
       width: 100%;
       height: 100%;
       margin: 0 auto;
+      box-sizing: border-box;
     }
     .tournament__title {
       color: var(--text);
@@ -24,7 +24,7 @@ template.innerHTML = `
     .tournament__form {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 1rem;
       margin-bottom: 1rem;
       width: 100%;
     }
@@ -134,6 +134,12 @@ template.innerHTML = `
       background: var(--accent);
       color: var(--text);
     }
+    .tournament__footer-btn:disabled {
+      background: var(--accent-secondary);
+      color: var(--body);
+      cursor: not-allowed;
+      opacity: 0.35;
+    }
 
     .tournament__error {
       font-size: 0.75rem;
@@ -162,11 +168,10 @@ template.innerHTML = `
   </div>
 `;
 
-// flex-wrap: wrap;
-
 export class CreateTournament extends HTMLElement {
   private players: string[] = [];
-  private count: number = 0;
+  private createBtn: HTMLButtonElement;
+  #MAX_PLAYERS = 8;
 
   constructor() {
     super();
@@ -177,17 +182,26 @@ export class CreateTournament extends HTMLElement {
     const input = this.shadowRoot.querySelector<HTMLInputElement>('#username');
     const addBtn = this.shadowRoot.querySelector<HTMLButtonElement>('.tournament__form-btn');
     const tagsDiv = this.shadowRoot.querySelector<HTMLDivElement>('.tournament__tags');
-    const createBtn = this.shadowRoot.querySelector<HTMLButtonElement>('#createBtn');
+    this.createBtn = this.shadowRoot.querySelector<HTMLButtonElement>('#createBtn');
     const errorText = this.shadowRoot.querySelector<HTMLParagraphElement>('#error');
+
+    this.createBtn.disabled = this.players.length < 8;
 
     addBtn.addEventListener('click', (e) => {
       e.preventDefault();
       const name = input.value.trim();
+      errorText.textContent = '';
+      if (name.length > 20) {
+        errorText.textContent = t('game.maxNameLength');
+        return;
+      }
+
       if (name && !this.players.includes(name)) {
-        if (this.players.length < 8) {
+        if (this.players.length < this.#MAX_PLAYERS) {
           this.players.push(name.toUpperCase());
           input.value = '';
           this.renderTags(tagsDiv);
+          this.createBtn.disabled = this.players.length < this.#MAX_PLAYERS;
         } else {
           errorText.textContent = t('game.maxPlayersReached');
         }
@@ -200,15 +214,39 @@ export class CreateTournament extends HTMLElement {
       }
     });
 
-    createBtn.addEventListener('click', (e) => {
+    // TODO: Implement backend communication to create tournament sending this.players
+    // If create is successful, reset players list, show loading, and then show next matches
+    // THIS IS A MOCK, REPLACE IT WITH ACTUAL BACKEND LOGIC
+    this.createBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      alert("Send to Backend list of players");
-      // TODO: Implement backend communication to create tournament sending this.players
-      // If create is successful, reset players list, show loading, and then show next matches
+
+      // START MOCK
+      // shuffle and pair players
+      const players = [...this.players];
+      for (let i = players.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [players[i], players[j]] = [players[j], players[i]];
+      }
+      const matches = [
+        { player1: players[0], player2: players[1] },
+        { player1: players[2], player2: players[3] },
+        { player1: players[4], player2: players[5] },
+        { player1: players[6], player2: players[7] },
+      ];
+      // END MOCK
+
+      // emit custom event with matches data
+      this.dispatchEvent(new CustomEvent('tournament-created', {
+        detail: { matches },
+        bubbles: true,
+        composed: true
+      }));
+
+      // reset component state
+      this.resetData();
     });
 
     this.renderTags(tagsDiv);
-    createBtn.disabled = this.players.length < 8;
   }
 
   renderTags(tagsDiv: HTMLDivElement) {
@@ -233,9 +271,17 @@ export class CreateTournament extends HTMLElement {
         e.stopPropagation();
         const idx = Number((e.currentTarget as HTMLElement).getAttribute('data-idx'));
         this.players.splice(idx, 1);
+        this.createBtn.disabled = this.players.length < this.#MAX_PLAYERS;
         this.renderTags(tagsDiv);
       });
     });
+  }
+
+  resetData() {
+    this.players = [];
+    this.createBtn.disabled = true;
+    this.shadowRoot.querySelector<HTMLInputElement>('#username').value = '';
+    this.renderTags(this.shadowRoot.querySelector<HTMLDivElement>('.tournament__tags'));
   }
 }
 
