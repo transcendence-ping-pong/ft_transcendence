@@ -6,6 +6,7 @@ export interface AuthResponse {
   requiresToken?: boolean;
   has2FA?: boolean;
   qrCodeUrl?: string;
+  secret?: string;
   accessToken?: string;
   refreshToken?: string;
 }
@@ -50,31 +51,29 @@ export async function login(email: string, password: string, token?: string): Pr
 }
 
 export async function googleLogin(): Promise<void> {
-  window.location.href = `${BASE_URL}/auth/google`;
+  window.location.href = `/auth/google`;
 }
 
 export async function logout(refreshToken: string): Promise<AuthResponse> {
-  const res = await fetch(`${BASE_URL}/logout`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token: refreshToken }),
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || 'Logout failed');
+  try {
+    const res = await fetch(`${BASE_URL}/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: refreshToken }),
+    });
+    
+    const result = await res.json();
+    
+    window.dispatchEvent(new CustomEvent('logout', { bubbles: true, composed: true }));
+    
+    return result;
+  } catch (error) {
+    console.error('Error during logout:', error);
+    
+    window.dispatchEvent(new CustomEvent('logout', { bubbles: true, composed: true }));
+    
+    return { error: 'Logout completed locally' };
   }
-
-  return data;
-}
-
-export async function checkServerLoginStatus(accessToken: string): Promise<AuthResponse> {
-  const res = await fetch(`${BASE_URL}/current-user`, {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`
-    }
-  });
-  return await res.json();
 }
 
 export async function check2FAStatus(email: string): Promise<AuthResponse> {
@@ -134,4 +133,21 @@ export async function changePassword(newPassword: string, accessToken: string): 
     body: JSON.stringify({ newPassword }),
   });
   return await res.json();
+}
+
+export async function checkServerLoginStatus(): Promise<AuthResponse> {
+  const token = localStorage.getItem('accessToken');
+  try {
+    const response = await fetch(`${BASE_URL}/current-user`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (response.ok) {
+      return await response.json();
+    }
+    throw new Error('Not authenticated');
+  } catch (error: any) {
+    return { error: error.message || 'Network error' };
+  }
 }
