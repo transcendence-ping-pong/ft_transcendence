@@ -2,6 +2,8 @@ import '@/components/ThemeToggle.js';
 import '@/components/LanguagesDropdown.js';
 import '@/components/TopBar.js';
 import '@/components/NotificationsBar.js';
+import { websocketService } from '@/services/websocketService.js';
+import { initChat } from '@/chat/chatManager.js';
 
 export function renderHome(containerId: string) {
   const container = document.getElementById(containerId);
@@ -30,8 +32,35 @@ export function renderHome(containerId: string) {
 
       <section class="screen-1 relative flex items-center justify-center h-screen w-screen">
         <div class="intro-text text-4xl text-white text-center z-10">[PLACEHOLDER]</div>
+        
+        <div id="mock-user-wrapper" style="position: fixed; top: 16px; left: 16px; z-index: 11000;">
+          <select id="mock-user-select" class="bg-black text-white border border-white rounded px-2 py-1">
+            <option value="">Select User</option>
+            <option value="Alice">Alice</option>
+            <option value="Bob">Bob</option>
+            <option value="Charlie">Charlie</option>
+          </select>
+        </div>
       </section>
+
+      <chat-panel></chat-panel>
     `;
+
+    // Initialize chat after DOM is ready
+    initChat();
+
+    const select = document.getElementById('mock-user-select') as HTMLSelectElement | null;
+    if (select) {
+      select.addEventListener('change', (e) => {
+        const username = (e.target as HTMLSelectElement).value;
+        if (!username) return;
+        websocketService.authenticate(username);
+        const panel = document.querySelector('chat-panel') as any;
+        if (panel && typeof panel.setCurrentUser === 'function') {
+          panel.setCurrentUser(username);
+        }
+      });
+    }
   }
 }
 

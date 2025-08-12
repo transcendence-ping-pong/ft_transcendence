@@ -24,6 +24,7 @@ class WebSocketService {
   private currentRoom: GameRoom | null = null;
   private currentRoomId: string | null = null;
   private authToken: string | null = null;
+  private pendingEventListeners: Array<{ event: string; callback: (data: any) => void }> = [];
 
   connect(url: string) {
     if (this.socket) return;
@@ -31,6 +32,14 @@ class WebSocketService {
     this.socket = io(url, {
       query: { clientId: state.clientId }
     });
+
+    // Bind any listeners registered before connect
+    if (this.pendingEventListeners.length) {
+      for (const { event, callback } of this.pendingEventListeners) {
+        this.socket.on(event, callback);
+      }
+      this.pendingEventListeners = [];
+    }
 
     this.socket.on('connect', () => {
       // auth if we have a token, later with other backend
@@ -101,32 +110,85 @@ class WebSocketService {
       window.dispatchEvent(new CustomEvent('game-update', { detail: data }));
     });
 
-    this.socket.on('playerReady', (data: PlayerEventWithRoom) => {
-      if (this.currentRoom && data.room) {
-        this.currentRoom.players = data.players;
-        this.currentRoom = data.room;
+    this.socket.on('gameEnd', (data: { winner: Player; gameState: GameState }) => {
+      if (this.currentRoom) {
+        this.currentRoom.status = 'finished';
       }
-      
-      window.dispatchEvent(new CustomEvent('player-ready', { 
-        detail: { 
-          player: data.player, 
-          players: data.players,
-          room: data.room || this.currentRoom 
-        } 
-      }));
-    });
-
-	// TODO: add proper end game UI
-    this.socket.on('gameEnd', (data: { gameState: GameState; winner: Player; players: Player[] }) => {
       window.dispatchEvent(new CustomEvent('game-end', { detail: data }));
     });
 
-	// TODO: add proper player left notification
     this.socket.on('playerLeft', (data: PlayerEventWithRoom) => {
       if (this.currentRoom) {
         this.currentRoom.players = data.players;
       }
-      window.dispatchEvent(new CustomEvent('player-left', { detail: data }));
+      window.dispatchEvent(new CustomEvent('player-left', { 
+        detail: { 
+          player: data.player, 
+          players: data.players, 
+          roomId: data.roomId,
+          room: this.currentRoom 
+        } 
+      }));
+    });
+
+    this.socket.on('playerReady', (data: PlayerEventWithRoom) => {
+      if (this.currentRoom) {
+        this.currentRoom.players = data.players;
+      }
+      window.dispatchEvent(new CustomEvent('player-ready', { 
+        detail: { 
+          player: data.player, 
+          players: data.players, 
+          roomId: data.roomId,
+          room: this.currentRoom 
+        } 
+      }));
+    });
+
+    // Chat system events
+    this.socket.on('chatMessage', (data: any) => {
+      window.dispatchEvent(new CustomEvent('chatMessage', { detail: data }));
+    });
+
+    this.socket.on('directMessage', (data: any) => {
+      window.dispatchEvent(new CustomEvent('directMessage', { detail: data }));
+    });
+
+    this.socket.on('gameInvite', (data: any) => {
+      window.dispatchEvent(new CustomEvent('gameInvite', { detail: data }));
+    });
+
+    this.socket.on('chatError', (data: any) => {
+      window.dispatchEvent(new CustomEvent('chatError', { detail: data }));
+    });
+
+    this.socket.on('userBlocked', (data: any) => {
+      window.dispatchEvent(new CustomEvent('userBlocked', { detail: data }));
+    });
+
+    this.socket.on('inviteSent', (data: any) => {
+      window.dispatchEvent(new CustomEvent('inviteSent', { detail: data }));
+    });
+
+    // Listen for invite sent confirmation
+    this.socket.on('inviteSent', (data: { targetUsername: string; message: string }) => {
+      window.dispatchEvent(new CustomEvent('inviteSent', { detail: data }));
+    });
+
+    // Listen for message delivery confirmation
+    this.socket.on('messageDelivered', (data: { messageId: number; receiverUsername: string; status: string }) => {
+      // Message was delivered successfully
+      console.log(`Message delivered to ${data.receiverUsername}`);
+    });
+
+    // Listen for user status updates
+    this.socket.on('userStatusUpdate', (data: any) => {
+      window.dispatchEvent(new CustomEvent('userStatusUpdate', { detail: data }));
+    });
+
+    // Online users list
+    this.socket.on('onlineUsers', (data: any) => {
+      window.dispatchEvent(new CustomEvent('onlineUsers', { detail: data }));
     });
 
     this.socket.on('error', (data: { message: string }) => {
@@ -207,12 +269,16 @@ class WebSocketService {
   onMessage(cb: (data: any) => void) {
     if (this.socket) {
       this.socket.on('message', cb);
+    } else {
+      this.pendingEventListeners.push({ event: 'message', callback: cb });
     }
   }
 
   on(event: string, callback: (data: any) => void) {
     if (this.socket) {
       this.socket.on(event, callback);
+    } else {
+      this.pendingEventListeners.push({ event, callback });
     }
   }
 

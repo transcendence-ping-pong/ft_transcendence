@@ -33,6 +33,15 @@ class WebSocketServer {
 		this.io = null;
 		this.gameRooms = new Map();
 		this.connectedUsers = new Map();
+
+		// Chat system
+		this.chatMessages = []; // In-memory for now
+		this.userBlocks = new Map(); // Map of blocker -> Set of blocked users
+		this.mockUsers = [
+			{ userId: 1, username: 'Alice', socketId: null },
+			{ userId: 2, username: 'Bob', socketId: null },
+			{ userId: 3, username: 'Charlie', socketId: null }
+		];
 	}
 
 	start() {
@@ -61,10 +70,32 @@ class WebSocketServer {
 				this.handleJoinRoom(socket, data);
 			});
 
+			// Handle game input
 			socket.on('gameInput', (data) => {
 				this.handleGameInput(socket, data);
 			});
 
+			// Handle chat messages
+			socket.on('chatMessage', (data) => {
+				this.handleChatMessage(socket, data);
+			});
+
+			// Handle direct messages
+			socket.on('directMessage', (data) => {
+				this.handleDirectMessage(socket, data);
+			});
+
+			// Handle user blocking
+			socket.on('blockUser', (data) => {
+				this.handleBlockUser(socket, data);
+			});
+
+			// Handle online users request
+			socket.on('getOnlineUsers', (data) => {
+				this.handleGetOnlineUsers(socket);
+			});
+
+			// Handle disconnection
 			socket.on('disconnect', () => {
 				this.handleDisconnect(socket);
 			});
@@ -85,21 +116,49 @@ class WebSocketServer {
 		try {
 			const username = data.username || data.token || 'Anonymous';
 
+			// Check if it's a mock user
+			const mockUser = this.mockUsers.find(u => u.username === username);
+			if (mockUser) {
+				// Update mock user's socket ID
+				mockUser.socketId = socket.id;
+			}
+
 			const existingUser = Array.from(this.connectedUsers.values()).find(u => u.username === username);
 			if (existingUser && existingUser.socketId !== socket.id) {
 				socket.emit('authenticated', { success: false, error: 'Username already taken' });
 				return;
 			}
 
+			const userId = mockUser ? mockUser.userId : `user_${Date.now()}`;
+
 			this.connectedUsers.set(socket.id, {
-				userId: `user_${Date.now()}`,
+				userId: userId,
 				username: username,
 				socketId: socket.id
 			});
+
 			socket.emit('authenticated', { success: true, username: username });
+
+			// Broadcast user online status to all OTHER connected users
+			this.broadcastUserStatus(socket, username, 'online');
 		} catch (error) {
 			socket.emit('authenticated', { success: false, error: 'Authentication failed' });
 		}
+	}
+
+	// Broadcast user status changes to all OTHER connected users
+	broadcastUserStatus(socket, username, status) {
+		const allUsers = Array.from(this.connectedUsers.values()).map(u => ({
+			username: u.username,
+			status: 'online'
+		}));
+
+		// Send to all users EXCEPT the sender using socket.broadcast
+		socket.broadcast.emit('userStatusUpdate', {
+			username,
+			status,
+			allUsers
+		});
 	}
 
 	handleCreateRoom(socket, data) {
@@ -618,6 +677,19 @@ class WebSocketServer {
 					}
 				}
 			});
+
+			// Broadcast user offline status to all OTHER connected users
+			// Note: socket is disconnected, so we need to broadcast to all remaining users
+			const allUsers = Array.from(this.connectedUsers.values()).map(u => ({
+				username: u.username,
+				status: 'online'
+			}));
+
+			this.io.emit('userStatusUpdate', {
+				username: user.username,
+				status: 'offline',
+				allUsers
+			});
 		}
 	}
 
@@ -627,6 +699,193 @@ class WebSocketServer {
 
 	getConnectedUsers() {
 		return Array.from(this.connectedUsers.values());
+	}
+
+	// Chat system methods
+	handleChatMessage(socket, data) {
+		const user = this.connectedUsers.get(socket.id);
+		if (!user) return;
+
+		const message = data.message.trim();
+		if (!message) return;
+
+		if (message.startsWith('/')) {
+			this.handleSlashCommand(socket, user, message);
+			return;
+		}
+
+		const chatMessage = {
+			id: Date.now(),
+			senderId: user.userId,
+			senderUsername: user.username,
+			message: message,
+			timestamp: Date.now(),
+			type: 'global'
+		};
+
+		this.chatMessages.push(chatMessage);
+
+		this.io.emit('chatMessage', chatMessage);
+	}
+
+	handleDirectMessage(socket, data) {
+		const user = this.connectedUsers.get(socket.id);
+		if (!user) return;
+
+		const { receiverUsername, message } = data;
+		if (!receiverUsername || !message) return;
+
+		const receiver = Array.from(this.connectedUsers.values())
+			.find(u => u.username === receiverUsername);
+
+		if (!receiver) {
+			socket.emit('chatError', { message: 'User not found' });
+			return;
+		}
+
+		if (this.isUserBlocked(receiver.userId, user.userId)) {
+			socket.emit('chatError', { message: 'Cannot send message to this user' });
+			return;
+		}
+
+		if (!receiver.socketId) {
+			socket.emit('chatError', { message: `${receiverUsername} is offline. Cannot send direct message.` });
+			return;
+		}
+
+		const directMessage = {
+			id: Date.now(),
+			senderId: user.userId,
+			senderUsername: user.username,
+			receiverId: receiver.userId,
+			receiverUsername: receiver.username,
+			message: message,
+			timestamp: Date.now(),
+			type: 'direct'
+		};
+
+		this.io.to(receiver.socketId).emit('directMessage', directMessage);
+
+		socket.emit('messageDelivered', {
+			messageId: directMessage.id,
+			receiverUsername: receiverUsername,
+			status: 'delivered'
+		});
+	}
+
+	handleBlockUser(socket, data) {
+		const user = this.connectedUsers.get(socket.id);
+		if (!user) return;
+
+		const { targetUsername } = data;
+		if (!targetUsername) return;
+
+		const targetUser = Array.from(this.connectedUsers.values())
+			.find(u => u.username === targetUsername);
+
+		if (!targetUser) {
+			socket.emit('chatError', { message: 'User not found' });
+			return;
+		}
+
+		if (!this.userBlocks.has(user.userId)) {
+			this.userBlocks.set(user.userId, new Set());
+		}
+		this.userBlocks.get(user.userId).add(targetUser.userId);
+
+		socket.emit('userBlocked', {
+			blockedUsername: targetUsername,
+			message: `You blocked ${targetUsername}`
+		});
+	}
+
+	handleSlashCommand(socket, user, message) {
+		const parts = message.split(' ');
+		const command = parts[0].toLowerCase();
+		const args = parts.slice(1);
+
+		switch (command) {
+			case '/pm':
+			case '/msg':
+				if (args.length < 2) {
+					socket.emit('chatError', { message: 'Usage: /pm <username> <message>' });
+					return;
+				}
+				const targetUsername = args[0];
+				const directMessage = args.slice(1).join(' ');
+				this.handleDirectMessage(socket, { receiverUsername: targetUsername, message: directMessage });
+				break;
+
+			case '/block':
+				if (args.length < 1) {
+					socket.emit('chatError', { message: 'Usage: /block <username>' });
+					return;
+				}
+				this.handleBlockUser(socket, { targetUsername: args[0] });
+				break;
+
+			case '/invite':
+				if (args.length < 1) {
+					socket.emit('chatError', { message: 'Usage: /invite <username>' });
+					return;
+				}
+				this.handleGameInvite(socket, user, args[0]);
+				break;
+
+			default:
+				socket.emit('chatError', { message: 'Unknown command. Use /pm, /block, or /invite' });
+		}
+	}
+
+	handleGameInvite(socket, user, targetUsername) {
+		const targetUser = Array.from(this.connectedUsers.values())
+			.find(u => u.username === targetUsername);
+
+		if (!targetUser) {
+			socket.emit('chatError', { message: 'User not found' });
+			return;
+		}
+
+		const inviteMessage = {
+			id: Date.now(),
+			senderId: user.userId,
+			senderUsername: user.username,
+			receiverId: targetUser.userId,
+			receiverUsername: targetUser.username,
+			message: `${user.username} invited you to play Pong!`,
+			timestamp: Date.now(),
+			type: 'invite'
+		};
+
+		if (targetUser.socketId) {
+			this.io.to(targetUser.socketId).emit('gameInvite', inviteMessage);
+		}
+
+		socket.emit('inviteSent', {
+			targetUsername,
+			message: `Invite sent to ${targetUsername}`
+		});
+	}
+
+	isUserBlocked(blockerId, blockedId) {
+		return this.userBlocks.has(blockerId) &&
+			this.userBlocks.get(blockerId).has(blockedId);
+	}
+
+	updateUserSocketId(userId, socketId) {
+		const mockUser = this.mockUsers.find(u => u.userId === userId);
+		if (mockUser) {
+			mockUser.socketId = socketId;
+		}
+	}
+
+	handleGetOnlineUsers(socket) {
+		const onlineUsers = Array.from(this.connectedUsers.values()).map(user => ({
+			userId: user.userId,
+			username: user.username,
+			status: 'online'
+		}));
+		socket.emit('onlineUsers', onlineUsers);
 	}
 }
 
