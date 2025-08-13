@@ -31,6 +31,7 @@ export class BabylonCanvas {
   private scene: Scene;
   private dynamicTexture?: any;
   private glowLayer?: BABYLON.GlowLayer;
+  private model: BABYLON.Mesh | null = null;
   private lastTimestamp: number = performance.now(); // used to calculate deltaTime
 
   constructor(containerId: string) {
@@ -230,40 +231,30 @@ export class BabylonCanvas {
     // hide the plane where dynamic texture is applied
     const plane = this.scene.getMeshByName("gameScreen");
     if (plane) plane.dispose();
+
+    this.createRadialGradientBackground(this.scene);
+
+    const models = await importMeshAsync("", "./assets/models/", "rubber_duck_toy_2k.glb", this.scene);
+    this.model = models.meshes[1];
+    console.log("Rubber duck model loaded:", this.model.name, this.model);
+    this.model.rotationQuaternion = null; // remove quaternion to use euler angles
+
+    const center = this.model.getBoundingInfo().boundingBox.center;
+
+    // TODO: set a constant to camera position
+    this.model.position = new BABYLON.Vector3(
+      this.model.position.x - center.x * 2,
+      this.model.position.y - center.y * 2,
+      this.model.position.z - center.z * 2
+    );
+
+    // this.model.rotation.x = Math.PI / 30; // tilt downward??
+    // this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
+    this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
+    // this.model.scaling = new BABYLON.Vector3(5, 5, 5);
+
+    createSpinAnimation(this.model, this.scene);
   }
-
-  // public async endingGame() {
-  //   // hide the plane where dynamic texture is applied
-  //   const plane = this.scene.getMeshByName("gameScreen");
-  //   if (plane) plane.dispose();
-
-  //   this.createRadialGradientBackground(this.scene);
-
-  //   // const models = await importMeshAsync("", "./assets/models/", "plastic_monobloc_chair_01_2k.glb", this.scene);
-  //   // const models = await importMeshAsync("", "./assets/models/", "yellow_onion_2k.glb", this.scene);
-  //   const models = await importMeshAsync("", "./assets/models/", "all_purpose_cleaner_2k.glb", this.scene);
-  //   // const models = await importMeshAsync("", "./assets/models/", "rubber_duck_toy_2k.glb", this.scene);
-  //   // const models = await importMeshAsync("", "./assets/models/", "garden_gnome_2k.glb", this.scene);
-  //   this.model = models.meshes[1];
-  //   console.log("Rubber duck model loaded:", this.model.name, this.model);
-  //   this.model.rotationQuaternion = null; // remove quaternion to use euler angles
-
-  //   const center = this.model.getBoundingInfo().boundingBox.center;
-
-  //   // TODO: set a constant to camera position
-  //   this.model.position = new BABYLON.Vector3(
-  //     this.model.position.x - center.x * 2,
-  //     this.model.position.y - center.y * 2,
-  //     this.model.position.z - center.z * 2
-  //   );
-
-  //   // this.model.rotation.x = Math.PI / 30; // tilt downward??
-  //   // this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
-  //   this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
-  //   // this.model.scaling = new BABYLON.Vector3(5, 5, 5);
-
-  //   createSpinAnimation(this.model, this.scene);
-  // }
 
   public getGameCanvas() {
     return this.gameCanvas;

@@ -117,8 +117,6 @@ export class GameCanvas extends EventTarget {
               detail: { winner, score }
             }));
           }
-          //               this.dispatchEvent(new CustomEvent('gameOver', { detail: this.gameManager.score }));
-          // }
         }
       );
     }

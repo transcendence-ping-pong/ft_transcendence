@@ -101,15 +101,20 @@ export class gameOrchestrator {
     this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
       // TODO FIX: arguments are obsolete (player and score), review
       this.gui.showGameOver('Player 1', { LEFT: 5, RIGHT: 3 });
-      this.babylonCanvas.cleanupGame();
 
       // TODO: detail matches should be handled via state
       if (this.gameType === GameType.TOURNAMENT) {
+        this.babylonCanvas.cleanupGame();
         window.dispatchEvent(new CustomEvent('tournament-created', {
           detail: { matches: [{ player1: "tchau", player2: "ola" }] },
           bubbles: true,
           composed: true
         }));
+      } else {
+        this.babylonCanvas.endingGame();
+        setTimeout(() => {
+          this.gui.clearGUI();
+        }, 2000);
       }
     });
   }
