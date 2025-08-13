@@ -30,6 +30,8 @@ export class BabylonCanvas {
   private engine: Engine;
   private scene: Scene;
   private dynamicTexture?: any;
+  private glowLayer?: BABYLON.GlowLayer;
+  private model: BABYLON.Mesh | null = null;
   private lastTimestamp: number = performance.now(); // used to calculate deltaTime
 
   constructor(containerId: string) {
@@ -192,8 +194,10 @@ export class BabylonCanvas {
     mat.backFaceCulling = false;
     mesh.material = mat;
 
-    const glowLayer = new BABYLON.GlowLayer("glow", this.scene);
-    glowLayer.intensity = 0.25;
+    if (!this.glowLayer) {
+      this.glowLayer = new BABYLON.GlowLayer("glow", this.scene);
+      this.glowLayer.intensity = 0.25;
+    }
   }
 
   private createRadialGradientBackground(scene: BABYLON.Scene) {
@@ -223,98 +227,34 @@ export class BabylonCanvas {
     dynamicTexture.update();
   }
 
-  private createGlowRampBehindModel(mesh: BABYLON.Mesh, scene: BABYLON.Scene) {
-    const boundingInfo = mesh.getBoundingInfo();
-    const center = boundingInfo.boundingBox.centerWorld;
-    const radius = boundingInfo.boundingBox.extendSizeWorld.length() * 1.3;
-
-    // Create a plane slightly behind the model
-    const glowPlane = BABYLON.MeshBuilder.CreatePlane("glowPlane", { size: radius * 2 }, scene);
-    glowPlane.position = center.clone();
-    glowPlane.position.z -= radius * 0.5; // Move behind the model
-    // glowPlane.scaling = new BABYLON.Vector3(1.5, 1.5, 1.5);
-
-    // Use the correct texture URL
-    const textureUrl = "https://playground.babylonjs.com/textures/WhiteTransarentRamp.png";
-    const glowMat = new BABYLON.StandardMaterial("glowMat", scene);
-    glowMat.diffuseTexture = new BABYLON.Texture(textureUrl, scene);
-    glowMat.diffuseTexture.hasAlpha = true;
-    glowMat.useAlphaFromDiffuseTexture = true;
-    glowMat.emissiveColor = BABYLON.Color3.FromHexString("#fcf4c5");
-    glowMat.alpha = 0.2;
-    glowMat.backFaceCulling = false;
-    glowMat.disableDepthWrite = true; // <-- This ensures the model always draws over the plane
-    glowPlane.material = glowMat;
-
-    glowPlane.isPickable = false;
-    glowPlane.receiveShadows = false;
-
-    // Render the plane before the model
-    glowPlane.renderingGroupId = 0;
-    mesh.renderingGroupId = 1;
-  }
-
   public async endingGame() {
     // hide the plane where dynamic texture is applied
     const plane = this.scene.getMeshByName("gameScreen");
     if (plane) plane.dispose();
 
-    // this.createRadialGradientBackground(this.scene);
+    this.createRadialGradientBackground(this.scene);
 
-    // const models = await importMeshAsync("", "./assets/models/", "rubber_duck_toy_2k.glb", this.scene);
-    // // const models = await importMeshAsync("", "./assets/models/", "all_purpose_cleaner_2k.glb", this.scene);
-    // // const models = await importMeshAsync("", "./assets/models/", "garden_gnome_2k.glb", this.scene);
-    // this.model = models.meshes[1];
-    // this.model.rotationQuaternion = null;
+    const models = await importMeshAsync("", "./assets/models/", "rubber_duck_toy_2k.glb", this.scene);
+    this.model = models.meshes[1];
+    console.log("Rubber duck model loaded:", this.model.name, this.model);
+    this.model.rotationQuaternion = null; // remove quaternion to use euler angles
 
-    // // GREEN LIGHT ?
+    const center = this.model.getBoundingInfo().boundingBox.center;
 
-    // const center = this.model.getBoundingInfo().boundingBox.center;
-    // const centerWorld = this.model.getBoundingInfo().boundingBox.centerWorld;
-    // this.model.position = new BABYLON.Vector3(
-    //   this.model.position.x - center.x * 2,
-    //   this.model.position.y - center.y * 2,
-    //   this.model.position.z - center.z * 2
-    // );
+    // TODO: set a constant to camera position
+    this.model.position = new BABYLON.Vector3(
+      this.model.position.x - center.x * 2,
+      this.model.position.y - center.y * 2,
+      this.model.position.z - center.z * 2
+    );
+
+    // this.model.rotation.x = Math.PI / 30; // tilt downward??
     // this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
+    this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
+    // this.model.scaling = new BABYLON.Vector3(5, 5, 5);
 
-    // createSparkleEffect(this.model, this.scene);
-    // this.createGlowRampBehindModel(this.model, this.scene);
-    // createSpinAnimation(this.model, this.scene);
+    createSpinAnimation(this.model, this.scene);
   }
-
-  // public async endingGame() {
-  //   // hide the plane where dynamic texture is applied
-  //   const plane = this.scene.getMeshByName("gameScreen");
-  //   if (plane) plane.dispose();
-
-  //   this.createRadialGradientBackground(this.scene);
-
-  //   // const models = await importMeshAsync("", "./assets/models/", "plastic_monobloc_chair_01_2k.glb", this.scene);
-  //   // const models = await importMeshAsync("", "./assets/models/", "yellow_onion_2k.glb", this.scene);
-  //   const models = await importMeshAsync("", "./assets/models/", "all_purpose_cleaner_2k.glb", this.scene);
-  //   // const models = await importMeshAsync("", "./assets/models/", "rubber_duck_toy_2k.glb", this.scene);
-  //   // const models = await importMeshAsync("", "./assets/models/", "garden_gnome_2k.glb", this.scene);
-  //   this.model = models.meshes[1];
-  //   console.log("Rubber duck model loaded:", this.model.name, this.model);
-  //   this.model.rotationQuaternion = null; // remove quaternion to use euler angles
-
-  //   const center = this.model.getBoundingInfo().boundingBox.center;
-
-  //   // TODO: set a constant to camera position
-  //   this.model.position = new BABYLON.Vector3(
-  //     this.model.position.x - center.x * 2,
-  //     this.model.position.y - center.y * 2,
-  //     this.model.position.z - center.z * 2
-  //   );
-
-  //   // this.model.rotation.x = Math.PI / 30; // tilt downward??
-  //   // this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
-  //   this.model.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
-  //   // this.model.scaling = new BABYLON.Vector3(5, 5, 5);
-
-  //   createSpinAnimation(this.model, this.scene);
-  // }
 
   public getGameCanvas() {
     return this.gameCanvas;
@@ -324,19 +264,27 @@ export class BabylonCanvas {
     return this.scene;
   }
 
+  // TODO FIX: review cleanupGame method
   public cleanupGame() {
-    if (this.engine) {
-      this.engine.stopRenderLoop();
-      this.engine.dispose();
-      this.engine = null;
+    // if (this.engine) {
+    //   this.engine.stopRenderLoop();
+    //   this.engine.dispose();
+    //   this.engine = null;
+    //   this.gameCanvas = null;
+    // }
+
+    if (this.gameCanvas) {
+      this.gameCanvas.stop();
       this.gameCanvas = null;
     }
+    this.initPlaneMaterial();
+    this.engine.stopRenderLoop();
 
-    if (this.canvas && this.canvas.parentNode) {
-      this.canvas.parentNode.removeChild(this.canvas);
-      this.canvas = null;
-    }
+    // if (this.canvas && this.canvas.parentNode) {
+    //   this.canvas.parentNode.removeChild(this.canvas);
+    //   this.canvas = null;
+    // }
 
-    window.removeEventListener('resize', () => this.engine?.resize());
+    // window.removeEventListener('resize', () => this.engine?.resize());
   }
 }

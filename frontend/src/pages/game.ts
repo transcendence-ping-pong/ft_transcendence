@@ -8,11 +8,10 @@ import '@/components/ViewTournament.js';
 const PLAYER_1 = { name: '', avatar: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=alice' };
 const PLAYER_2 = { name: '', avatar: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=bob' };
 
-// TODO FIX: use scale-100 if want to scale down border image
-// remove 20px margin bottom from the border image?
+// // TODO FIX: use scale-100 if want to scale down border image
+// // remove 20px margin bottom from the border image?
 export function renderGame(containerId: string) {
-  document.body.classList.add('overflow-hidden'); // prevent scrolling
-
+  document.body.classList.add('overflow-hidden');
   const container = document.getElementById(containerId);
   if (!container) return;
 
@@ -38,7 +37,6 @@ export function renderGame(containerId: string) {
 
   container.innerHTML = `
     ${renderTopBar()}
-
     <div class="game-area relative w-screen h-screen">
       <div id="game-screen" class="absolute z-10"></div>
       <img 
@@ -51,8 +49,49 @@ export function renderGame(containerId: string) {
 
   const orchestrator = new gameOrchestrator('game-screen');
 
-  // insertAdjacentHTML method uses specified input as HTML...
-  // ...and inserts the resulting nodes into the DOM tree at a specified position
+  // listen for tournament-created globally, so it works for every round
+  // this is important because in the case of a TOURNAMENT, the view modal will be triggered many times
+  window.addEventListener('tournament-created', (e: CustomEvent) => {
+    // remove any existing modal
+    const oldModal = container.querySelector('generic-modal');
+    if (oldModal) oldModal.remove();
+
+    // show the modal with the tournament view
+    container.insertAdjacentHTML('beforeend', `
+      <generic-modal dismissible="false" appear-delay="500">
+        <div slot="body" class="w-full h-full min-h-full flex justify-center items-center" id="tournament-modal-content"></div>
+      </generic-modal>
+    `);
+
+    const content = container.querySelector('#tournament-modal-content');
+    if (!content) return;
+
+    showTournamentView(e.detail.matches);
+
+    function showTournamentView(matches: Array<{ player1: string, player2: string }>) {
+      content.innerHTML = '';
+      const view = document.createElement('view-tournament');
+      (view as any).matchesData = matches;
+      content.appendChild(view);
+
+      // listen for the start-tournament-match event
+      // this means all config FE-BE was done successfully...
+      view.addEventListener('start-tournament-match', (e: CustomEvent) => {
+        const modal = container.querySelector('generic-modal');
+        if (modal) modal.remove();
+
+        // ...set players names, it comes from event detail
+        PLAYER_1.name = e.detail.player1;
+        PLAYER_2.name = e.detail.player2;
+        // ...re-render top bar with player info
+        container.querySelector('top-bar').outerHTML = renderTopBar();
+        // ...finally, start the game
+        // this is an exception, as the game start is usually triggered by the gameOrchestrator
+        orchestrator.startGame();
+      });
+    }
+  });
+
   window.addEventListener('openTournamentConfig', () => {
     container.insertAdjacentHTML('beforeend', `
       <generic-modal dismissible="false" appear-delay="500">
@@ -68,42 +107,7 @@ export function renderGame(containerId: string) {
     function showTournamentConfig() {
       content.innerHTML = '';
       const el = document.createElement('create-tournament');
-      el.addEventListener('tournament-created', (e: CustomEvent) => {
-        showSpinner();
-        setTimeout(() => showTournamentView(e.detail.matches), 1200);
-      });
       content.appendChild(el);
-    }
-
-    function showSpinner() {
-      content.innerHTML = `
-        <div class="w-12 h-12 border-8 border-[var(--loading)] border-t-[var(--accent-tertiary)] rounded-full animate-spin"></div>
-      `;
-    }
-
-    function showTournamentView(matches: Array<{ player1: string, player2: string }>) {
-      content.innerHTML = '';
-      const view = document.createElement('view-tournament');
-      (view as any).matchesData = matches;
-      content.appendChild(view);
-
-      // listen for the start-tournament-match event
-      // this means all config FE-BE was done successfully...
-      view.addEventListener('start-tournament-match', (e: CustomEvent) => {
-        // ...remove the modal
-        const modal = container.querySelector('generic-modal');
-        if (modal) modal.remove();
-
-        // ...set players names
-        PLAYER_1.name = e.detail.player1;
-        PLAYER_2.name = e.detail.player2;
-
-        // ...re-render top bar with player info
-        container.querySelector('top-bar').outerHTML = renderTopBar();
-
-        // ...finally, start the game
-        orchestrator.startGame();
-      });
     }
   });
 }
