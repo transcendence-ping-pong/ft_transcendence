@@ -97,6 +97,23 @@ export class gameOrchestrator {
     });
   }
 
+  private setupGameOverTracking() {
+    this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
+      // TODO FIX: arguments are obsolete (player and score), review
+      this.gui.showGameOver('Player 1', { LEFT: 5, RIGHT: 3 });
+      this.babylonCanvas.cleanupGame();
+
+      // TODO: detail matches should be handled via state
+      if (this.gameType === GameType.TOURNAMENT) {
+        window.dispatchEvent(new CustomEvent('tournament-created', {
+          detail: { matches: [{ player1: "tchau", player2: "ola" }] },
+          bubbles: true,
+          composed: true
+        }));
+      }
+    });
+  }
+
   public startGame() {
     // start game!!!!! countdown and then ball starts moving
     this.babylonCanvas.createGameCanvas(this.gameLevel, this.gamePlayerMode);
@@ -108,10 +125,10 @@ export class gameOrchestrator {
     });
 
     this.setupScoreTracking();
-  }
+    this.setupGameOverTracking();
 
-  private endGame() {
-
+    // restart the render loop for the new game
+    this.babylonCanvas.startRenderLoop();
   }
 
   private setupMenuFlow() {
@@ -132,6 +149,7 @@ export class gameOrchestrator {
             // if one match, the flow is simpler. User can play with a bot or with another player
             // then, the game is ready to start
             this.gui.showGameTypeButton((gameType) => {
+              this.gameType = gameType as GameType;
               if (gameType === GameType.ONE_MATCH) {
                 this.gui.showPlayerSelector((mode) => {
                   if (mode === PlayerMode.ONE_PLAYER) {

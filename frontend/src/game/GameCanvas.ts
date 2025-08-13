@@ -60,14 +60,14 @@ export class GameCanvas extends EventTarget {
     const initialX = VIRTUAL_WIDTH / 2;
     const initialY = VIRTUAL_HEIGHT / 2;
 
-    this.courtBounds = new GameCourtBounds(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.colors.border);
+    this.courtBounds = new GameCourtBounds(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.colors.text);
 
     const ballSize = VIRTUAL_HEIGHT * GameSize.BALL_SIZE_RATIO;
-    this.ball = new Ball(initialX, initialY, ballSize, level, this.courtBounds, this.colors.border);
+    this.ball = new Ball(initialX, initialY, ballSize, level, this.courtBounds, this.colors.text);
 
     this.paddles = [
-      new Paddle(0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.courtBounds, level, this.colors.border),
-      new Paddle(1, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.courtBounds, level, this.colors.border),
+      new Paddle(0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.courtBounds, level, this.colors.text),
+      new Paddle(1, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this.courtBounds, level, this.colors.text),
     ];
 
     this.handleKeyDown = this.onKeyDown.bind(this);
@@ -109,7 +109,7 @@ export class GameCanvas extends EventTarget {
           this.ball.resetPosition();
 
           // after updating the score, check if the game is over
-          if (this.gameManager.isGameOver) { 
+          if (this.gameManager.isGameOver) {
             const winner = this.gameManager.getWinner();
             const score = this.gameManager.score;
 
@@ -125,16 +125,16 @@ export class GameCanvas extends EventTarget {
 
     // move paddles if direction is set
     for (let i = 0; i < this.paddles.length; i++) {
-       if (this.bots[i]) {
-        if (this.gameManager.isStarted){ //To be sure the bot is update when the game start
-           this.bots[i]!.update(deltaTime);
+      if (this.bots[i]) {
+        if (this.gameManager.isStarted) { //To be sure the bot is update when the game start
+          this.bots[i]!.update(deltaTime);
         }
       } else {
-      const dir = this.paddleDirections[i];
-      if (dir === 'up') this.paddles[i].moveUp(deltaTime);
-      else if (dir === 'down') this.paddles[i].moveDown(deltaTime);
+        const dir = this.paddleDirections[i];
+        if (dir === 'up') this.paddles[i].moveUp(deltaTime);
+        else if (dir === 'down') this.paddles[i].moveDown(deltaTime);
+      }
     }
-  }
 
     // draw stuff
     const { PADDLE_WIDTH_RATIO, PADDLE_HEIGHT_RATIO } = GameSize;
@@ -232,5 +232,6 @@ export class GameCanvas extends EventTarget {
     if (this.animationId) cancelAnimationFrame(this.animationId);
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
+
   }
 }
