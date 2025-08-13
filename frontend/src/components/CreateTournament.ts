@@ -106,6 +106,7 @@ template.innerHTML = `
       border-radius: 50%;
       padding: 0.3em 0.3em;
     }
+    .tournament__tag img,
     .tournament__tag-remove span img {
       width: 1rem;
       height: 1rem;
@@ -256,7 +257,7 @@ export class CreateTournament extends HTMLElement {
         'beforeend',
         `
       <span class="tournament__tag" data-idx="${idx}">
-        ${player}
+        ${actionIcons.user} ${player}
         <button class="tournament__tag-remove" title="Remove" data-idx="${idx}">
           <span>${actionIcons.close}</span>
         </button>

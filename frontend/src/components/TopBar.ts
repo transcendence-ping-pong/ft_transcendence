@@ -140,7 +140,7 @@ template.innerHTML = `
       display: inline-flex;
       align-items: center;
       font-size: var(--main-font-size);
-      color: #fff;
+      color: var(--text);
     }
 
     .top-bar__left ::slotted([slot="player1-avatar"]) {
@@ -151,7 +151,6 @@ template.innerHTML = `
     }
 
     .top-bar__right ::slotted([slot="player2-username"]) {
-      color: #fff;
       margin-right: 0.5rem;
     }
     .top-bar__right ::slotted([slot="player2-avatar"]) {
@@ -160,8 +159,8 @@ template.innerHTML = `
 
     ::slotted([slot="player1-avatar"]),
     ::slotted([slot="player2-avatar"]) {
-      width: var(--avatar-size, 2.5rem);
-      height: var(--avatar-size, 2.5rem);
+      width: 1.5rem;
+      height: 1.5rem;
       border-radius: 50%;
       object-fit: cover;
       display: inline-block;
@@ -258,3 +257,14 @@ export class TopBar extends HTMLElement {
 }
 
 customElements.define('top-bar', TopBar);
+
+// .top-bar__player1,
+//     .top-bar__player2 {
+//       display: flex;
+//       align-items: center;
+//       gap: 0.5rem;
+//       background: var(--body);
+//       padding: 0.5rem;
+//       border: 2px solid var(--border);
+//       min-width: var(--button-min-width);
+//     }
