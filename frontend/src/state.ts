@@ -23,6 +23,7 @@ const initialState = savedState ? JSON.parse(savedState) : {
   soundEnabled: true,
   scaleFactor: {},
   userData: {} as UserData, // user data will be set after login
+  tournamentData: {} as TournamentData,
   // TODO: add other state properties that we need to persist
 };
 
@@ -34,6 +35,13 @@ export const state = new Proxy(initialState, {
     return true;
   }
 });
+
+export interface TournamentData {
+  players: string[];
+  matches: Match[];
+  currentMatchIndex: number;
+  tournamentId: number | null;
+}
 
 export interface Match {
   matchId: number;
