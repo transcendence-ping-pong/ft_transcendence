@@ -5,183 +5,208 @@ import '@/components/CustomTag.js';
 const template = document.createElement('template');
 template.innerHTML = `
   <style>
-    .profile-form__section {
-      margin-bottom: 2rem;
-    }
-    .profile-form__section-title {
-      font-size: 1.2rem;
-      font-weight: bold;
-      margin-bottom: 0.5rem;
-    }
-
-    .profile-form__checkbox-label {
+    .matches-section {
+      height: 100%;
       display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      cursor: pointer;
-      font-size: 1rem;
-      color: var(--text);
+      flex-direction: column;
     }
-    .profile-form__checkbox {
-      width: 1.5rem;
-      height: 1.5rem;
-      background-color: var(--body);
-      border: 2px solid var(--border);
-      border-radius: 0;
-      appearance: none;
-      -webkit-appearance: none;
-      outline: none;
-      cursor: pointer;
+    .matches-title {
+      font-size: var(--title-font-size);
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.01em;
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      padding: 0.7em 0.5em;
+      background: var(--body, #fff);
+      border-bottom: 1.5px solid var(--border, #e0e0e0);
+      box-shadow: 0 2px 8px -6px rgba(0,0,0,0.12);
+    }
+    .timeline-outer {
+      flex: 1 1 auto;
+      height: 100%;
+      overflow-y: auto;
+      padding: 1.5rem 0;
       position: relative;
-      transition: box-shadow 0.2s;
     }
-    .profile-form__checkbox:checked {
-      background-color: var(--accent);
-      border-color: var(--accent);
+    .timeline {
+      position: relative;
+      margin: 0 auto;
+      width: 100%;
+      max-width: 540px;
+      padding-left: 32px;
+      padding-right: 32px;
     }
-    .profile-form__checkbox:checked::before,
-    .profile-form__checkbox:checked::after {
-      content: '';
+    .timeline::before {
+      content: "";
       position: absolute;
       left: 50%;
-      top: 50%;
-      width: 0.8rem;
-      height: 2px;
-      background: var(--text);
-      border-radius: 1px;
-      transform: translate(-50%, -50%) rotate(45deg);
-      display: block;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--border, #e0e0e0);
+      transform: translateX(-50%);
+      z-index: 0;
     }
-    .profile-form__checkbox:checked::after {
-      transform: translate(-50%, -50%) rotate(-45deg);
+    .timeline-event {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 2.5rem;
+      position: relative;
+      z-index: 1;
     }
-    .profile-form__checkbox:focus {
-      box-shadow: 0 0 0 2px var(--accent-secondary);
+    .timeline-event:last-child {
+      margin-bottom: 0;
     }
-
-    .profile-form__table {
+    .timeline-dot {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 18px;
+      height: 18px;
+      background: var(--accent, #f4f4f4);
+      border: 3px solid var(--border, #e0e0e0);
+      border-radius: 50%;
+      z-index: 2;
+      top: 0.2em;
+      box-shadow: 0 2px 8px -6px rgba(0,0,0,0.10);
+    }
+    .timeline-content {
+      display: flex;
       width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
+      justify-content: space-between;
+      gap: 2.5rem;
     }
-    .profile-form__table th,
-    .profile-form__table td {
-      border: 1px solid var(--border);
-      padding: 0.5em;
-      text-align: left;
-    }
-    .profile-form__table th {
-      background: var(--accent);
-    }
-    .actions {
+    .timeline-side {
+      flex: 1 1 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
       text-align: right;
+      padding-right: 2.5rem;
+      min-width: 120px;
     }
-    button {
-      padding: 0.7em 2em;
-      font-size: 1rem;
+    .timeline-side .date {
+      font-size: 1.05rem;
+      font-weight: 500;
+      color: var(--text, #222);
+    }
+    .timeline-side .status {
+      font-size: 0.95rem;
       font-weight: bold;
+      margin-top: 0.2em;
+      color: var(--accent-secondary, #888);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .timeline-info {
+      flex: 1 1 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+      padding-left: 2.5rem;
+      min-width: 180px;
+    }
+    .timeline-info .score {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--text, #222);
+    }
+    .timeline-info .opponent {
+      margin-top: 0.2em;
+      font-size: 0.97rem;
+      color: var(--text, #444);
+    }
+    .timeline-info .meta {
+      margin-top: 0.2em;
+      font-size: 0.92rem;
+      color: var(--accent-secondary, #888);
+    }
+    /* Responsive */
+    @media (max-width: 700px) {
+      .timeline {
+        max-width: 100%;
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+      .timeline-side, .timeline-info {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
     }
   </style>
 
-  <h1>${t('profile.personalInfo')}</h1>
-  <form id="profileForm" autocomplete="off">
-    <div class="profile-form__section">
-      <h2 class="profile-form__section-title">${t('profile.authentication')}</h2>
-      <div class="profile-form__checkbox-label">
-        <input id="enable2fa" name="enable2fa" class="profile-form__checkbox" type="checkbox" />
-        <label>${t('profile.enable2FA')}</label>
-      </div>
+  <div class="matches-section">
+    <div class="matches-title">${t('profile.matchesHistory')}</div>
+    <div class="timeline-outer">
+      <div class="timeline" id="timeline"></div>
     </div>
-    <div class="profile-form__section">
-      <h2 class="profile-form__section-title">${t('profile.matchesHistory')}</h2>
-      <table class="profile-form__table">
-        <thead>
-          <tr>
-            <th>${t('profile.day')}</th>
-            <th>${t('profile.time')}</th>
-            <th>${t('profile.score')}</th>
-            <th>${t('profile.matchId')}</th>
-            <th>${t('profile.opponent')}</th>
-            <th>${t('profile.mode')}</th>
-            <th>${t('profile.winLoss')}</th>
-          </tr>
-        </thead>
-        <tbody id="matchesBody">
-          <!-- Matches will be rendered here -->
-        </tbody>
-      </table>
-    </div>
-    <div class="actions">
-      <button type="submit">${t('profile.save')}</button>
-    </div>
-  </form>
+  </div>
 `;
 
-export class UserProfileForm extends HTMLElement {
+export class MatchTable extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
   }
 
-  mockMatches = [
-    {
-      day: '2025-08-10',
-      time: '15:30',
-      score: '3-1',
-      matchId: 'M001',
-      opponent: 'PESTO SUPREME',
-      winLoss: 'Win',
-      mode: 'REMOTE'
-    },
-    {
-      day: '2025-08-09',
-      time: '18:00',
-      score: '2-3',
-      matchId: 'M002',
-      opponent: 'WINE PLEASE',
-      winLoss: 'Win',
-      mode: 'TOURNAMENT'
-    },
-    {
-      day: '2025-08-08',
-      time: '12:45',
-      score: '4-0',
-      matchId: 'M003',
-      opponent: 'SUPER PONG KILLER',
-      winLoss: 'LOSS',
-      mode: 'LOCAL'
-    }
-  ];
-
   connectedCallback() {
-    // fetch and render matches here
-    this.renderMatches(this.mockMatches);
+    this.renderTimeline(mockMatches);
   }
 
-  renderMatches(matches: Array<{ day: string, time: string, score: string, matchId: string, opponent: string, winLoss: string, mode: string }>) {
-    const tbody = this.shadowRoot?.getElementById('matchesBody');
-    if (!tbody) return;
-    tbody.innerHTML = matches.map(m => `
-      <tr>
-        <td>${m.day}</td>
-        <td>${m.time}</td>
-        <td>${m.score}</td>
-        <td>${m.matchId}</td>
-        <td><custom-tag text="${m.opponent}" size="s" button></custom-tag></td>
-        <td>${m.mode}</td>
-        <td><custom-tag text="${m.winLoss.toUpperCase()}" size="s" color="${m.winLoss}"></custom-tag></td>
-      </tr>
+  renderTimeline(matches: Array<{ day: string, time: string, score: string, matchId: string, opponent: string, winLoss: string, mode: string }>) {
+    const timeline = this.shadowRoot?.getElementById('timeline');
+    if (!timeline) return;
+    timeline.innerHTML = matches.map(m => `
+      <div class="timeline-event">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <div class="timeline-side">
+            <span class="date">${m.day} ${m.time}</span>
+            <span class="status">${m.winLoss.toUpperCase()}</span>
+          </div>
+          <div class="timeline-info">
+            <span class="score">${m.score}</span>
+            <span class="opponent"><custom-tag text="${m.opponent}" size="s" button></custom-tag></span>
+            <span class="meta">${m.mode} &middot; #${m.matchId}</span>
+          </div>
+        </div>
+      </div>
     `).join('');
   }
 };
 
-customElements.define('user-profile-form', UserProfileForm);
+customElements.define('match-table', MatchTable);
 
-/*
- <div class="section">
-      <div class="section-title">${t('profile.personalInfo')}</div>
-      <input id="username" name="username" type="text" required autocomplete="username" placeholder="${t('auth.username')}" />
-      <input id="email" name="email" type="email" required autocomplete="email" placeholder="${t('auth.email')}" />
-      <input id="password" name="password" type="password" minlength="7" required autocomplete="current-password" placeholder="${t('auth.password')}" />
-    </div>
-*/
+const mockMatches = [
+  {
+    day: '2025-08-10',
+    time: '15:30',
+    score: '3-1',
+    matchId: 'M001',
+    opponent: 'PESTO SUPREME',
+    winLoss: 'Win',
+    mode: 'REMOTE'
+  },
+  {
+    day: '2025-08-09',
+    time: '18:00',
+    score: '2-3',
+    matchId: 'M002',
+    opponent: 'WINE PLEASE',
+    winLoss: 'Win',
+    mode: 'TOURNAMENT'
+  },
+  {
+    day: '2025-08-08',
+    time: '12:45',
+    score: '4-0',
+    matchId: 'M003',
+    opponent: 'SUPER PONG KILLER',
+    winLoss: 'LOSS',
+    mode: 'LOCAL'
+  },
+  // ...more mock data...
+];

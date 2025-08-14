@@ -249,6 +249,7 @@
     },
     "profile": {
       "personalInfo": "Informações Pessoais",
+      "authentication": "Autenticação",
       "visitorNo": "Visitante Nº",
       "enable2FA": "Ativar autenticação de dois fatores (2FA)",
       "changePassword": "Alterar senha",
