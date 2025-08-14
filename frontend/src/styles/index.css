@@ -22,6 +22,14 @@
   /* 16px horizontal padding */
   --component-h-padding: 0 1rem;
   --sidebar-width: 30vw;
+
+  --button-circle-size: 2.5rem;
+  --button-default-height: 2.5rem;
+
+  --modal-height: 50vh;
+  --modal-width: 40vw;
+  --button-height: 2.5rem;
+  --button-min-width: 150px;
 }
 
 @media (max-width: 1400px) {
@@ -46,6 +54,11 @@
     /* 12px horizontal padding */
     --component-h-padding: 0 0.75rem;
     --sidebar-width: 30vw;
+
+    --modal-height: 50vh;
+    --modal-width: 40vw;
+    --button-height: 2rem;
+    --button-min-width: 120px;
   }
 }
 
@@ -71,6 +84,12 @@
     /* 20px horizontal padding */
     --component-h-padding: 0 1.25rem;
     --sidebar-width: 30vw;
+
+    --modal-height: 50vh;
+    --modal-width: 35vw;
+
+    --button-height: 3rem;
+    --button-min-width: 180px;
   }
 }
 
@@ -167,6 +186,7 @@
   --google: #ffffff;
   --google-hover: #EEEEEE;
   --shadow: 0 8px 32px #0004;
+  --shadow-soft: 0 4px 16px #0004;
   --game-gradient-start: #f8c434;
   --game-gradient-end: #b8a77a;
   --game-transition-bg: rgb(255, 255, 255);
@@ -193,7 +213,8 @@
   --hover: #2a1484;
   --google: #000000;
   --google-hover: #1e1e1e;
-  --shadow: 0 8px 32px #525151;
+  --shadow: 0 8px 32px #8982ac;
+  --shadow-soft: 0 4px 8px #8982ac;
   --game-gradient-start: #1f0f5c;
   --game-gradient-end: #1a2233;
   --game-transition-bg: rgb(0, 0, 0);

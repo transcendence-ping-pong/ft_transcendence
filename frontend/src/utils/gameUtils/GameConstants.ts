@@ -12,14 +12,24 @@ export enum PlayerMode {
   TWO_PLAYER = 'TWO PLAYERS'
 }
 
+export enum GameMode {
+  LOCAL = 'LOCAL',
+  REMOTE = 'REMOTE'
+}
+
+export enum GameType {
+  ONE_MATCH = 'ONE MATCH',
+  TOURNAMENT = 'TOURNAMENT',
+}
+
 export enum GameScore {
   WIN = 1,
   LOSE = -1,
   DRAW = 0,
   POINT = 1,
   NO_POINT = 0,
-  SCORE_MAX = 11,
-  // SCORE_MAX = 1, // testing purposes
+  // SCORE_MAX = 11,
+  SCORE_MAX = 1, // testing purposes
   LEFT = 'LEFT',   // Player is on the left side
   RIGHT = 'RIGHT',  // Player is on the right side
 }
@@ -142,8 +152,8 @@ export function getGUIConstants(): GUIConstants {
     BUTTON_WIDTH: VIRTUAL_WIDTH / 5,
     BUTTON_GAP: VIRTUAL_HEIGHT / 40,
     BUTTON_FONT_SIZE: VIRTUAL_HEIGHT / 25,
-    BUTTON_FONT_WEIGHT: 'normal',
-    BUTTON_FONT_COLOR: "#000000",
+    BUTTON_FONT_WEIGHT: 'bold',
+    BUTTON_FONT_COLOR: colors.text,
     BUTTON_BORDER_COLOR: colors.border,
     BUTTON_CORNER_RADIUS: 0,
     BUTTON_THICKNESS: 4,
@@ -155,8 +165,8 @@ export function getGUIConstants(): GUIConstants {
     COUNTDOWN_DURATION: 3,
     COUNTDOWN_FONT_SIZE: VIRTUAL_HEIGHT / 8,
     COUNTDOWN_FONT_WEIGHT: 'bold',
-    COUNTDOWN_FONT_COLOR: colors.border, // semi-transparent white
-    SCORE_FONT_COLOR: "rgba(0,0,0,0.25)", // semi-transparent black
+    COUNTDOWN_FONT_COLOR: "rgba(255, 255, 255, 0.8)", // semi-transparent white
+    SCORE_FONT_COLOR: "rgba(0,0,0,0.35)", // semi-transparent black
     SCORE_FONT_SIZE: VIRTUAL_HEIGHT / 6,
     SCORE_FONT_WEIGHT: 'bold',
     SCORE_MARGIN_TOP: "10%",

@@ -58,7 +58,7 @@ template.innerHTML = `
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      background: var(--accent, #f0e9d2);
+      background: var(--accent);
       border-radius: 50%;
       width: 2.25rem;
       height: 2.25rem;
@@ -116,7 +116,6 @@ template.innerHTML = `
       align-items: center;
       justify-content: center;
       border-radius: 50%;
-      
     }
 
     .notif-meta__dismiss span {

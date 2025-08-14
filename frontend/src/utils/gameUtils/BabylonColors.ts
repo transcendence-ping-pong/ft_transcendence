@@ -5,6 +5,7 @@ export type ThemeColors = {
   warning: string;
   hover: string;
   shadow: string;
+  text: string;
   gameGradientStart: string;
   gameGradientEnd: string;
 };
@@ -32,6 +33,7 @@ export function getThemeColors(themeName = 'primary') {
     '--warning',
     '--hover',
     '--shadow',
+    '--text',
     '--game-gradient-start',
     '--game-gradient-end',
   ];

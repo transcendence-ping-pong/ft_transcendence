@@ -62,7 +62,18 @@ template.innerHTML = `
       margin-left: 0.1rem;
     }
     .top-bar__center {
-      flex: 1;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      width: auto;
+      height: auto;
+      pointer-events: none;
     }
 
     .top-bar__avatar {
@@ -116,21 +127,64 @@ template.innerHTML = `
       display: none !important;
     }
 
-    ::slotted([slot="logo"]) {
+    ::slotted([slot="logo"]),
+    ::slotted([slot="logo-center"]) {
       width: var(--logo-size);
       height: var(--logo-size);
       object-fit: contain;
       display: block;
+    }
+
+    ::slotted([slot="player1-avatar"]),
+    ::slotted([slot="player1-username"]) {
+      display: inline-flex;
+      align-items: center;
+      font-size: var(--main-font-size);
+      color: var(--text);
+    }
+
+    .top-bar__left ::slotted([slot="player1-avatar"]) {
+      margin-right: 0.5rem;
+    }
+    .top-bar__left ::slotted([slot="player1-username"]) {
+      margin-left: 0;
+    }
+
+    .top-bar__right ::slotted([slot="player2-username"]) {
+      margin-right: 0.5rem;
+    }
+    .top-bar__right ::slotted([slot="player2-avatar"]) {
+      margin-left: 0;
+    }
+
+    ::slotted([slot="player1-avatar"]),
+    ::slotted([slot="player2-avatar"]) {
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      object-fit: cover;
+      display: inline-block;
+    }
+
+    :host([mode="game"]) {
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
     }
   </style>
 
   <div class="top-bar__inner">
     <div class="top-bar__left">
       <slot name="logo"></slot>
-      <span class="top-bar__title"><slot name="title">FOUR PING TWO PONG</slot></span>
+      <span class="top-bar__title"><slot name="title"></slot></span>
+
+      <slot name="player1-avatar"></slot>
+      <slot name="player1-username"></slot>
     </div>
 
-    <div class="top-bar__center"></div>
+    <div class="top-bar__center">
+      <slot name="logo-center"></slot>
+      <span class="top-bar__title"><slot name="title-center"></slot></span>
+    </div>
 
     <div class="top-bar__right">
       <button class="top-bar__avatar" id="avatar" type="button">
@@ -138,11 +192,13 @@ template.innerHTML = `
       </button>
       <slot name="toggle"></slot>
       <slot name="language"></slot>
-
       <button id="logout" class="top-bar__logout">
         <span class="top-bar__logout-icon">${actionIcons.logout}</span>
         ${t('nav.logout')}
       </button>
+
+      <slot name="player2-username"></slot>
+      <slot name="player2-avatar"></slot>
     </div>
   </div>
 `;
@@ -150,6 +206,10 @@ template.innerHTML = `
 export class TopBar extends HTMLElement {
   logoutButton: HTMLButtonElement | null = null;
   profileButton: HTMLButtonElement | null = null;
+
+  static get observedAttributes() {
+    return ['mode'];
+  }
 
   constructor() {
     super();
@@ -165,17 +225,14 @@ export class TopBar extends HTMLElement {
     this.profileButton.addEventListener('click', (e) => this.handleProfile(e));
 
     // check logout visibility on mount
-    this.showLogoutButton();
+    this.updateButtons();
   }
 
-  private showLogoutButton() {
-    if (state.userData?.accessToken) {
-      this.logoutButton?.classList.remove('hidden');
-      this.profileButton?.classList.remove('hidden');
-    } else {
-      this.logoutButton?.classList.add('hidden');
-      this.profileButton?.classList.add('hidden');
-    }
+  private updateButtons() {
+    const isGame = this.getAttribute('mode') === 'game';
+    const loggedIn = !!state.userData?.accessToken;
+    this.logoutButton?.classList.toggle('hidden', isGame || !loggedIn);
+    this.profileButton?.classList.toggle('hidden', isGame || !loggedIn);
   }
 
   private async handleLogout(e: Event) {
@@ -188,7 +245,7 @@ export class TopBar extends HTMLElement {
 
     state.userData = null;
     renderLoading('app');
-    this.showLogoutButton();
+    this.updateButtons();
     setTimeout(() => navigate('login'), 1200);
   }
 
@@ -200,3 +257,14 @@ export class TopBar extends HTMLElement {
 }
 
 customElements.define('top-bar', TopBar);
+
+// .top-bar__player1,
+//     .top-bar__player2 {
+//       display: flex;
+//       align-items: center;
+//       gap: 0.5rem;
+//       background: var(--body);
+//       padding: 0.5rem;
+//       border: 2px solid var(--border);
+//       min-width: var(--button-min-width);
+//     }

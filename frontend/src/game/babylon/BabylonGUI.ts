@@ -1,27 +1,28 @@
 import { t } from '@/locales/Translations.js';
-import { GameLevel, GameScore, PlayerMode, getGUIConstants } from '@/utils/gameUtils/GameConstants.js';
+import { GameLevel, GameScore, GameMode, GameType, PlayerMode, getGUIConstants } from '@/utils/gameUtils/GameConstants.js';
 import { AdvancedDynamicTexture, Button, Control, TextBlock, Rectangle } from "@babylonjs/gui";
 import { state } from '@/state';
-
-// TODO: centralize constants for button styles, colors, etc.
 
 // read more here: https://doc.babylonjs.com/features/featuresDeepDive/gui/gui3D/
 export class BabylonGUI {
   private advancedTexture: AdvancedDynamicTexture;
   private startButton: Button | null = null;
+  private modeSelectorButtons: Button[] = [];
+  private gameTypeButtons: Button[] = [];
   private difficultyButtons: Button[] = [];
   private playerSelectorButtons: Button[] = [];
   private tvOverlay: Rectangle | null = null;
   private countdownText: TextBlock | null = null;
   private scoreBoard: TextBlock[] = [];
   private gameOverText: TextBlock | null = null;
+  private fadeOverlay: Rectangle | null = null;
   private GUIConstants = getGUIConstants();
 
   constructor(scene: any) {
     this.advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
   }
 
-  setButtonStyle(button: Button, idx: number, arrayLength: number) {
+  private setButtonStyle(button: Button, idx: number, arrayLength: number) {
     button.width = this.GUIConstants.BUTTON_WIDTH * state.scaleFactor.scaleX + 'px';
     button.height = this.GUIConstants.BUTTON_HEIGHT * state.scaleFactor.scaleY + 'px';
     button.fontSize = this.GUIConstants.BUTTON_FONT_SIZE * state.scaleFactor.scaleY + 'px';
@@ -41,30 +42,65 @@ export class BabylonGUI {
     // set top position based on number of buttons, i.e. how they are distributed vertically
     const offset = (((+this.GUIConstants.BUTTON_HEIGHT + this.GUIConstants.BUTTON_GAP) * state.scaleFactor.scaleY) * (idx - (arrayLength - 1) / 2));
     button.top = offset;
+    button.hoverCursor = "pointer";
   }
 
-  hideButtons(arrayButtons: Button[]) {
+  private hideButtons(arrayButtons: Button[]) {
     arrayButtons.forEach(btn => this.advancedTexture.removeControl(btn));
     arrayButtons = [];
   }
 
-  showStartButton(onStart: () => void) {
-    this.clearGUI();
-
+  public showStartButton(onStart: () => void) {
     this.startButton = Button.CreateSimpleButton("startButton", t("game.start"));
     this.setButtonStyle(this.startButton, 0, 1); // only one button, so idx = 0, arrayLength = 1
 
+    // on button click event, trigger the onStart callback... then hide buttons
     this.startButton.onPointerUpObservable.add(() => {
       onStart();
       this.hideButtons([this.startButton]);
     });
-
     this.advancedTexture.addControl(this.startButton);
   }
 
-  showPlayerSelector(onPlayerSelected: (playerCount: string) => void) {
-    this.clearGUI();
+  public showGameModeButton(onModeSelected: (mode: GameMode) => void) {
+    const modeKeys = [GameMode.LOCAL, GameMode.REMOTE];
+    this.modeSelectorButtons = [];
 
+    modeKeys.forEach((mode, idx) => {
+      const label = t(`game.mode${idx + 1}`);
+      const button = Button.CreateSimpleButton(mode + "Button", label);
+      this.setButtonStyle(button, idx, modeKeys.length);
+
+      button.onPointerUpObservable.add(() => {
+        onModeSelected(mode);
+        this.hideButtons(this.modeSelectorButtons);
+      });
+
+      this.advancedTexture.addControl(button);
+      this.modeSelectorButtons.push(button);
+    });
+  }
+
+  public showGameTypeButton(onGameTypeSelected: (gameType: GameType) => void) {
+    const gameTypeKeys = [GameType.ONE_MATCH, GameType.TOURNAMENT];
+    this.gameTypeButtons = [];
+
+    gameTypeKeys.forEach((type: GameType, idx: number) => {
+      const label = t(`game.game${idx + 1}`);
+      const button = Button.CreateSimpleButton(type + "Button", label);
+      this.setButtonStyle(button, idx, gameTypeKeys.length);
+
+      button.onPointerUpObservable.add(() => {
+        onGameTypeSelected(type);
+        this.hideButtons(this.gameTypeButtons);
+      });
+
+      this.advancedTexture.addControl(button);
+      this.gameTypeButtons.push(button);
+    });
+  }
+
+  public showPlayerSelector(onPlayerSelected: (playerCount: string) => void) {
     const playersKeys = [PlayerMode.ONE_PLAYER, PlayerMode.TWO_PLAYER];
     this.playerSelectorButtons = [];
 
@@ -83,9 +119,7 @@ export class BabylonGUI {
     });
   }
 
-  showDifficultySelector(onDifficultySelected: (difficulty: string) => void) {
-    this.clearGUI();
-
+  public showDifficultySelector(onDifficultySelected: (difficulty: string) => void) {
     const levelKeys = [GameLevel.EASY, GameLevel.MEDIUM, GameLevel.HARD];
     this.difficultyButtons = [];
 
@@ -104,31 +138,29 @@ export class BabylonGUI {
     });
   }
 
-  showTVEffectOverlay(advancedTexture: AdvancedDynamicTexture) {
-    if (!this.tvOverlay) {
-      this.tvOverlay = new Rectangle();
-      this.tvOverlay.width = 1;
-      this.tvOverlay.height = 1;
-      this.tvOverlay.thickness = 0;
-      this.tvOverlay.background = this.GUIConstants.SCENE_BACKGROUND_COLOR;
-      this.tvOverlay.alpha = 0.3;
-      this.tvOverlay.zIndex = 0;
-      advancedTexture.addControl(this.tvOverlay);
+  private showTVEffectOverlay(advancedTexture: AdvancedDynamicTexture) {
+    // remove previous overlay if exists
+    this.hideTVEffectOverlay();
 
-      // add scanlines effect when starting/finishing the game
-      for (let i = 0; i < 40; i++) {
-        const line = new Rectangle();
-        line.width = 1;
-        line.height = "2%";
-        line.top = `${-50 + i * 5}%`;
-        line.left = "0%";
-        line.thickness = 0;
-        line.background = "rgba(255,255,255,0.15)";
-        line.alpha = 0.5;
-        this.tvOverlay.addControl(line);
-      }
-    } else {
-      this.tvOverlay.isVisible = true;
+    this.tvOverlay = new Rectangle();
+    this.tvOverlay.width = 1;
+    this.tvOverlay.height = 1;
+    this.tvOverlay.thickness = 0;
+    this.tvOverlay.background = this.GUIConstants.SCENE_BACKGROUND_COLOR;
+    this.tvOverlay.alpha = 0.3;
+    this.tvOverlay.zIndex = 0;
+    advancedTexture.addControl(this.tvOverlay);
+
+    for (let i = 0; i < 40; i++) {
+      const line = new Rectangle();
+      line.width = 1;
+      line.height = "2%";
+      line.top = `${-50 + i * 5}%`;
+      line.left = "0%";
+      line.thickness = 0;
+      line.background = "rgba(255,255,255,0.15)";
+      line.alpha = 0.5;
+      this.tvOverlay.addControl(line);
     }
 
     // flickering effect
@@ -141,16 +173,16 @@ export class BabylonGUI {
     (this.tvOverlay as any)._flickerInterval = flickerInterval;
   }
 
-  hideTVEffectOverlay() {
+  private hideTVEffectOverlay() {
     if (this.tvOverlay) {
       this.tvOverlay.isVisible = false;
       clearInterval((this.tvOverlay as any)._flickerInterval);
     }
   }
 
-  showCountdown(seconds: number, onDone: () => void) {
+  public showCountdown(seconds: number, onDone: () => void) {
     this.clearGUI();
-    this.fadeBackground(0, 0.4);
+    this.fadeBackground(0.5);
     this.showTVEffectOverlay(this.advancedTexture);
 
     this.countdownText = new TextBlock();
@@ -192,16 +224,23 @@ export class BabylonGUI {
     }, 1000);
   }
 
-  hideCountdown() {
+  private hideCountdown() {
     if (this.countdownText) {
       this.advancedTexture.removeControl(this.countdownText);
       this.countdownText = null;
       this.hideTVEffectOverlay();
-      this.fadeBackground(0.4, 0);
+
+      if (this.fadeOverlay) {
+        this.advancedTexture.removeControl(this.fadeOverlay);
+        this.fadeOverlay = null;
+      }
     }
   }
 
-  fadeBackground(startAlpha: number, endAlpha: number, duration = 500) {
+  private fadeBackground(startAlpha: number, duration = 500) {
+    // remove previous overlay if exists
+    this.clearOverlay();
+
     const overlay = new Rectangle();
     overlay.width = 1;
     overlay.height = 1;
@@ -210,6 +249,7 @@ export class BabylonGUI {
     overlay.alpha = startAlpha;
     overlay.zIndex = 0;
     this.advancedTexture.addControl(overlay);
+    this.fadeOverlay = overlay;
 
     const steps = 20;
     const stepTime = duration / steps;
@@ -226,7 +266,7 @@ export class BabylonGUI {
     fade();
   }
 
-  showScoreBoard(score: { [GameScore.LEFT]: number, [GameScore.RIGHT]: number }, onDone?: () => void) {
+  public showScoreBoard(score: { [GameScore.LEFT]: number, [GameScore.RIGHT]: number }, onDone?: () => void) {
     const positions = {
       [GameScore.LEFT]: this.GUIConstants.SCORE_MARGIN_LEFT,
       [GameScore.RIGHT]: this.GUIConstants.SCORE_MARGIN_RIGHT,
@@ -247,14 +287,13 @@ export class BabylonGUI {
     });
   }
 
-  showGameOver(winnerName: string, score: { LEFT: number; RIGHT: number }) {
+  public showGameOver(winnerName: string, score: { LEFT: number; RIGHT: number }) {
     this.clearGUI();
-    this.fadeBackground(0, 0.8);
-
-    const resultText = `🏆 ${winnerName} won!\nFinal Score: ${score.LEFT} x ${score.RIGHT}`;
+    this.fadeBackground(0.5);
+    this.showTVEffectOverlay(this.advancedTexture);
 
     this.gameOverText = new TextBlock();
-    this.gameOverText.text = resultText;
+    this.gameOverText.text = "GAME OVER";
     this.gameOverText.color = this.GUIConstants.COUNTDOWN_FONT_COLOR;
     this.gameOverText.fontSize = this.GUIConstants.COUNTDOWN_FONT_SIZE * state.scaleFactor.scaleY + 'px';
     this.gameOverText.fontWeight = this.GUIConstants.COUNTDOWN_FONT_WEIGHT;
@@ -264,7 +303,15 @@ export class BabylonGUI {
     this.advancedTexture.addControl(this.gameOverText);
   }
 
-  clearGUI() {
+  private clearOverlay() {
+    if (this.fadeOverlay) {
+      this.advancedTexture.removeControl(this.fadeOverlay);
+      this.fadeOverlay = null;
+    }
+    this.hideTVEffectOverlay();
+  }
+
+  public clearGUI() {
     if (this.advancedTexture && this.advancedTexture.rootContainer && this.advancedTexture.rootContainer.children) {
       // TODO STUDY: copy the array because it will change as we remove controls
       const controls = this.advancedTexture.rootContainer.children.slice();
@@ -278,6 +325,8 @@ export class BabylonGUI {
     this.scoreBoard = [];
     this.playerSelectorButtons = [];
     this.gameOverText = null;
+
+    this.clearOverlay();
   }
 
   hideAllGUI() {

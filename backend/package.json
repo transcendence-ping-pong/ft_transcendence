@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "./src/index.js",
   "scripts": {
-    "dev": "node src/index.js"
+    "dev": "node app.js"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.0",
