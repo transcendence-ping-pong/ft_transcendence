@@ -12,7 +12,7 @@ export function renderProfile(containerId: string, params: Record<string, string
   if (container) {
     container.innerHTML = `
     <top-bar>
-        <img slot="logo" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=octopus" alt="Logo" />
+        <img slot="logo" src="/public/logo.png" alt="Logo" />
         <span slot="title">FOUR PING TWO PONG</span>
         <theme-toggle slot="toggle"></theme-toggle>
         <languages-dropdown slot="language"></languages-dropdown>

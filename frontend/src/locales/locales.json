@@ -26,6 +26,7 @@
     "profile": {
       "personalInfo": "Personal Information",
       "authentication": "Authentication",
+      "visitorNo": "Visitor No.",
       "enable2FA": "Enable Two-factor Authentication (2FA)",
       "changePassword": "Change Password",
       "currentPassword": "Current Password",
@@ -137,6 +138,7 @@
     "profile": {
       "personalInfo": "Informations personnelles",
       "authentication": "Authentification",
+      "visitorNo": "Visiteur N°",
       "enable2FA": "Activer l’authentification à deux facteurs (2FA)",
       "changePassword": "Changer le mot de passe",
       "currentPassword": "Mot de passe actuel",
@@ -247,7 +249,7 @@
     },
     "profile": {
       "personalInfo": "Informações Pessoais",
-      "authentication": "Autenticação",
+      "visitorNo": "Visitante Nº",
       "enable2FA": "Ativar autenticação de dois fatores (2FA)",
       "changePassword": "Alterar senha",
       "currentPassword": "Senha atual",
@@ -359,6 +361,7 @@
     "profile": {
       "personalInfo": "個人情報",
       "authentication": "認証",
+      "visitorNo": "ビジター番号",
       "enable2FA": "二要素認証 (2FA) を有効にする",
       "changePassword": "パスワードを変更",
       "currentPassword": "現在のパスワード",

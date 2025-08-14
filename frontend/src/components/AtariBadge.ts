@@ -74,11 +74,17 @@ template.innerHTML = `
       margin-bottom: 0.2em;
       text-transform: uppercase;
     }
-    .badge-hr {
+    .badge__container--row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.5rem;
       width: 80%;
+    }
+    .badge-hr {
+      flex: 1 1 auto;
       border: none;
       border-top: 2.5px solid var(--text);
-      margin: 0.2em 0 0.7em 0;
     }
     .username-label {
       font-size: 0.95rem;
@@ -86,13 +92,6 @@ template.innerHTML = `
       opacity: 0.7;
       margin-bottom: 1.2em;
       letter-spacing: 0.08em;
-    }
-    .visitor-row {
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      width: 100%;
-      margin-bottom: 1.2em;
     }
     .visitor-info {
       display: flex;
@@ -108,31 +107,25 @@ template.innerHTML = `
     }
     .visitor-label {
       font-size: 0.8rem;
+      margin-right: 0.5em;
       color: var(--text);
       opacity: 0.7;
       letter-spacing: 0.08em;
     }
-    .visitor-line {
-      flex: 1;
-      border-bottom: 2px solid var(--text);
-      margin-bottom: 0.7em;
-    }
     .logo-row {
-      margin-top: 1.5em;
       width: 100%;
       display: flex;
       justify-content: center;
+      margin-top: 1.5rem;
     }
     .logo-box {
-      width: 80px;
-      height: 32px;
-      background: #fff;
-      border-radius: 6px;
+      width: 64px;
+      height: 64px;
+      background: var(--avatar-bg);
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: bold;
-      color: #111;
     }
   </style>
 
@@ -145,17 +138,18 @@ template.innerHTML = `
     <div class="profile-card atari-badge">
       <img class="avatar" />
       <h2 class="badge-username"></h2>
-      <hr class="badge-hr" />
-      <div class="username-label">${t("auth.username")}</div>
-      <div class="visitor-row">
-        <div class="visitor-info">
-          <span class="visitor-number">#042</span>
-          <span class="visitor-label">visitor no.</span>
-        </div>
-        <div class="visitor-line"></div>
+      <div class="badge__container--row">
+        <hr class="badge-hr" />
       </div>
+      <span class="username-label">${t("auth.username")}</span>
+      <span class="visitor-number">#042</span>
+      <div class="badge__container--row">
+        <span class="visitor-label">${t("profile.visitorNo")}</span>
+        <hr class="badge-hr" />
+      </div>
+
       <div class="logo-row">
-        <div class="logo-box">LOGO</div>
+        <img class="logo-box" src="/public/logo.png" alt="Logo" />
       </div>
     </div>
   </div>

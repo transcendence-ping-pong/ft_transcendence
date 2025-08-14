@@ -200,6 +200,7 @@
   --google-hover: #EEEEEE;
   --shadow: 0 8px 32px #0004;
   --shadow-soft: 0 4px 16px #0004;
+  --avatar-bg: rgba(0, 0, 0, 0.35);
   --game-gradient-start: #f8c434;
   --game-gradient-end: #b8a77a;
   --game-transition-bg: rgb(255, 255, 255);
@@ -228,6 +229,7 @@
   --google-hover: #1e1e1e;
   --shadow: 0 8px 32px #8982ac;
   --shadow-soft: 0 4px 8px #8982ac;
+  --avatar-bg: rgba(255, 255, 255, 0.35);
   --game-gradient-start: #1f0f5c;
   --game-gradient-end: #1a2233;
   --game-transition-bg: rgb(0, 0, 0);
