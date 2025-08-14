@@ -148,5 +148,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // connects to websocket server
-  websocketService.connect(`http://${window.location.hostname}:4001`);
+  websocketService.connect(`ws://${window.location.hostname}:4001`);
 });

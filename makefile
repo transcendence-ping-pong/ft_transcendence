@@ -6,8 +6,8 @@ frontend-install:
 frontend-dev:
 	@cd frontend && VITE_API_BASE_URL="http://localhost:4000/api" npm run dev -- --host
 
-# frontend-build:
-# 	@cd frontend && VITE_API_BASE_URL="/api" npm run build
+frontend-build:
+	@cd frontend && VITE_API_BASE_URL="/api" npm run build
 
 frontend-preview:
 	cd frontend && npm run preview
@@ -47,4 +47,17 @@ clean:
 	docker network prune -f
 	clear
 
-.PHONY: frontend-install frontend-dev frontend-build frontend-preview backend-install backend-dev backend-test dev build a clean
+clean-db:
+	@echo "Cleaning up with database reset..."
+	docker compose down -v
+	docker system prune -af
+	docker volume prune -f
+	docker network prune -f
+	clear
+
+fresh-start: clean-db
+	@echo "Starting fresh with clean database..."
+	docker compose up -d --build
+	docker compose logs -f backend frontend
+
+.PHONY: frontend-install frontend-dev frontend-build frontend-preview backend-install backend-dev backend-test dev build a clean clean-db fresh-start
