@@ -11,7 +11,7 @@ const PLAYER_2 = { name: '', avatar: 'https://api.dicebear.com/7.x/pixel-art/svg
 // // TODO FIX: use scale-100 if want to scale down border image
 // // remove 20px margin bottom from the border image?
 export function renderGame(containerId: string) {
-  document.body.classList.add('overflow-hidden');
+  document.body.classList.add('overflow-hidden'); // prevent scrolling during the game
   const container = document.getElementById(containerId);
   if (!container) return;
 

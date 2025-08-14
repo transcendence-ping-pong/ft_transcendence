@@ -9,6 +9,8 @@ import { t } from '@/locales/Translations';
 // </div>
 const VIRTUAL_WIDTH = 500;
 const VIRTUAL_HEIGHT = 500;
+const VIRTUAL_MARGIN_Y = 220;
+const VIRTUAL_MARGIN_X = 80;
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -19,23 +21,21 @@ template.innerHTML = `
       height: 100vh;
       position: relative;
     }
+
     .badge-border-img {
       position: absolute;
       height: 100%;
       z-index: 20;
       pointer-events: none;
-      border: 2px dashed green;
-      left: 50%;
+      left: 0;
       top: 0;
-      transform: translateX(-50%);
     }
     .badge-content-outer {
-      position: absolute;
-      top: 50%;
-      left: 50%;
+      position: relative;
+      top: ${VIRTUAL_MARGIN_Y}px;
+      left: ${VIRTUAL_MARGIN_X}px;
       width: ${VIRTUAL_WIDTH}px;
       height: ${VIRTUAL_HEIGHT}px;
-      transform: translate(-50%, -50%);
       z-index: 10;
       display: flex;
       align-items: center;

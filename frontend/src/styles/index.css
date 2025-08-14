@@ -5,6 +5,7 @@
 :root {
   /* 16" screens */
   --header-font-size: 1.25rem;
+  --title-font-size: 2.25rem;
   --main-font-size: 1rem;
   --secondary-font-size: 0.85rem;
 
@@ -37,6 +38,7 @@
   /* 14" screens */
   :root {
     --header-font-size: 1rem;
+    --title-font-size: 2rem;
     --main-font-size: 0.85rem;
     --secondary-font-size: 0.7rem;
 
@@ -67,6 +69,7 @@
   /* Large desktop */
   :root {
     --header-font-size: 1.5rem;
+    --title-font-size: 3rem;
     --main-font-size: 1.1rem;
     --secondary-font-size: 0.95rem;
 

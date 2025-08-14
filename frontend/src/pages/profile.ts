@@ -1,12 +1,14 @@
 import { t } from '@/locales/Translations';
 import '@/components/TopBar.js';
-import '@/components/ThemeToggle.js'; // This registers <toggle-switch>
+import '@/components/ThemeToggle.js';
 import '@/components/UserSignin.js';
 import '@/components/LanguagesDropdown.js';
 import '@/components/UserProfileForm.js';
 import '@/components/AtariBadge.js';
+import '@/components/GenericModal.js';
 
 export function renderProfile(containerId: string, params: Record<string, string> = {}) {
+  document.body.classList.add('overflow-hidden'); // prevent scrolling during the profile view
   const container = document.getElementById(containerId);
   const username = params.username;
   if (container) {
@@ -23,9 +25,23 @@ export function renderProfile(containerId: string, params: Record<string, string
         </button>
       </top-bar>
 
-      <section class="screen-1 relative flex items-center justify-center h-screen w-screen">
-        <atari-badge username="${username}" style="--badge-x: 60%;"></atari-badge>
+      <section class="screen-1 h-screen w-screen">
+        <div class="page-container">
+          <div class="flex justify-between items-center">
+            <atari-badge username="${username}"></atari-badge>
+            <user-profile-form></user-profile-form>
+          </div>
+        </div>
       </section>
     `;
+
+    window.addEventListener('view-matches-history', (e: CustomEvent) => {
+      // show the modal with matches history
+      container.insertAdjacentHTML('beforeend', `
+        <generic-modal dismissible="true" appear-delay="500">
+          <div slot="body">HELLO</div>
+        </generic-modal>
+      `);
+    });
   }
 }
