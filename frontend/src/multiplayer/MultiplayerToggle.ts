@@ -64,7 +64,7 @@ export class MultiplayerToggle {
     this.container = container;
     
     container.innerHTML = `
-      <div class="multiplayer-toggle fixed top-4 left-4 z-50">
+      <div class="multiplayer-toggle fixed top-24 left-4 z-[10000]">
         <button id="multiplayer-btn" 
                 class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-bold transition-colors">
           🎮 Multiplayer
