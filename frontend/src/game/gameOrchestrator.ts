@@ -41,14 +41,6 @@ export class gameOrchestrator {
     this.babylonCanvas = new BabylonCanvas(containerId);
     this.gui = new BabylonGUI(this.babylonCanvas.getScene());
 
-    // const params = new URLSearchParams(window.location.search);
-    // this.isTournament = params.get('tournament') === '1';
-
-    // if (this.isTournament) {
-    //   this.setupTournamentFlow();
-    // } else {
-    //   this.setupMenuFlow();
-    // }
 	this.setupMultiplayerEvents();
     this.setupMenuFlow();
     this.babylonCanvas.startRenderLoop();
@@ -93,7 +85,7 @@ export class gameOrchestrator {
   }
 
   setupMultiplayerEvents() {
-    window.addEventListener('game-start', (e: CustomEvent) => {
+    window.addEventListener('gameStart', (e: CustomEvent) => {
       this.isMultiplayerMode = true;
       this.babylonCanvas.createMultiplayerGameCanvas();
       this.gameCanvas = this.babylonCanvas.getGameCanvas();
@@ -106,13 +98,13 @@ export class gameOrchestrator {
       }
       
       this.gui.hideAllGUI();
-      window.dispatchEvent(new CustomEvent('hide-multiplayer-ui'));
+      window.dispatchEvent(new CustomEvent('hideMultiplayerUI'));
       this.setupMultiplayerInput();
     });
 
-    window.addEventListener('game-end', (e: CustomEvent) => {
+    window.addEventListener('gameEnd', (e: CustomEvent) => {
       this.isMultiplayerMode = false;
-      window.dispatchEvent(new CustomEvent('show-multiplayer-ui'));
+      window.dispatchEvent(new CustomEvent('showMultiplayerUI'));
       this.removeMultiplayerInput();
       this.gui.showGameOver('Player 1', { LEFT: 0, RIGHT: 0 });
       setTimeout(() => {
@@ -122,14 +114,14 @@ export class gameOrchestrator {
     });
 
 	// TODO: think its somewhat buggy
-    window.addEventListener('player-disconnected', (e: CustomEvent) => {
+    window.addEventListener('playerDisconnected', (e: CustomEvent) => {
       if (this.isMultiplayerMode) {
         this.isMultiplayerMode = false;
         this.removeMultiplayerInput();
         this.gui.showGameOver('Player 1', { LEFT: 0, RIGHT: 0 });
         this.gui.clearGUI();
         this.babylonCanvas.initPlaneMaterial();
-        window.dispatchEvent(new CustomEvent('show-multiplayer-ui'));
+        window.dispatchEvent(new CustomEvent('showMultiplayerUI'));
       }
     });
   }

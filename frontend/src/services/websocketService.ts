@@ -110,22 +110,22 @@ class WebSocketService {
 
 	// todo: add proper countdown ui
     this.socket.on('countdown', (data: { countdown: number }) => {
-      window.dispatchEvent(new CustomEvent('game-countdown', { detail: data }));
+      window.dispatchEvent(new CustomEvent('gameCountdown', { detail: data }));
     });
 
     this.socket.on('gameStarted', (data: { gameState: GameState }) => {
-      window.dispatchEvent(new CustomEvent('game-started', { detail: data }));
+      window.dispatchEvent(new CustomEvent('gameStarted', { detail: data }));
     });
 
     this.socket.on('gameUpdate', (data: GameUpdateEvent) => {
-      window.dispatchEvent(new CustomEvent('game-update', { detail: data }));
+      window.dispatchEvent(new CustomEvent('gameUpdate', { detail: data }));
     });
 
     this.socket.on('gameEnd', (data: { winner: Player; gameState: GameState }) => {
       if (this.currentRoom) {
         this.currentRoom.status = 'finished';
       }
-      window.dispatchEvent(new CustomEvent('game-end', { detail: data }));
+      window.dispatchEvent(new CustomEvent('gameEnd', { detail: data }));
     });
 
     this.socket.on('playerLeft', (data: PlayerEventWithRoom) => {

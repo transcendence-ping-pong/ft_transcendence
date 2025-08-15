@@ -193,7 +193,11 @@ export class RemoteMultiplayerManager {
       if (this.state.currentRoom) {
         this.state.currentRoom.status = 'playing';
         window.dispatchEvent(new CustomEvent('gameStarting', { 
-          detail: { room: this.state.currentRoom } 
+          detail: { 
+            room: this.state.currentRoom,
+            gameState: e.detail.gameState,
+            players: e.detail.players
+          } 
         }));
       }
     });

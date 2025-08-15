@@ -114,7 +114,14 @@ export class RemoteMultiplayerUI {
     // Game starting
     window.addEventListener('gameStarting', (e: CustomEvent) => {
       console.log('UI: Game starting', e.detail);
-      // TODO: Transition to game
+      // Transition to game - dispatch event that gameOrchestrator listens to
+      window.dispatchEvent(new CustomEvent('gameStart', { 
+        detail: { 
+          room: e.detail.room,
+          gameState: e.detail.gameState,
+          players: e.detail.players
+        } 
+      }));
     });
   }
 

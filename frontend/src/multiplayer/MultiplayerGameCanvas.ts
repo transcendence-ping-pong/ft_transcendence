@@ -20,34 +20,34 @@ export class MultiplayerGameCanvas extends GameCanvas {
 
 	private setupMultiplayerEvents() {
 		// Game started event
-		window.addEventListener('game-started', (e: CustomEvent) => {
+		    window.addEventListener('gameStarted', (e: CustomEvent) => {
 			if (this.isMultiplayerMode && e.detail.gameState) {
 				this.updateFromServerState(e.detail.gameState);
 			}
 		});
 
 		// Game update event
-		window.addEventListener('game-update', (e: CustomEvent) => {
+		    window.addEventListener('gameUpdate', (e: CustomEvent) => {
 			if (this.isMultiplayerMode && e.detail.gameState) {
 				this.updateFromServerState(e.detail.gameState);
 			}
 		});
 
 		// Game end event
-		window.addEventListener('game-end', (e: CustomEvent) => {
+		    window.addEventListener('gameEnd', (e: CustomEvent) => {
 			this.isMultiplayerMode = false;
 			this.currentRoomId = null;
 			this.playerIndex = -1;
 		});
 
 		// Player disconnect event
-		window.addEventListener('player-left', (e: CustomEvent) => {
+		    window.addEventListener('playerLeft', (e: CustomEvent) => {
 			if (this.isMultiplayerMode) {
 				this.isMultiplayerMode = false;
 				this.currentRoomId = null;
 				this.playerIndex = -1;
 				
-				window.dispatchEvent(new CustomEvent('player-disconnected', { 
+				      window.dispatchEvent(new CustomEvent('playerDisconnected', { 
 					detail: { player: e.detail.player, players: e.detail.players } 
 				}));
 			}
