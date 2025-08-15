@@ -6,9 +6,10 @@ import '@/components/LanguagesDropdown.js';
 import '@/components/UserProfileForm.js';
 import '@/components/AtariBadge.js';
 import '@/components/GenericModal.js';
+import '@/components/MatchesHistory.js';
 
 export function renderProfile(containerId: string, params: Record<string, string> = {}) {
-  document.body.classList.add('overflow-hidden'); // prevent scrolling during the profile view
+  // document.body.classList.add('overflow-hidden'); // prevent scrolling
   const container = document.getElementById(containerId);
   const username = params.username;
   if (container) {
@@ -33,15 +34,18 @@ export function renderProfile(containerId: string, params: Record<string, string
           </div>
         </div>
       </section>
+
+      <section class="screen-2 h-screen w-screen">
+        <div class="page-container ">
+          <matches-history></matches-history>
+        </div>
     `;
 
-    window.addEventListener('view-matches-history', (e: CustomEvent) => {
-      // show the modal with matches history
-      container.insertAdjacentHTML('beforeend', `
-        <generic-modal dismissible="true" appear-delay="500">
-          <div slot="body">HELLO</div>
-        </generic-modal>
-      `);
+    window.addEventListener('delete-profile', (e: CustomEvent) => {
+      // TODO: delete profile
+      alert(t('profile.deleteAccountWarning'));
     });
   }
 }
+
+// TODO: idea, maybe match history could be a vertical timeline?

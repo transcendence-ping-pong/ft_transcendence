@@ -181,6 +181,14 @@ template.innerHTML = `
       cursor: not-allowed;
       opacity: 0.35;
     }
+    .delete-btn {
+      background: var(--warning);
+      color: var(--body);
+    }
+    .delete-btn:hover, .delete-btn:focus {
+      background: var(--warning-secondary);
+      color: #fff;
+    }
     .confirm-password:disabled {
       opacity: 0.5;
     }
@@ -220,7 +228,7 @@ template.innerHTML = `
     </div>
 
     <div class="profile-form__footer">
-      <button id="viewMatchesBtn" class="profile-form__footer-btn" type="button">${t('profile.matchesHistory')}</button>
+      <button id="deleteBtn" class="profile-form__footer-btn delete-btn" type="button">${t('profile.deleteAccount')}</button>
       <button id="saveBtn" class="profile-form__footer-btn" type="button">${t('profile.saveChanges')}</button>
     </div>
   </form>
@@ -235,7 +243,7 @@ export class UserProfileForm extends HTMLElement {
   private errorText: HTMLParagraphElement;
   private viewBtn: HTMLSpanElement;
   private saveBtn: HTMLButtonElement;
-  private viewMatchesBtn: HTMLButtonElement;
+  private deleteBtn: HTMLButtonElement;
   private isEditMode = false;
   private pendingAvatarFile: File | null = null;
 
@@ -263,7 +271,7 @@ export class UserProfileForm extends HTMLElement {
     this.errorText = shadowRoot.getElementById('error') as HTMLParagraphElement;
     this.viewBtn = shadowRoot.getElementById('viewBtn') as HTMLSpanElement;
     this.saveBtn = shadowRoot.getElementById('saveBtn') as HTMLButtonElement;
-    this.viewMatchesBtn = shadowRoot.getElementById('viewMatchesBtn') as HTMLButtonElement;
+    this.deleteBtn = shadowRoot.getElementById('deleteBtn') as HTMLButtonElement;
 
     this.viewBtn.addEventListener('click', () => {
       const isPasswordVisible = this.passwordInput.type === 'text';
@@ -278,9 +286,9 @@ export class UserProfileForm extends HTMLElement {
       this.toggleEditMode();
     });
 
-    this.viewMatchesBtn.addEventListener('click', (e: Event) => {
+    this.deleteBtn.addEventListener('click', (e: Event) => {
       e.preventDefault();
-      window.dispatchEvent(new CustomEvent('view-matches-history', { bubbles: true, composed: true }));
+      window.dispatchEvent(new CustomEvent('delete-profile', { bubbles: true, composed: true }));
     });
 
     // Listen for avatar changes
