@@ -210,25 +210,18 @@ export class AtariBadge extends HTMLElement {
     this.avatar = this.shadowRoot.querySelector('.avatar') as HTMLImageElement;
     this.fileInput = this.shadowRoot.querySelector('.hidden-file-input') as HTMLInputElement;
     
-    // Add click handler for avatar
     this.avatar.addEventListener('click', () => {
-      this.fileInput.click();
+        this.fileInput.click();
     });
 
-    // Add file change handler
     this.fileInput.addEventListener('change', (e) => {
-      this.handleFileSelect(e);
+        this.handleFileSelect(e);
     });
 
-    // Listen for avatar updates from upload
-    window.addEventListener('avatar-updated', (e: CustomEvent) => {
-        console.log('Avatar updated event received:', e.detail);
-        if (this.avatar && e.detail.avatarUrl) {
-            // Force immediate update with cache busting
-            this.avatar.src = e.detail.avatarUrl;
-            // Also trigger a re-render to update state
-            this.render();
-        }
+    // SIMPLIFIED: Just listen for username updates
+    window.addEventListener('username-updated', () => {
+        console.log('Username updated, re-rendering badge');
+        this.render();
     });
 
     this.render();
@@ -244,126 +237,70 @@ export class AtariBadge extends HTMLElement {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
 
-    // Validate file type
+    // Validate file type and size
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
-      return;
+        alert('Please select an image file');
+        return;
     }
 
-    // Validate file size (e.g., max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
-      return;
+        alert('File size must be less than 5MB');
+        return;
     }
 
     // Show preview immediately
     const reader = new FileReader();
     reader.onload = (e) => {
-      const result = e.target?.result as string;
-      this.avatar.src = result;
+        const result = e.target?.result as string;
+        this.avatar.src = result;
     };
     reader.readAsDataURL(file);
 
-    // Trigger the actual upload to server
-    this.uploadAvatarToServer(file);
-}
-
-private async uploadAvatarToServer(file: File) {
-    try {
-        console.log('Starting upload for file:', file.name, 'Size:', file.size);
-        
-        const formData = new FormData();
-        formData.append('avatar', file);
-
-        const token = localStorage.getItem('accessToken');
-        if (!token) {
-            throw new Error('No access token available. Please log in again.');
-        }
-
-        console.log('Sending request to /api/upload-avatar');
-        
-        const response = await fetch('/api/upload-avatar', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
-            body: formData
-        });
-
-        console.log('Response status:', response.status);
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Upload failed:', response.status, errorText);
-            throw new Error(`Failed to upload avatar: ${response.status}`);
-        }
-
-        const result = await response.json();
-        console.log('Upload result:', result);
-        
-        // Check what we got back
-        if (!result.avatarUrl) {
-            console.error('No avatarUrl in response:', result);
-            throw new Error('Invalid response from server');
-        }
-        
-        // Save clean URL to state (without cache-busting)
-        state.userData.avatar = result.avatarUrl;
-        console.log('Updated state.userData.avatar to:', state.userData.avatar);
-
-        // Update display with cache-busting
-        const avatarUrl = `${result.avatarUrl}?t=${Date.now()}`;
-        this.avatar.src = avatarUrl;
-        
-        console.log('Avatar uploaded successfully, reloading page...');
-
-        // Reload the page to show updated values everywhere
-        setTimeout(() => {
-            window.location.reload();
-        }, 1000); // Increased delay to see console logs
-
-    } catch (error) {
-        console.error('Error uploading avatar:', error);
-        alert(`Failed to upload avatar: ${error.message}`);
-        
-        // Revert to original avatar on error
-        this.render();
-    }
+    // Dispatch event to UserProfileForm to handle the actual upload
+    window.dispatchEvent(new CustomEvent('avatar-changed', {
+        bubbles: true,
+        composed: true,
+        detail: { 
+            file,
+            enableEditMode: true
+         }
+    }));
 }
   render() {
-    const username = this.getAttribute('username') || '';
-    console.log('AtariBadge render() called for username:', username);
-    console.log('Current state.userData.avatar:', state.userData.avatar);
+    const username = state.userData?.username || this.getAttribute('username') || '';
     
-    // Check if user has custom avatar in state, otherwise use generated one
-    const customAvatar = state.userData.avatar;
+    const h2 = this.shadowRoot.querySelector('.badge-username');
+    if (h2) {
+        const displayName = this.printFirstName(username).toUpperCase();
+        h2.textContent = displayName;
+    }
+    
+    const visitorNumber = this.shadowRoot.querySelector('.visitor-number');
+    if (visitorNumber) {
+        const visitorNum = state.userData?.userId?.toString() || '';
+        visitorNumber.textContent = visitorNum;
+    }
+    
+    const usernameLabel = this.shadowRoot.querySelector('.username-label');
+    if (usernameLabel) {
+        usernameLabel.textContent = username;
+    }
+    
+    // Handle avatar
+    const customAvatar = state.userData?.avatar;
     let avatarUrl;
     
     if (customAvatar) {
-        // Remove any existing cache-busting parameters before adding new ones
         const baseUrl = customAvatar.split('?')[0];
         avatarUrl = `${baseUrl}?t=${Date.now()}`;
-        console.log('Using custom avatar:', avatarUrl);
     } else {
-        avatarUrl = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`;
-        console.log('Using generated avatar:', avatarUrl);
+        avatarUrl = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}&t=${Date.now()}`;
     }
     
     if (this.avatar) {
-      this.avatar.src = avatarUrl;
-      this.avatar.alt = "Avatar";
-      console.log('Set avatar.src to:', avatarUrl);
+        this.avatar.src = avatarUrl;
+        this.avatar.alt = "Avatar";
     }
-    
-    const h2 = this.shadowRoot.querySelector('.badge-username');
-    if (h2) h2.textContent = this.printFirstName(username);
-    
-    // Update other elements with values from state
-    const visitorNumber = this.shadowRoot.querySelector('.visitor-number');
-    if (visitorNumber) visitorNumber.textContent = state.userData.userId?.toString() || '';
-    
-    const usernameLabel = this.shadowRoot.querySelector('.username-label');
-    if (usernameLabel) usernameLabel.textContent = state.userData.username || '';
 }
 }
 

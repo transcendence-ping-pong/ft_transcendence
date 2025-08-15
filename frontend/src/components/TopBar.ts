@@ -224,8 +224,10 @@ export class TopBar extends HTMLElement {
     this.logoutButton.addEventListener('click', (e) => this.handleLogout(e));
     this.profileButton.addEventListener('click', (e) => this.handleProfile(e));
 
+    // SIMPLIFIED: Just one listener
+    window.addEventListener('username-updated', () => this.updateAvatar());
+    
     this.updateAvatar();
-    // check logout visibility on mount
     this.updateButtons();
   }
 

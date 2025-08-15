@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('loggedInUser', decodeURIComponent(username));
     localStorage.setItem('userEmail', email);
+    localStorage.setItem('loginMethod', 'google');
     
     state.userData = {
       username: decodeURIComponent(username),
@@ -103,6 +104,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     if (existingToken && existingUsername && existingEmail) {
       console.log('Loading existing user session...');
+      
+      // Check if loginMethod exists, if not default to 'regular'
+      let loginMethod = localStorage.getItem('loginMethod');
+      if (!loginMethod) {
+        // For existing users without loginMethod, assume regular login
+        loginMethod = 'regular';
+        localStorage.setItem('loginMethod', 'regular');
+      }
+      
       state.userData = {
         username: existingUsername,
         email: existingEmail,
@@ -124,10 +134,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   navigate = initRouter(routes, 'app');
 
-  window.addEventListener('login-success', () => {
+  window.addEventListener('login-success', async (e: CustomEvent) => {
+    // Check if this is a regular login (not Google OAuth)
+    if (state.userData && !localStorage.getItem('accessToken')) {
+        // Store tokens for regular login
+        localStorage.setItem('accessToken', state.userData.accessToken);
+        localStorage.setItem('refreshToken', state.userData.refreshToken);
+        localStorage.setItem('loggedInUser', state.userData.username);
+        localStorage.setItem('userEmail', state.userData.email);
+        localStorage.setItem('loginMethod', 'regular');
+        
+        // Load user profile data
+        await loadUserProfile();
+    }
+    
     renderLoading('app'); 
     setTimeout(() => {
-      navigate('/');
+        navigate('/');
     }, 1200);
   });
 
@@ -138,6 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('loggedInUser');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('loginMethod');
     
     state.userData = null;
     
@@ -169,17 +193,64 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ADD THIS FUNCTION: Load user profile data
 async function loadUserProfile() {
   try {
-    const token = localStorage.getItem('accessToken');
+    let token = localStorage.getItem('accessToken');
     if (!token) return;
 
     console.log('Loading user profile data...');
     
-    // Get current user info including avatar
-    const response = await fetch('/api/current-user', {
+    // First, try the request with current token
+    let response = await fetch('/api/current-user', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
+
+    // If token expired (401), try to refresh it automatically
+    if (response.status === 401) {
+      console.log('Token expired, attempting automatic refresh...');
+      
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) {
+        console.log('No refresh token, logging out...');
+        window.dispatchEvent(new CustomEvent('logout'));
+        return;
+      }
+
+      try {
+        const refreshResponse = await fetch('/api/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: refreshToken })
+        });
+
+        if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json();
+          
+          // Update stored tokens
+          localStorage.setItem('accessToken', refreshData.accessToken);
+          if (refreshData.refreshToken) {
+            localStorage.setItem('refreshToken', refreshData.refreshToken);
+          }
+          
+          console.log('Token refreshed successfully, retrying request...');
+          
+          // Retry the original request with new token
+          response = await fetch('/api/current-user', {
+            headers: {
+              'Authorization': `Bearer ${refreshData.accessToken}`
+            }
+          });
+        } else {
+          console.log('Token refresh failed, logging out...');
+          window.dispatchEvent(new CustomEvent('logout'));
+          return;
+        }
+      } catch (refreshError) {
+        console.error('Error refreshing token:', refreshError);
+        window.dispatchEvent(new CustomEvent('logout'));
+        return;
+      }
+    }
 
     if (response.ok) {
       const userData = await response.json();
@@ -193,9 +264,70 @@ async function loadUserProfile() {
       
       console.log('Updated state.userData with avatar:', state.userData.avatar);
     } else {
-      console.log('Failed to load user profile, response not ok');
+      console.log('Failed to load user profile after token refresh');
     }
   } catch (error) {
     console.error('Failed to load user profile:', error);
   }
 }
+
+// Add this helper function for all API calls:
+async function makeAuthenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
+  let token = localStorage.getItem('accessToken');
+  if (!token) {
+    throw new Error('No access token available');
+  }
+
+  // Make the request
+  let response = await fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  // If token expired, try to refresh automatically
+  if (response.status === 401) {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      window.dispatchEvent(new CustomEvent('logout'));
+      throw new Error('Token expired and no refresh token available');
+    }
+
+    try {
+      const refreshResponse = await fetch('/api/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: refreshToken })
+      });
+
+      if (refreshResponse.ok) {
+        const refreshData = await refreshResponse.json();
+        localStorage.setItem('accessToken', refreshData.accessToken);
+        if (refreshData.refreshToken) {
+          localStorage.setItem('refreshToken', refreshData.refreshToken);
+        }
+
+        // Retry original request with new token
+        response = await fetch(url, {
+          ...options,
+          headers: {
+            ...options.headers,
+            'Authorization': `Bearer ${refreshData.accessToken}`
+          }
+        });
+      } else {
+        window.dispatchEvent(new CustomEvent('logout'));
+        throw new Error('Token refresh failed');
+      }
+    } catch (error) {
+      window.dispatchEvent(new CustomEvent('logout'));
+      throw error;
+    }
+  }
+
+  return response;
+}
+
+export { makeAuthenticatedRequest };

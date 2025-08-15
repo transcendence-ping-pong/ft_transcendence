@@ -252,24 +252,24 @@ async function userRoutes(fastify, options) {
         res.send({ message: MSG.LOGOUT_SUCCESSFUL });
     });
 
-    fastify.get('/current-user', { preHandler: authenticateToken }, (req, res) => {
-        // Get user data including avatar from database
-        db.get(`SELECT userId, username, email, avatar FROM users WHERE userId = ?`, 
-            [req.user.userId], (err, row) => {
-            if (err) {
-                return res.status(500).send({ error: 'Error fetching user data' });
-            }
-            if (!row) {
-                return res.status(404).send({ error: 'User not found' });
+    fastify.get('/current-user', { preHandler: authenticateToken }, async (request, reply) => {
+        try {
+            const userId = request.user.userId;
+            
+            const user = await dbGet(db, 
+                'SELECT userId, username, email, avatar FROM users WHERE userId = ?', 
+                [userId]
+            );
+            
+            if (!user) {
+                return reply.code(404).send({ error: 'User not found' });
             }
             
-            res.send({ 
-                username: row.username, 
-                userId: row.userId, 
-                email: row.email,
-                avatar: row.avatar  // Include avatar in response
-            });
-        });
+            return reply.send(user);
+        } catch (error) {
+            console.error('Error fetching current user:', error);
+            return reply.code(500).send({ error: 'Internal server error' });
+        }
     });
 
     fastify.get('/users', { preHandler: authenticateToken }, async (req, res) => {
@@ -319,7 +319,7 @@ async function userRoutes(fastify, options) {
         const { email, token, secret } = req.body;
 
         if (!email || !token) {
-            return res.status(400).json({ error: MSG.EMAIL_AND_TOKEN_REQUIRED });
+            return res.status(400).send({ error: MSG.EMAIL_AND_TOKEN_REQUIRED });
         }
 
         if (secret) {
@@ -333,20 +333,20 @@ async function userRoutes(fastify, options) {
             if (verified) {
                 db.run(`UPDATE users SET secret = ? WHERE email = ?`, [secret, email], function (err) {
                     if (err) {
-                        return res.status(500).json({ error: MSG.ERROR_SAVING_SECRET });
+                        return res.status(500).send({ error: MSG.ERROR_SAVING_SECRET });
                     }
-                    res.json({ message: MSG.TOKEN_VERIFIED_2FA_ENABLED });
+                    res.send({ message: MSG.TOKEN_VERIFIED_2FA_ENABLED });
                 });
             } else {
-                res.status(403).json({ error: MSG.INVALID_TOKEN });
+                res.status(403).send({ error: MSG.INVALID_TOKEN });
             }
         } else {
             db.get(`SELECT secret FROM users WHERE email = ?`, [email], (err, row) => {
                 if (err) {
-                    return res.status(500).json({ error: MSG.ERROR_FETCHING_SECRET });
+                    return res.status(500).send({ error: MSG.ERROR_FETCHING_SECRET });
                 }
                 if (!row || !row.secret) {
-                    return res.status(404).json({ error: MSG.USER_NOT_FOUND_OR_NO_2FA });
+                    return res.status(404).send({ error: MSG.USER_NOT_FOUND_OR_NO_2FA });
                 }
                 const verified = speakeasy.totp.verify({
                     secret: row.secret,
@@ -354,9 +354,9 @@ async function userRoutes(fastify, options) {
                     token: token
                 });
                 if (verified) {
-                    res.json({ message: MSG.TOKEN_VERIFIED_SUCCESSFULLY });
+                    res.send({ message: MSG.TOKEN_VERIFIED_SUCCESSFULLY });
                 } else {
-                    res.status(403).json({ error: MSG.INVALID_TOKEN });
+                    res.status(403).send({ error: MSG.INVALID_TOKEN });
                 }
             });
         }

@@ -3,6 +3,7 @@ export type UserData = {
   email: string;
   accessToken: string;
   refreshToken: string;
+  userId?: number;
   avatar?: string; // avatar optional
   expiresAt?: number; // optional, for token expiry
 };

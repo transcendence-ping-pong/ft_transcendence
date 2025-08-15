@@ -2,6 +2,7 @@ import { t } from '@/locales/Translations';
 import { actionIcons } from '@/utils/Constants';
 import '@/components/CustomTag.js';
 import { state } from '@/state';
+import { makeAuthenticatedRequest } from '@/main.js';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -286,30 +287,54 @@ export class UserProfileForm extends HTMLElement {
       this.toggleEditMode();
     });
 
+    // ADD THIS: Save button event listener
+    this.saveBtn.addEventListener('click', async (e: Event) => {
+        e.preventDefault();
+        await this.saveChanges();
+    });
+
     this.deleteBtn.addEventListener('click', (e: Event) => {
       e.preventDefault();
       window.dispatchEvent(new CustomEvent('delete-profile', { bubbles: true, composed: true }));
     });
 
-    // Listen for avatar changes
+    // Listen for avatar changes from AtariBadge
     window.addEventListener('avatar-changed', (e: CustomEvent) => {
-      console.log('Avatar changed event received:', e.detail);
-      this.pendingAvatarFile = e.detail.file;
-      console.log('Pending avatar file set:', this.pendingAvatarFile);
+        this.pendingAvatarFile = e.detail.file;
+        
+        // Enable edit mode when avatar is changed
+        if (e.detail.enableEditMode && !this.isEditMode) {
+            this.isEditMode = true;
+            this.editButton.style.backgroundColor = 'var(--accent-secondary)';
+            this.toggleEditMode();
+        }
+        
+        console.log('Avatar changed, edit mode enabled');
     });
-
-    this.saveBtn.addEventListener('click', async (e: Event) => {
-      e.preventDefault();
-      await this.saveChanges();
+    
+    // Listen for profile data updates
+    window.addEventListener('profile-loaded', () => {
+        console.log('Profile loaded event received, re-rendering form');
+        this.renderForm();
     });
-
+    
     this.toggleEditMode();
     this.renderForm();
   }
 
   private renderForm() {
-    this.usernameInput.value = state.userData.username;
-    this.emailInput.value = state.userData.email;
+    console.log('=== RENDER FORM DEBUG ===');
+    console.log('state.userData:', state.userData);
+    console.log('localStorage items:', {
+        accessToken: !!localStorage.getItem('accessToken'),
+        loginMethod: localStorage.getItem('loginMethod'),
+        loggedInUser: localStorage.getItem('loggedInUser'),
+        userEmail: localStorage.getItem('userEmail')
+    });
+    console.log('========================');
+    
+    this.usernameInput.value = state.userData?.username || '';
+    this.emailInput.value = state.userData?.email || '';
     this.passwordInput.value = ''; // Don't show password - not safe
     
     // Disable password and 2FA fields for Google accounts
@@ -353,13 +378,72 @@ export class UserProfileForm extends HTMLElement {
     if (this.saveBtn) this.saveBtn.disabled = !editable;
   }
 
-  private async saveChanges() {
+private async updateUsername(newUsername: string): Promise<void> {
+    const response = await makeAuthenticatedRequest('/api/change-username', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ newUsername })
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update username');
+    }
+
+    // Update state with new username
+    if (state.userData) {
+        state.userData.username = newUsername;
+    }
+    localStorage.setItem('loggedInUser', newUsername);
+}
+
+private async updatePassword(newPassword: string): Promise<void> {
+    const response = await makeAuthenticatedRequest('/api/change-password', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ newPassword })
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update password');
+    }
+}
+
+// Add this method to your UserProfileForm class:
+
+private updateAvatarDisplay(avatarUrl: string): void {
+    // Update the state with new avatar
+    if (state.userData) {
+        state.userData.avatar = avatarUrl;
+    }
+    
+    // Dispatch an event to update other components that might display the avatar
+    window.dispatchEvent(new CustomEvent('avatar-updated', {
+        bubbles: true,
+        composed: true,
+        detail: { avatarUrl }
+    }));
+    
+    console.log('Avatar display updated with URL:', avatarUrl);
+}
+
+// Also modify your saveChanges method to handle avatar upload:
+private async saveChanges() {
     try {
-        console.log('Save changes called');
-        console.log('Pending avatar file:', this.pendingAvatarFile);
-        
         const isGoogleAccount = this.isGoogleAccount();
         let hasChanges = false;
+
+        // Upload avatar if there's a pending file
+        if (this.pendingAvatarFile) {
+            await this.uploadAvatar(this.pendingAvatarFile);
+            this.pendingAvatarFile = null;
+            hasChanges = true;
+        }
 
         // For regular accounts, check and update other profile data
         if (!isGoogleAccount) {
@@ -384,12 +468,15 @@ export class UserProfileForm extends HTMLElement {
         }
         
         if (hasChanges) {
+            // SIMPLIFIED: Just dispatch one event
+            window.dispatchEvent(new CustomEvent('username-updated'));
+            
             alert("Profile updated successfully!");
-            // Clear password fields after successful update
             this.passwordInput.value = '';
             this.confirmPasswordInput.value = '';
-            // Refresh the form with new data
-            this.renderForm();
+            this.isEditMode = false;
+            this.editButton.style.backgroundColor = 'var(--accent)';
+            this.toggleEditMode();
         } else {
             alert("No changes to save.");
         }
@@ -400,51 +487,28 @@ export class UserProfileForm extends HTMLElement {
     }
 }
 
-private async updateUsername(newUsername: string): Promise<void> {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-        throw new Error('No access token available');
-    }
+// Replace your uploadAvatar method:
+private async uploadAvatar(file: File): Promise<void> {
+    const formData = new FormData();
+    formData.append('file', file);
 
-    const response = await fetch('/api/change-username', {
+    const response = await makeAuthenticatedRequest('/api/upload-avatar', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ newUsername })
+        body: formData
     });
 
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to update username');
+        throw new Error(error.error || 'Upload failed');
     }
 
-    // Update state with new username
-    state.userData.username = newUsername;
-    localStorage.setItem('loggedInUser', newUsername);
-}
-
-private async updatePassword(newPassword: string): Promise<void> {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-        throw new Error('No access token available');
-    }
-
-    const response = await fetch('/api/change-password', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ newPassword })
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update password');
+    const result = await response.json();
+    if (result.avatarUrl) {
+        this.updateAvatarDisplay(result.avatarUrl);
     }
 }
 };
 
 customElements.define('user-profile-form', UserProfileForm);
+
+export { makeAuthenticatedRequest };
