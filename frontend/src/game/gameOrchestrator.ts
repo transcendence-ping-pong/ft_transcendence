@@ -252,7 +252,10 @@ export class gameOrchestrator {
                 }));
               }
             })
-          };
+          } else if (this.gameMode === GameMode.REMOTE) {
+            // remote multiplayer mode - show remote multiplayer ui
+            this.gui.showRemoteMultiplayerUI(this.gameLevel);
+          }
         });
       });
     });

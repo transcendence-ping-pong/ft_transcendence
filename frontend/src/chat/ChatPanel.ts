@@ -208,12 +208,7 @@ template.innerHTML = `
         <button class="chat-tab" data-tab="direct">Direct</button>
         <button class="chat-tab" data-tab="invites">Invites</button>
       </div>
-      
-      <div class="user-selector" id="user-selector" style="display: none;">
-        <select id="dm-user-select">
-          <option value="">Select user to message...</option>
-        </select>
-      </div>
+
       
       <div class="chat-messages" id="chat-messages">
         <div class="system-message">Select a user to start chatting</div>
@@ -310,11 +305,11 @@ export class ChatPanel extends HTMLElement {
         this.addSystemMessage(`Game invite sent to ${e.detail.receiverUsername}`);
       });
 
-      window.addEventListener('websocket-authenticated', (e: CustomEvent) => {
+      window.addEventListener('websocketAuthenticated', (e: CustomEvent) => {
         this.updateConnectionStatus();
       });
 
-      window.addEventListener('websocket-error', (e: CustomEvent) => {
+      window.addEventListener('websocketError', (e: CustomEvent) => {
         this.updateConnectionStatus();
       });
 
@@ -634,7 +629,7 @@ export class ChatPanel extends HTMLElement {
           
           messageDiv.innerHTML = `<span class="${messageClass}">${msg.message}</span>`;
         } else {
-          const onlineStatus = this.onlineUsers.has(msg.senderUsername) ? 'online' : 'offline';
+          const onlineStatus = msg.senderUsername === this.currentUser ? 'online' : (this.onlineUsers.has(msg.senderUsername) ? 'online' : 'offline');
           messageDiv.innerHTML = `
             <span class="sender">
               <span class="online-indicator ${onlineStatus}"></span>

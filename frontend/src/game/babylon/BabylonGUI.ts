@@ -1,7 +1,8 @@
+import { AdvancedDynamicTexture, Button, Control, TextBlock, Rectangle } from "@babylonjs/gui";
 import { t } from '@/locales/Translations.js';
 import { GameLevel, GameScore, GameMode, GameType, PlayerMode, getGUIConstants } from '@/utils/gameUtils/GameConstants.js';
-import { AdvancedDynamicTexture, Button, Control, TextBlock, Rectangle } from "@babylonjs/gui";
 import { state } from '@/state';
+import { RemoteMultiplayerUI } from '../../multiplayer/RemoteMultiplayerUI.js';
 
 // read more here: https://doc.babylonjs.com/features/featuresDeepDive/gui/gui3D/
 export class BabylonGUI {
@@ -22,7 +23,7 @@ export class BabylonGUI {
     this.advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
   }
 
-  private setButtonStyle(button: Button, idx: number, arrayLength: number) {
+  public setButtonStyle(button: Button, idx: number, arrayLength: number) {
     button.width = this.GUIConstants.BUTTON_WIDTH * state.scaleFactor.scaleX + 'px';
     button.height = this.GUIConstants.BUTTON_HEIGHT * state.scaleFactor.scaleY + 'px';
     button.fontSize = this.GUIConstants.BUTTON_FONT_SIZE * state.scaleFactor.scaleY + 'px';
@@ -45,7 +46,7 @@ export class BabylonGUI {
     button.hoverCursor = "pointer";
   }
 
-  private hideButtons(arrayButtons: Button[]) {
+  public hideButtons(arrayButtons: Button[]) {
     arrayButtons.forEach(btn => this.advancedTexture.removeControl(btn));
     arrayButtons = [];
   }
@@ -117,6 +118,13 @@ export class BabylonGUI {
       this.advancedTexture.addControl(button);
       this.playerSelectorButtons.push(button);
     });
+  }
+
+  public showRemoteMultiplayerUI(difficulty?: GameLevel) {
+    // simple integration point - delegate to remotemultiplayerui
+    // pass this instance so RemoteMultiplayerUI can reuse existing methods
+    const remoteUI = new RemoteMultiplayerUI(this.advancedTexture, this.GUIConstants, difficulty, this);
+    remoteUI.show();
   }
 
   public showDifficultySelector(onDifficultySelected: (difficulty: string) => void) {

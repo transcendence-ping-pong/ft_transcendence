@@ -1,5 +1,4 @@
 import { gameOrchestrator } from '@/game/gameOrchestrator.js';
-import { multiplayerToggle } from '@/multiplayer/MultiplayerToggle.js';
 import '@/components/TopBar.js';
 import '@/components/GenericModal.js';
 import '@/components/CreateTournament.js';
@@ -45,17 +44,10 @@ export function renderGame(containerId: string) {
         alt="TV Frame"
         class="absolute top-0 left-0 w-full h-full z-20 pointer-events-none"
       />
-	  <div id="multiplayer-toggle-container"></div>
     </div>
   `;
 
   const orchestrator = new gameOrchestrator('game-screen');
-
-  // multiplayer test toggle
-  const toggleContainer = document.getElementById('multiplayer-toggle-container');
-  if (toggleContainer) {
-	multiplayerToggle.render(toggleContainer);
-  }
 
   // listen for tournament-created globally, so it works for every round
   // this is important because in the case of a TOURNAMENT, the view modal will be triggered many times
@@ -116,6 +108,32 @@ export function renderGame(containerId: string) {
       content.innerHTML = '';
       const el = document.createElement('create-tournament');
       content.appendChild(el);
+    }
+  });
+
+  // listen for remote games modal
+  window.addEventListener('openRemoteGamesModal', () => {
+    container.insertAdjacentHTML('beforeend', `
+      <generic-modal dismissible="true" appear-delay="500">
+        <div slot="body" class="w-full h-full min-h-full flex flex-col justify-center items-center p-8" id="remote-games-modal-content">
+          <div class="flex items-center justify-between w-full mb-6">
+            <h2 class="text-2xl font-bold text-white">Available Games</h2>
+            <button id="refresh-games-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+              🔄 Refresh
+            </button>
+          </div>
+          <div class="text-center text-gray-400">Loading games...</div>
+        </div>
+      </generic-modal>
+    `);
+    
+    // add refresh button functionality
+    const refreshBtn = container.querySelector('#refresh-games-btn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        // dispatch refresh event that RemoteMultiplayerUI can listen to
+                          window.dispatchEvent(new CustomEvent('refreshRemoteGames'));
+      });
     }
   });
 }

@@ -25,13 +25,18 @@ class WebSocketService {
   private currentRoomId: string | null = null;
   private authToken: string | null = null;
   private pendingEventListeners: Array<{ event: string; callback: (data: any) => void }> = [];
+  
+  // reconnection settings
+  private reconnectAttempts: number = 0;
+  private maxReconnectAttempts: number = 5;
+  private reconnectDelay: number = 1000; // start with 1 second
+  private reconnectTimer: number | null = null;
+  private isReconnecting: boolean = false;
 
   connect(url: string) {
     if (this.socket) return;
     
-    this.socket = io(url, {
-      query: { clientId: state.clientId }
-    });
+    this.socket = io(url);
 
     // Bind any listeners registered before connect
     if (this.pendingEventListeners.length) {
@@ -42,28 +47,34 @@ class WebSocketService {
     }
 
     this.socket.on('connect', () => {
-      // auth if we have a token, later with other backend
-      if (this.authToken) {
-        this.authenticate(this.authToken);
-      }
+      console.log('WebSocket connected');
+      
+      // Process pending event listeners
+      this.processPendingEventListeners();
     });
 
     this.socket.on('disconnect', () => {
-      // connection lost - TODO: notify user
+      console.log('WebSocket disconnected');
+      this.handleDisconnect();
     });
 
     this.socket.on('authenticated', (data: { success: boolean; error?: string; username?: string }) => {
       if (data.success) {
-        window.dispatchEvent(new CustomEvent('websocket-authenticated', { detail: { success: true, username: data.username } }));
+        // reset reconnection state on successful connection
+        this.reconnectAttempts = 0;
+        this.reconnectDelay = 1000;
+        this.isReconnecting = false;
+        
+        window.dispatchEvent(new CustomEvent('websocketAuthenticated', { detail: { success: true, username: data.username } }));
       } else {
-        window.dispatchEvent(new CustomEvent('websocket-authenticated', { detail: { success: false, error: data.error } }));
+        window.dispatchEvent(new CustomEvent('websocketAuthenticated', { detail: { success: false, error: data.error } }));
       }
     });
 
     this.socket.on('roomCreated', (data: RoomEvent) => {
       this.currentRoom = data.room;
       this.currentRoomId = data.roomId;
-      window.dispatchEvent(new CustomEvent('room-created', { detail: data }));
+      window.dispatchEvent(new CustomEvent('roomCreated', { detail: data }));
     });
 
     this.socket.on('playerJoined', (data: PlayerEventWithRoom) => {
@@ -74,7 +85,7 @@ class WebSocketService {
         this.currentRoom.players = data.players;
       }
       
-      window.dispatchEvent(new CustomEvent('player-joined', { 
+            window.dispatchEvent(new CustomEvent('playerJoined', {
         detail: { 
           player: data.player, 
           players: data.players, 
@@ -89,7 +100,7 @@ class WebSocketService {
         this.currentRoom.status = 'playing';
         this.currentRoom.players = data.players;
       }
-      window.dispatchEvent(new CustomEvent('game-start', { 
+      window.dispatchEvent(new CustomEvent('gameStart', { 
         detail: { 
           ...data, 
           room: this.currentRoom 
@@ -97,7 +108,7 @@ class WebSocketService {
       }));
     });
 
-	// TODO: add proper countdown UI
+	// todo: add proper countdown ui
     this.socket.on('countdown', (data: { countdown: number }) => {
       window.dispatchEvent(new CustomEvent('game-countdown', { detail: data }));
     });
@@ -121,7 +132,7 @@ class WebSocketService {
       if (this.currentRoom) {
         this.currentRoom.players = data.players;
       }
-      window.dispatchEvent(new CustomEvent('player-left', { 
+      window.dispatchEvent(new CustomEvent('playerLeft', { 
         detail: { 
           player: data.player, 
           players: data.players, 
@@ -131,11 +142,31 @@ class WebSocketService {
       }));
     });
 
+    this.socket.on('availableRooms', (data: any) => {
+      console.log('WebSocket: Available rooms event received:', data);
+      window.dispatchEvent(new CustomEvent('availableRooms', { detail: data }));
+    });
+
+    this.socket.on('roomMessage', (data: any) => {
+      console.log('WebSocket: Room message received:', data);
+      window.dispatchEvent(new CustomEvent('roomMessage', { detail: data }));
+    });
+
+    this.socket.on('roomUpdated', (data: any) => {
+      console.log('WebSocket: Room updated received:', data);
+      window.dispatchEvent(new CustomEvent('roomUpdated', { detail: data }));
+    });
+
+    this.socket.on('error', (data: any) => {
+      console.error('WebSocket: Error received:', data);
+      window.dispatchEvent(new CustomEvent('websocketError', { detail: data }));
+    });
+
     this.socket.on('playerReady', (data: PlayerEventWithRoom) => {
       if (this.currentRoom) {
         this.currentRoom.players = data.players;
       }
-      window.dispatchEvent(new CustomEvent('player-ready', { 
+      window.dispatchEvent(new CustomEvent('playerReady', { 
         detail: { 
           player: data.player, 
           players: data.players, 
@@ -170,10 +201,7 @@ class WebSocketService {
       window.dispatchEvent(new CustomEvent('inviteSent', { detail: data }));
     });
 
-    // Listen for invite sent confirmation
-    this.socket.on('inviteSent', (data: { targetUsername: string; message: string }) => {
-      window.dispatchEvent(new CustomEvent('inviteSent', { detail: data }));
-    });
+
 
     // Listen for message delivery confirmation
     this.socket.on('messageDelivered', (data: { messageId: number; receiverUsername: string; status: string }) => {
@@ -191,53 +219,57 @@ class WebSocketService {
       window.dispatchEvent(new CustomEvent('onlineUsers', { detail: data }));
     });
 
-    this.socket.on('error', (data: { message: string }) => {
-      window.dispatchEvent(new CustomEvent('websocket-error', { detail: data }));
-    });
+
   }
 
   authenticate(username: string) {
+    // authenticates user with backend using username
     this.authToken = username;
     if (this.socket && this.socket.connected) {
       this.socket.emit('authenticate', { username });
     } else if (this.socket) {
-      // If socket exists but not connected, wait for connection
+      // if socket exists but not connected, wait for connection
       this.socket.once('connect', () => {
         this.socket.emit('authenticate', { username });
       });
     }
   }
 
-  createRoom() {
+  createRoom(settings?: any) {
+    // creates new game room with optional settings
     if (this.socket) {
-      this.socket.emit('createRoom', {});
+      this.socket.emit('createRoom', settings || {});
     }
   }
 
   joinRoom(roomId: string) {
+    // joins existing room and sets current room id
     if (this.socket) {
-      this.currentRoomId = roomId; // Set immediately
+      this.currentRoomId = roomId; // set immediately
       this.socket.emit('joinRoom', { roomId });
     }
   }
 
+
+
   sendGameInput(roomId: string, type: GameInput['type'], data: any) {
+    // sends game input to specific room
     if (this.socket) {
       this.socket.emit('gameInput', { roomId, type, ...data });
     }
   }
 
   sendPaddleMove(roomId: string, direction: number) {
+    // sends paddle movement input to room
     this.sendGameInput(roomId, 'paddleMove', { direction });
   }
 
   sendPaddleStop(roomId: string) {
+    // sends paddle stop input to room
     this.sendGameInput(roomId, 'paddleStop', {});
   }
 
-  sendReady(roomId: string) {
-    this.sendGameInput(roomId, 'ready', {});
-  }
+
 
   // sends browser console logs to backend for debugging
   sendBrowserLog(level: string, message: string, data?: any) {
@@ -247,25 +279,49 @@ class WebSocketService {
   }
 
   getCurrentRoom(): GameRoom | null {
+    // returns current room object or null
     return this.currentRoom;
   }
 
   getSocketId(): string | null {
+    // returns current socket id or null
     const socketId = this.socket?.id || null;
     return socketId;
   }
 
   getCurrentRoomId(): string | null {
+    // returns current room id or null
     return this.currentRoomId;
   }
 
+  isConnected(): boolean {
+    // returns true if websocket is connected
+    return this.socket?.connected || false;
+  }
+
   emit(event: string, data?: any) {
+    // emits custom event to websocket server
     if (this.socket) {
       this.socket.emit(event, data);
     }
   }
 
-  // on message TODO: later
+  getAvailableRooms() {
+    // requests list of available rooms from backend
+    this.emit('getAvailableRooms');
+  }
+
+  sendReady(roomId: string) {
+    // sends ready status to room
+    this.emit('playerReady', { roomId });
+  }
+
+  leaveRoom(roomId: string) {
+    // leaves current room
+    this.emit('leaveRoom', { roomId });
+  }
+
+  // on message todo: later
   onMessage(cb: (data: any) => void) {
     if (this.socket) {
       this.socket.on('message', cb);
@@ -282,7 +338,57 @@ class WebSocketService {
     }
   }
 
+  // setupEventListeners removed - all event handling is now in the main connection setup
+  // prevents duplicate event listeners and conflicts
+
+  private processPendingEventListeners() {
+    if (this.pendingEventListeners.length) {
+      for (const { event, callback } of this.pendingEventListeners) {
+        this.socket.on(event, callback);
+      }
+      this.pendingEventListeners = [];
+    }
+  }
+
+  private handleDisconnect() {
+    // dispatch disconnect event
+    window.dispatchEvent(new CustomEvent('websocketDisconnected'));
+    
+    // attempt reconnection if not already reconnecting
+    if (!this.isReconnecting && this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.isReconnecting = true;
+      this.reconnectAttempts++;
+      
+      console.log(`WebSocket: Attempting reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${this.reconnectDelay}ms`);
+      
+      this.reconnectTimer = setTimeout(() => {
+        this.attemptReconnect();
+      }, this.reconnectDelay);
+      
+      // exponential backoff: double the delay for next attempt
+      this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30000); // max 30 seconds
+    } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('WebSocket: Max reconnection attempts reached, giving up');
+      window.dispatchEvent(new CustomEvent('websocketError', { 
+        detail: { message: 'Connection lost. Max reconnection attempts reached.' } 
+      }));
+    }
+  }
+
+  private attemptReconnect() {
+    if (this.socket) {
+      this.socket.connect();
+      this.isReconnecting = false;
+    }
+  }
+
   disconnect() {
+    // clear reconnection timer
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;

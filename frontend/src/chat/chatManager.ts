@@ -1,6 +1,7 @@
 import './ChatPanel';
 import type { ChatPanel } from './ChatPanel';
 import { websocketService } from '@/services/websocketService.js';
+import { state } from '@/state.js';
 
 export class ChatManager {
   private chatPanel: ChatPanel | null = null;
@@ -18,16 +19,7 @@ export class ChatManager {
       gameArea.appendChild(this.chatPanel);
     }
 
-    const userSelect = document.getElementById('mock-user-select') as HTMLSelectElement;
-    if (userSelect) {
-      userSelect.addEventListener('change', (e) => {
-        const username = (e.target as HTMLSelectElement).value;
-        if (username) {
-          websocketService.authenticate(username);
-          if (this.chatPanel) this.chatPanel.setCurrentUser(username);
-        }
-      });
-    }
+    this.setCurrentUser(state.userData.username);
 
     this.initialized = true;
   }
@@ -35,10 +27,6 @@ export class ChatManager {
   setCurrentUser(username: string) {
     if (this.chatPanel) {
       this.chatPanel.setCurrentUser(username);
-    }
-    const userSelect = document.getElementById('mock-user-select') as HTMLSelectElement;
-    if (userSelect) {
-      userSelect.value = username;
     }
     websocketService.authenticate(username);
   }

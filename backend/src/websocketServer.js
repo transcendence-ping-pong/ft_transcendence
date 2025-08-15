@@ -66,36 +66,52 @@ class WebSocketServer {
 				this.handleCreateRoom(socket, data);
 			});
 
+			socket.on('getAvailableRooms', () => {
+				this.handleGetAvailableRooms(socket);
+			});
+
+			socket.on('leaveRoom', (data) => {
+				this.handleLeaveRoom(socket, data);
+			});
+
+			socket.on('playerReady', (data) => {
+				this.handlePlayerReady(socket, data);
+			});
+
+			socket.on('sendRoomMessage', (data) => {
+				this.handleRoomMessage(socket, data);
+			});
+
 			socket.on('joinRoom', (data) => {
 				this.handleJoinRoom(socket, data);
 			});
 
-			// Handle game input
+			// handles game input
 			socket.on('gameInput', (data) => {
 				this.handleGameInput(socket, data);
 			});
 
-			// Handle chat messages
+			// handles chat messages
 			socket.on('chatMessage', (data) => {
 				this.handleChatMessage(socket, data);
 			});
 
-			// Handle direct messages
+			// handles direct messages
 			socket.on('directMessage', (data) => {
 				this.handleDirectMessage(socket, data);
 			});
 
-			// Handle user blocking
+			// handles user blocking
 			socket.on('blockUser', (data) => {
 				this.handleBlockUser(socket, data);
 			});
 
-			// Handle online users request
+			// handles online users request
 			socket.on('getOnlineUsers', (data) => {
 				this.handleGetOnlineUsers(socket);
 			});
 
-			// Handle disconnection
+			// handles disconnection
 			socket.on('disconnect', () => {
 				this.handleDisconnect(socket);
 			});
@@ -116,10 +132,10 @@ class WebSocketServer {
 		try {
 			const username = data.username || data.token || 'Anonymous';
 
-			// Check if it's a mock user
+			// checks if it's a mock user
 			const mockUser = this.mockUsers.find(u => u.username === username);
 			if (mockUser) {
-				// Update mock user's socket ID
+				// updates mock user's socket id
 				mockUser.socketId = socket.id;
 			}
 
@@ -139,7 +155,7 @@ class WebSocketServer {
 
 			socket.emit('authenticated', { success: true, username: username });
 
-			// Broadcast user online status to all OTHER connected users
+			// broadcasts user online status to all other connected users
 			this.broadcastUserStatus(socket, username, 'online');
 		} catch (error) {
 			socket.emit('authenticated', { success: false, error: 'Authentication failed' });
@@ -162,6 +178,7 @@ class WebSocketServer {
 	}
 
 	handleCreateRoom(socket, data) {
+		// creates new game room with host player and metadata
 		const user = this.connectedUsers.get(socket.id);
 		if (!user) {
 			socket.emit('error', { message: 'Not authenticated' });
@@ -191,15 +208,76 @@ class WebSocketServer {
 			maxPlayers: 2,
 			status: 'waiting',
 			gameState: null,
-			createdAt: Date.now()
+			createdAt: Date.now(),
+			// Add room metadata for listing
+			difficulty: data.difficulty || 'MEDIUM',
+			gameType: data.gameType || 'ONE_MATCH',
+			playerMode: data.playerMode || 'TWO_PLAYER',
+			hostUsername: user.username
 		};
 
 		this.gameRooms.set(roomId, room);
 		socket.join(roomId);
+
+		console.log(`[DEBUG] Emitting roomCreated to socket ${socket.id} with roomId: ${roomId}`);
 		socket.emit('roomCreated', { roomId, room });
+
+		// Don't broadcast available rooms automatically - only when requested
+		// This prevents the spamming loop
+
+		// Also emit roomUpdated for the specific room
+		this.io.to(roomId).emit('roomUpdated', { roomId, room });
+	}
+
+	handleGetAvailableRooms(socket) {
+		// sends list of available rooms to requesting client
+		const availableRooms = [];
+
+		for (const [roomId, room] of this.gameRooms) {
+			if (room.status === 'waiting' && room.players.length < room.maxPlayers) {
+				availableRooms.push({
+					id: room.id,
+					hostUsername: room.hostUsername,
+					difficulty: room.difficulty,
+					gameType: room.gameType,
+					playerMode: room.playerMode,
+					maxPlayers: room.maxPlayers,
+					currentPlayers: room.players.length,
+					status: room.status,
+					createdAt: room.createdAt
+				});
+			}
+		}
+
+		socket.emit('availableRooms', availableRooms);
+	}
+
+	broadcastAvailableRooms() {
+		// broadcasts available rooms list to all connected clients
+		const availableRooms = [];
+
+		for (const [roomId, room] of this.gameRooms) {
+			if (room.status === 'waiting' && room.players.length < room.maxPlayers) {
+				availableRooms.push({
+					id: room.id,
+					hostUsername: room.hostUsername,
+					difficulty: room.difficulty,
+					gameType: room.gameType,
+					playerMode: room.playerMode,
+					maxPlayers: room.maxPlayers,
+					currentPlayers: room.players.length,
+					status: room.status,
+					createdAt: room.createdAt
+				});
+			}
+		}
+
+		console.log(`[DEBUG] Broadcasting ${availableRooms.length} available rooms:`, availableRooms);
+		this.io.emit('availableRooms', availableRooms);
 	}
 
 	handleJoinRoom(socket, data) {
+		// adds player to existing room and notifies all players
 		const user = this.connectedUsers.get(socket.id);
 		if (!user) {
 			socket.emit('error', { message: 'Not authenticated' });
@@ -241,6 +319,7 @@ class WebSocketServer {
 		room.players.push(enhancedUser);
 		socket.join(data.roomId);
 
+		// Send playerJoined event to the room
 		this.io.to(data.roomId).emit('playerJoined', {
 			player: enhancedUser,
 			players: room.players,
@@ -248,9 +327,136 @@ class WebSocketServer {
 			room: room
 		});
 
+		// Send current ready status to the new player so they can see who's already ready
+		const readyPlayers = room.players.filter(p => p.isReady);
+		console.log(`[DEBUG] Room ${data.roomId}: ${readyPlayers.length} players already ready, sending status to new player ${user.username}`);
+		readyPlayers.forEach(readyPlayer => {
+			if (readyPlayer.socketId !== socket.id) { // Don't send to the player who just joined
+				console.log(`[DEBUG] Sending ready status for ${readyPlayer.username} to new player ${user.username}`);
+				socket.emit('playerReady', {
+					player: readyPlayer,
+					players: room.players,
+					roomId: data.roomId,
+					room: room
+				});
+			}
+		});
+
 		if (room.players.length === room.maxPlayers) {
 			this.checkGameStart(data.roomId);
 		}
+
+		// Don't broadcast available rooms automatically - only when requested
+		// This prevents the spamming loop
+
+		// Also emit roomUpdated for the specific room
+		this.io.to(data.roomId).emit('roomUpdated', { roomId: data.roomId, room });
+	}
+
+	handleLeaveRoom(socket, data) {
+		const user = this.connectedUsers.get(socket.id);
+		if (!user) {
+			socket.emit('error', { message: 'Not authenticated' });
+			return;
+		}
+
+		const roomId = data.roomId;
+		const room = this.gameRooms.get(roomId);
+		if (!room) {
+			socket.emit('error', { message: 'Room not found' });
+			return;
+		}
+
+		// Remove player from room
+		room.players = room.players.filter(p => p.socketId !== socket.id);
+		socket.leave(roomId);
+
+		// If room is empty, delete it
+		if (room.players.length === 0) {
+			this.gameRooms.delete(roomId);
+		} else {
+			// If host left, make first remaining player the host
+			if (room.players[0] && !room.players[0].isHost) {
+				room.players[0].isHost = true;
+			}
+		}
+
+		// Don't broadcast available rooms automatically - only when requested
+		// This prevents the spamming loop
+
+		// Emit playerLeft to room
+		this.io.to(roomId).emit('playerLeft', {
+			player: user,
+			players: room.players,
+			roomId: roomId,
+			room: room
+		});
+	}
+
+	handlePlayerReady(socket, data) {
+		const user = this.connectedUsers.get(socket.id);
+		if (!user) {
+			socket.emit('error', { message: 'Not authenticated' });
+			return;
+		}
+
+		const roomId = data.roomId;
+		const room = this.gameRooms.get(roomId);
+		if (!room) {
+			socket.emit('error', { message: 'Room not found' });
+			return;
+		}
+
+		// Find and update the player's ready status
+		const player = room.players.find(p => p.socketId === socket.id);
+		if (player) {
+			player.isReady = true;
+			console.log(`[DEBUG] Player ${player.username} marked as ready in room ${roomId}`);
+
+			// Emit playerReady to the room
+			console.log(`[DEBUG] Broadcasting playerReady to room ${roomId} for player ${player.username}`);
+			this.io.to(roomId).emit('playerReady', {
+				player: player,
+				players: room.players,
+				roomId: roomId,
+				room: room
+			});
+
+			// Check if game can start
+			this.checkGameStart(roomId);
+		}
+	}
+
+	handleRoomMessage(socket, data) {
+		const user = this.connectedUsers.get(socket.id);
+		if (!user) {
+			socket.emit('error', { message: 'Not authenticated' });
+			return;
+		}
+
+		const roomId = data.roomId;
+		const room = this.gameRooms.get(roomId);
+		if (!room) {
+			socket.emit('error', { message: 'Room not found' });
+			return;
+		}
+
+		// Check if user is in the room
+		if (!room.players.some(p => p.socketId === socket.id)) {
+			socket.emit('error', { message: 'You are not in this room' });
+			return;
+		}
+
+		const message = {
+			id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+			roomId: roomId,
+			username: user.username,
+			message: data.message,
+			timestamp: Date.now()
+		};
+
+		// Emit message to all players in the room
+		this.io.to(roomId).emit('roomMessage', message);
 	}
 
 	checkGameStart(roomId) {
