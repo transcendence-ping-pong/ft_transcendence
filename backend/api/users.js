@@ -313,7 +313,7 @@ async function userRoutes(fastify, options) {
                     if (err) {
                         return res.status(500).send({ error: MSG.ERROR_SAVING_SECRET });
                     }
-                    res.json({ message: MSG.TOKEN_VERIFIED_2FA_ENABLED });
+                    res.send({ message: MSG.TOKEN_VERIFIED_2FA_ENABLED });
                 });
             } else {
                 res.status(403).send({ error: MSG.INVALID_TOKEN });

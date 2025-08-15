@@ -254,7 +254,10 @@ class QrAuthentication extends HTMLElement {
   }
 
   private async verifyToken(email: string, code: string) {
-    const res = await authService.verifyToken(email, code);
+    const secret = this.authData['secret'];
+    
+    const res = await authService.verifyToken(email, code, secret);
+    
     if (res.error) {
       this.codeInput.classList.add('input-error');
       this._setError(err(res.error));
@@ -266,7 +269,6 @@ class QrAuthentication extends HTMLElement {
     this._renderVerifyOutput('dino', 'var(--success)');
     this._clearError();
     this._setError('');
-    // this.dispatchEvent(new CustomEvent('login-success', { bubbles: true, composed: true }));
   }
 
   _renderVerifyOutput(icon: string, color: string) {

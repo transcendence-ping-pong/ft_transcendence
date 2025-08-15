@@ -90,11 +90,11 @@ export async function fetchUsers(accessToken: string): Promise<any[]> {
   return await res.json();
 }
 
-export async function verifyToken(email: string, token: string): Promise<AuthResponse> {
+export async function verifyToken(email: string, token: string, secret?: string): Promise<AuthResponse> {
   const res = await fetch(`${BASE_URL}/verify-token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, token }),
+    body: JSON.stringify({email,token,secret}),
   });
   return await res.json();
 }
