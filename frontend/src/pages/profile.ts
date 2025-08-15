@@ -6,7 +6,7 @@ import '@/components/LanguagesDropdown.js';
 import '@/components/UserProfileForm.js';
 import '@/components/AtariBadge.js';
 import '@/components/GenericModal.js';
-import '@/components/MatchTable.js';
+import '@/components/MatchesHistory.js';
 
 export function renderProfile(containerId: string, params: Record<string, string> = {}) {
   // document.body.classList.add('overflow-hidden'); // prevent scrolling
@@ -37,7 +37,7 @@ export function renderProfile(containerId: string, params: Record<string, string
 
       <section class="screen-2 h-screen w-screen">
         <div class="page-container ">
-          <match-table></match-table>
+          <matches-history></matches-history>
         </div>
     `;
 

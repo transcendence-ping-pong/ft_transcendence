@@ -302,13 +302,13 @@ export class UserProfileForm extends HTMLElement {
   private renderForm() {
     this.usernameInput.value = this.mockData.username;
     this.emailInput.value = this.mockData.email;
+    this.emailInput.disabled = true; // email should not be editable
     this.passwordInput.value = this.mockData.password;
   }
 
   private toggleEditMode() {
     const editable = this.isEditMode;
     this.usernameInput.disabled = !editable;
-    this.emailInput.disabled = !editable;
     this.passwordInput.disabled = !editable;
     this.confirmPasswordInput.disabled = !editable;
     if (this.saveBtn) this.saveBtn.disabled = !editable;

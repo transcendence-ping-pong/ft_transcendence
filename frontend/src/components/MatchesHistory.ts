@@ -9,6 +9,7 @@ template.innerHTML = `
       height: 100%;
       display: flex;
       flex-direction: column;
+      overflow: hidden; /* Prevent double scrollbars */
     }
     .matches-title {
       font-size: var(--title-font-size);
@@ -19,8 +20,7 @@ template.innerHTML = `
       top: 0;
       z-index: 3;
       padding: 0.7em 0.5em;
-      background: var(--body, #fff);
-      border-bottom: 1.5px solid var(--border, #e0e0e0);
+      border-bottom: 1.5px solid var(--border);
       box-shadow: 0 2px 8px -6px rgba(0,0,0,0.12);
     }
     .timeline-outer {
@@ -45,7 +45,7 @@ template.innerHTML = `
       top: 0;
       bottom: 0;
       width: 3px;
-      background: var(--border, #e0e0e0);
+      background: var(--border);
       transform: translateX(-50%);
       z-index: 0;
     }
@@ -65,12 +65,17 @@ template.innerHTML = `
       transform: translateX(-50%);
       width: 18px;
       height: 18px;
-      background: var(--accent, #f4f4f4);
-      border: 3px solid var(--border, #e0e0e0);
+      background: var(--accent);
+      border: 3px solid var(--border);
       border-radius: 50%;
       z-index: 2;
       top: 0.2em;
+      cursor: pointer;
       box-shadow: 0 2px 8px -6px rgba(0,0,0,0.10);
+    }
+    .timeline-dot:hover {
+      background: var(--accent-tertiary);
+      border: 3px solid #fff;
     }
     .timeline-content {
       display: flex;
@@ -96,7 +101,7 @@ template.innerHTML = `
       font-size: 0.95rem;
       font-weight: bold;
       margin-top: 0.2em;
-      color: var(--accent-secondary, #888);
+      color: var(--accent-secondary);
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }
@@ -117,14 +122,14 @@ template.innerHTML = `
     .timeline-info .opponent {
       margin-top: 0.2em;
       font-size: 0.97rem;
-      color: var(--text, #444);
+      color: var(--text);
     }
     .timeline-info .meta {
       margin-top: 0.2em;
       font-size: 0.92rem;
       color: var(--accent-secondary, #888);
     }
-    /* Responsive */
+
     @media (max-width: 700px) {
       .timeline {
         max-width: 100%;
@@ -138,15 +143,15 @@ template.innerHTML = `
     }
   </style>
 
-  <div class="matches-section">
+  <section class="matches-section">
     <div class="matches-title">${t('profile.matchesHistory')}</div>
     <div class="timeline-outer">
       <div class="timeline" id="timeline"></div>
     </div>
-  </div>
+  </section>
 `;
 
-export class MatchTable extends HTMLElement {
+export class MatchesHistory extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
@@ -169,7 +174,7 @@ export class MatchTable extends HTMLElement {
           </div>
           <div class="timeline-info">
             <span class="score">${m.score}</span>
-            <span class="opponent"><custom-tag text="${m.opponent}" size="s" button></custom-tag></span>
+            <span class="opponent"><custom-tag text="${m.opponent}" size="m" button></custom-tag></span>
             <span class="meta">${m.mode} &middot; #${m.matchId}</span>
           </div>
         </div>
@@ -178,8 +183,9 @@ export class MatchTable extends HTMLElement {
   }
 };
 
-customElements.define('match-table', MatchTable);
+customElements.define('matches-history', MatchesHistory);
 
+// TODO: this is a mock. Replace with real data fetching logic
 const mockMatches = [
   {
     day: '2025-08-10',
@@ -198,6 +204,33 @@ const mockMatches = [
     opponent: 'WINE PLEASE',
     winLoss: 'Win',
     mode: 'TOURNAMENT'
+  },
+  {
+    day: '2025-08-08',
+    time: '12:45',
+    score: '4-0',
+    matchId: 'M003',
+    opponent: 'SUPER PONG KILLER',
+    winLoss: 'LOSS',
+    mode: 'LOCAL'
+  },
+  {
+    day: '2025-08-08',
+    time: '12:45',
+    score: '4-0',
+    matchId: 'M003',
+    opponent: 'SUPER PONG KILLER',
+    winLoss: 'LOSS',
+    mode: 'LOCAL'
+  },
+  {
+    day: '2025-08-10',
+    time: '15:30',
+    score: '3-1',
+    matchId: 'M001',
+    opponent: 'PESTO SUPREME',
+    winLoss: 'Win',
+    mode: 'REMOTE'
   },
   {
     day: '2025-08-08',
