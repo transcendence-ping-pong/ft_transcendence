@@ -29,6 +29,8 @@
 
   --modal-height: 50vh;
   --modal-width: 40vw;
+  --modal-small-height: 25vh;
+  --modal-small-width: 35vw;
   --button-height: 2.5rem;
   --button-min-width: 150px;
 }
@@ -59,6 +61,8 @@
 
     --modal-height: 50vh;
     --modal-width: 40vw;
+    --modal-small-height: 25vh;
+    --modal-small-width: 35vw;
     --button-height: 2rem;
     --button-min-width: 120px;
   }
@@ -90,7 +94,8 @@
 
     --modal-height: 50vh;
     --modal-width: 35vw;
-
+    --modal-small-height: 25vh;
+    --modal-small-width: 35vw;
     --button-height: 3rem;
     --button-min-width: 180px;
   }

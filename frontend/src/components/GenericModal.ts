@@ -21,8 +21,6 @@ template.innerHTML = `
       border: 2px solid var(--border);
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
       padding: 24px;
-      width: var(--modal-width);
-      height: var(--modal-height);
       position: relative;
       display: flex;
       align-items: center;
@@ -83,7 +81,7 @@ template.innerHTML = `
 
 export class GenericModal extends HTMLElement {
   static get observedAttributes() {
-    return ['dismissible', 'appear-delay'];
+    return ['dismissible', 'appear-delay', 'small'];
   }
 
   constructor() {
@@ -94,20 +92,31 @@ export class GenericModal extends HTMLElement {
 
   connectedCallback() {
     this.updateDismissible();
+    this.updateModalSize();
     this.setupEvents();
     this.triggerAppear();
+
+    // listen for modal-dismiss from slotted content, e.g. DeleteProfile cancel button
+    this.addEventListener('modal-dismiss', (e) => {
+      e.stopPropagation(); // TODO STUDY: prevent bubbling further (?)
+      this.dismiss();
+    });
   }
 
-  attributeChangedCallback(name, oldValue, newValue) {
+  // callback parameters: name, oldValue, newValue
+  attributeChangedCallback(name: string) {
     if (name === 'dismissible') {
       this.updateDismissible();
     }
     if (name === 'appear-delay') {
       this.triggerAppear();
     }
+    if (name === 'small') {
+      this.updateModalSize();
+    }
   }
 
-  triggerAppear() {
+  private triggerAppear() {
     const delay = parseInt(this.getAttribute('appear-delay') || '0', 10);
     const modal = this.shadowRoot.querySelector('.modal');
     const overlay = this.shadowRoot.querySelector('.overlay');
@@ -121,16 +130,29 @@ export class GenericModal extends HTMLElement {
     }
   }
 
-  updateDismissible() {
+  private updateModalSize() {
+    const modal = this.shadowRoot.querySelector('.modal') as HTMLElement;
+    if (modal) {
+      if (this.hasAttribute('small')) {
+        modal.style.width = 'var(--modal-small-width)';
+        modal.style.height = 'var(--modal-small-height)';
+      } else {
+        modal.style.width = 'var(--modal-width)';
+        modal.style.height = 'var(--modal-height)';
+      }
+    }
+  }
+
+  private updateDismissible() {
     const dismissible = this.getAttribute('dismissible') === 'true';
-    const closeBtn = this.shadowRoot.querySelector('.close-btn');
+    const closeBtn = this.shadowRoot.querySelector('.close-btn') as HTMLButtonElement;
     if (closeBtn) {
       closeBtn.style.display = dismissible ? '' : 'none';
     }
   }
 
-  setupEvents() {
-    const closeBtn = this.shadowRoot.querySelector('.close-btn');
+  private setupEvents() {
+    const closeBtn = this.shadowRoot.querySelector('.close-btn') as HTMLButtonElement;
     const overlay = this.shadowRoot.querySelector('.overlay');
     const dismissible = this.getAttribute('dismissible') === 'true';
 
@@ -144,7 +166,7 @@ export class GenericModal extends HTMLElement {
     }
   }
 
-  dismiss() {
+  private dismiss() {
     this.remove();
     this.dispatchEvent(new CustomEvent('modal-dismiss', { bubbles: true }));
   }

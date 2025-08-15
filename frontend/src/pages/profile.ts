@@ -1,4 +1,5 @@
 import { t } from '@/locales/Translations';
+import * as authService from '@/services/authService.js';
 import '@/components/TopBar.js';
 import '@/components/ThemeToggle.js';
 import '@/components/UserSignin.js';
@@ -7,6 +8,7 @@ import '@/components/UserProfileForm.js';
 import '@/components/AtariBadge.js';
 import '@/components/GenericModal.js';
 import '@/components/MatchesHistory.js';
+import '@/components/DeleteProfile.js';
 
 export function renderProfile(containerId: string, params: Record<string, string> = {}) {
   // document.body.classList.add('overflow-hidden'); // prevent scrolling
@@ -42,10 +44,21 @@ export function renderProfile(containerId: string, params: Record<string, string
     `;
 
     window.addEventListener('delete-profile', (e: CustomEvent) => {
-      // TODO: delete profile
-      alert(t('profile.deleteAccountWarning'));
+      if (!container) return;
+      container.insertAdjacentHTML('beforeend', `
+      <generic-modal dismissible="true" small appear-delay="500">
+        <delete-profile slot="body"></delete-profile>
+      </generic-modal>
+    `);
+    });
+
+    window.addEventListener('enable2fa', (e: CustomEvent) => {
+      if (!container) return;
+      container.insertAdjacentHTML('beforeend', `
+      <generic-modal dismissible="true" appear-delay="500">
+        <img slot="body" id="qrCode" alt="QR Code" style="margin-top: 10px;">
+      </generic-modal>
+    `);
     });
   }
 }
-
-// TODO: idea, maybe match history could be a vertical timeline?

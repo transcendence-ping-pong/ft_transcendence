@@ -159,7 +159,7 @@ template.innerHTML = `
       margin-top: 2rem;
     }
     .profile-form__footer-btn {
-      padding: 1rem 0;
+      padding: 1rem 1rem;
       border: none;
       background: var(--accent-secondary);
       color: var(--body);
@@ -239,6 +239,7 @@ export class UserProfileForm extends HTMLElement {
   private emailInput: HTMLInputElement;
   private passwordInput: HTMLInputElement;
   private confirmPasswordInput: HTMLInputElement;
+  private enable2fa: HTMLInputElement;
   private errorText: HTMLParagraphElement;
   private viewBtn: HTMLSpanElement;
   private saveBtn: HTMLButtonElement;
@@ -266,6 +267,7 @@ export class UserProfileForm extends HTMLElement {
     this.emailInput = shadowRoot.getElementById('email') as HTMLInputElement;
     this.passwordInput = shadowRoot.getElementById('password') as HTMLInputElement;
     this.confirmPasswordInput = shadowRoot.getElementById('confirm-password') as HTMLInputElement;
+    this.enable2fa = shadowRoot.getElementById('enable2fa') as HTMLInputElement;
     this.errorText = shadowRoot.getElementById('error') as HTMLParagraphElement;
     this.viewBtn = shadowRoot.getElementById('viewBtn') as HTMLSpanElement;
     this.saveBtn = shadowRoot.getElementById('saveBtn') as HTMLButtonElement;
@@ -282,6 +284,14 @@ export class UserProfileForm extends HTMLElement {
       if (this.isEditMode) this.editButton.style.backgroundColor = 'var(--accent-secondary)';
       else this.editButton.style.backgroundColor = 'var(--accent)';
       this.toggleEditMode();
+    });
+
+    this.enable2fa.addEventListener('change', (e: Event) => {
+      e.preventDefault();
+      if (this.enable2fa.checked) {
+        this.enable2fa.parentElement?.classList.add('active');
+        window.dispatchEvent(new CustomEvent('enable2fa', { bubbles: true, composed: true }));
+      }
     });
 
     this.deleteBtn.addEventListener('click', (e: Event) => {
