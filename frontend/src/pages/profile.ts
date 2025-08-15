@@ -9,6 +9,7 @@ import '@/components/AtariBadge.js';
 import '@/components/GenericModal.js';
 import '@/components/MatchesHistory.js';
 import '@/components/DeleteProfile.js';
+import '@/components/QrAuthentication.js';
 
 export function renderProfile(containerId: string, params: Record<string, string> = {}) {
   // document.body.classList.add('overflow-hidden'); // prevent scrolling
@@ -38,7 +39,7 @@ export function renderProfile(containerId: string, params: Record<string, string
       </section>
 
       <section class="screen-2 h-screen w-screen">
-        <div class="page-container ">
+        <div class="page-container">
           <matches-history></matches-history>
         </div>
     `;
@@ -55,8 +56,8 @@ export function renderProfile(containerId: string, params: Record<string, string
     window.addEventListener('enable2fa', (e: CustomEvent) => {
       if (!container) return;
       container.insertAdjacentHTML('beforeend', `
-      <generic-modal dismissible="true" appear-delay="500">
-        <img slot="body" id="qrCode" alt="QR Code" style="margin-top: 10px;">
+      <generic-modal dismissible="true" large appear-delay="500">
+        <qr-authentication slot="body"></qr-authentication>
       </generic-modal>
     `);
     });

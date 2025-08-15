@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -172,7 +173,7 @@
                 document.getElementById('authenticatorSection').style.display = 'none';
                 return;
             }
-            
+
             const response = await fetch(`/check-2fa?email=${encodeURIComponent(userEmail)}`);
             const data = await response.json();
 
@@ -268,7 +269,7 @@
 
             const response = await fetch('/generate', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${accessToken}`
                 },
@@ -301,7 +302,7 @@
             const accessToken = localStorage.getItem('accessToken');
             const response = await fetch('/change-password', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${accessToken}`
                 },
@@ -362,21 +363,22 @@
         };
     </script>
     <script>
-    (function() {
-        const params = new URLSearchParams(window.location.search);
-        const accessToken = params.get('accessToken');
-        const refreshToken = params.get('refreshToken');
-        const username = params.get('username');
-        if (accessToken && refreshToken && username) {
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('refreshToken', refreshToken);
-            localStorage.setItem('loggedInUser', username);
-            window.history.replaceState({}, document.title, "/");
-            window.location.reload();
-        }
-    })();
+        (function () {
+            const params = new URLSearchParams(window.location.search);
+            const accessToken = params.get('accessToken');
+            const refreshToken = params.get('refreshToken');
+            const username = params.get('username');
+            if (accessToken && refreshToken && username) {
+                localStorage.setItem('accessToken', accessToken);
+                localStorage.setItem('refreshToken', refreshToken);
+                localStorage.setItem('loggedInUser', username);
+                window.history.replaceState({}, document.title, "/");
+                window.location.reload();
+            }
+        })();
     </script>
 </head>
+
 <body>
     <h1>Authenticator</h1>
     <label for="username">Username:</label>
@@ -431,4 +433,5 @@
         <button onclick="changePassword()">Change Password</button>
     </div>
 </body>
+
 </html>

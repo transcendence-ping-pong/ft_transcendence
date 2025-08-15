@@ -15,6 +15,7 @@ module.exports = {
   INVALID_CREDENTIALS: 'INVALID_CREDENTIALS', // "Invalid email or password"
   ERROR_VERIFYING_PASSWORD: 'ERROR_VERIFYING_PASSWORD', // "Error verifying password"
   AUTHENTICATOR_TOKEN_REQUIRED: 'AUTHENTICATOR_TOKEN_REQUIRED', // "Authenticator token is required"
+  USER_NOT_FOUND_OR_NO_2FA: 'USER_NOT_FOUND_OR_NO_2FA', // "User not found or 2FA not activated"
   INVALID_AUTHENTICATOR_TOKEN: 'INVALID_AUTHENTICATOR_TOKEN', // "Invalid authenticator token"
   ERROR_CREATING_SESSION: 'ERROR_CREATING_SESSION', // "Error creating session"
   ERROR_FETCHING_USER: 'ERROR_FETCHING_USER', // "Error fetching user from database"

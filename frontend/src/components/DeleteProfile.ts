@@ -59,7 +59,7 @@ template.innerHTML = `
   <section class="delete-profile">
     <h1 class="delete-profile__title">${t('profile.deleteAccount')}</h1>
     <hr/>
-    <p class="delete-prodile__description">${t('profile.deleteAccountWarning')}</p>
+    <p class="delete-profile__description">${t('profile.deleteAccountWarning')}</p>
 
     <div class="delete-profile__footer">
       <button id="cancelBtn" class="delete-profile__footer-btn" type="button">${t('profile.cancel')}</button>

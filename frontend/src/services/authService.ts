@@ -61,17 +61,17 @@ export async function logout(refreshToken: string): Promise<AuthResponse> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: refreshToken }),
     });
-    
+
     const result = await res.json();
-    
+
     window.dispatchEvent(new CustomEvent('logout', { bubbles: true, composed: true }));
-    
+
     return result;
   } catch (error) {
     console.error('Error during logout:', error);
-    
+
     window.dispatchEvent(new CustomEvent('logout', { bubbles: true, composed: true }));
-    
+
     return { error: 'Logout completed locally' };
   }
 }

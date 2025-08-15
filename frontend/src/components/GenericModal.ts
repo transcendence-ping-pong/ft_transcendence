@@ -99,7 +99,7 @@ export class GenericModal extends HTMLElement {
     // listen for modal-dismiss from slotted content, e.g. DeleteProfile cancel button
     this.addEventListener('modal-dismiss', (e) => {
       e.stopPropagation(); // TODO STUDY: prevent bubbling further (?)
-      this.dismiss();
+      this.dismiss(true); // avoid infinite loop
     });
   }
 
@@ -111,7 +111,7 @@ export class GenericModal extends HTMLElement {
     if (name === 'appear-delay') {
       this.triggerAppear();
     }
-    if (name === 'small') {
+    if (name === 'small' || name === 'large') {
       this.updateModalSize();
     }
   }
@@ -136,6 +136,9 @@ export class GenericModal extends HTMLElement {
       if (this.hasAttribute('small')) {
         modal.style.width = 'var(--modal-small-width)';
         modal.style.height = 'var(--modal-small-height)';
+      } else if (this.hasAttribute('large')) {
+        modal.style.width = 'var(--modal-large-width)';
+        modal.style.height = 'var(--modal-large-height)';
       } else {
         modal.style.width = 'var(--modal-width)';
         modal.style.height = 'var(--modal-height)';
@@ -166,9 +169,11 @@ export class GenericModal extends HTMLElement {
     }
   }
 
-  private dismiss() {
+  private dismiss(fromChild = false) {
     this.remove();
-    this.dispatchEvent(new CustomEvent('modal-dismiss', { bubbles: true }));
+    if (!fromChild) {
+      this.dispatchEvent(new CustomEvent('modal-dismiss', { bubbles: true }));
+    }
   }
 }
 
