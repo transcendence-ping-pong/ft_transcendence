@@ -155,6 +155,12 @@ export class UserSignin extends HTMLElement {
       accessToken: res.accessToken || '',
       refreshToken: res.refreshToken || '',
     } as UserData;
+    
+    // Also store in localStorage as backup
+    localStorage.setItem('accessToken', res.accessToken || '');
+    localStorage.setItem('refreshToken', res.refreshToken || '');
+    localStorage.setItem('loggedInUser', res.username || '');
+    localStorage.setItem('userEmail', email);
   }
 
   private async _onLogin(e: Event) {

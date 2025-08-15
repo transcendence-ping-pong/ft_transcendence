@@ -271,63 +271,106 @@ async function loadUserProfile() {
   }
 }
 
-// Add this helper function for all API calls:
-async function makeAuthenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
-  let token = localStorage.getItem('accessToken');
-  if (!token) {
+// Replace the makeAuthenticatedRequest function:
+
+export async function makeAuthenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
+  let accessToken = state.userData?.accessToken || localStorage.getItem('accessToken');
+  const refreshToken = state.userData?.refreshToken || localStorage.getItem('refreshToken');
+  
+  if (!accessToken) {
     throw new Error('No access token available');
   }
 
-  // Make the request
+  // Try the request with current access token
   let response = await fetch(url, {
     ...options,
     headers: {
       ...options.headers,
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${accessToken}`
     }
   });
-
-  // If token expired, try to refresh automatically
-  if (response.status === 401) {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-      window.dispatchEvent(new CustomEvent('logout'));
-      throw new Error('Token expired and no refresh token available');
-    }
-
-    try {
-      const refreshResponse = await fetch('/api/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: refreshToken })
-      });
-
-      if (refreshResponse.ok) {
-        const refreshData = await refreshResponse.json();
-        localStorage.setItem('accessToken', refreshData.accessToken);
-        if (refreshData.refreshToken) {
-          localStorage.setItem('refreshToken', refreshData.refreshToken);
-        }
-
-        // Retry original request with new token
-        response = await fetch(url, {
-          ...options,
-          headers: {
-            ...options.headers,
-            'Authorization': `Bearer ${refreshData.accessToken}`
+  
+  // If unauthorized (401 or 403), try to refresh or logout
+  if (response.status === 401 || response.status === 403) {
+    console.log(`Request failed with ${response.status}, attempting token refresh...`);
+    
+    if (refreshToken) {
+      try {
+        const refreshResult = await refreshAccessToken(refreshToken);
+        
+        if (refreshResult.accessToken) {
+          console.log('Token refreshed successfully, retrying request...');
+          
+          // Update both state and localStorage with new token
+          if (state.userData) {
+            state.userData.accessToken = refreshResult.accessToken;
           }
-        });
-      } else {
-        window.dispatchEvent(new CustomEvent('logout'));
-        throw new Error('Token refresh failed');
+          localStorage.setItem('accessToken', refreshResult.accessToken);
+          accessToken = refreshResult.accessToken;
+          
+          // Retry the original request with new token
+          response = await fetch(url, {
+            ...options,
+            headers: {
+              ...options.headers,
+              'Authorization': `Bearer ${accessToken}`
+            }
+          });
+          
+          // If it still fails after refresh, logout
+          if (response.status === 401 || response.status === 403) {
+            console.log('Request still failed after token refresh, logging out...');
+            logoutUser();
+            throw new Error('Session expired, please log in again');
+          }
+        } else {
+          console.log('Token refresh failed, logging out...');
+          logoutUser();
+          throw new Error('Session expired, please log in again');
+        }
+      } catch (error) {
+        console.log('Error during token refresh, logging out...');
+        logoutUser();
+        throw new Error('Session expired, please log in again');
       }
-    } catch (error) {
-      window.dispatchEvent(new CustomEvent('logout'));
-      throw error;
+    } else {
+      console.log('No refresh token available, logging out...');
+      logoutUser();
+      throw new Error('Session expired, please log in again');
     }
   }
-
+  
   return response;
 }
 
-export { makeAuthenticatedRequest };
+// Add helper function to centralize logout logic:
+function logoutUser() {
+  state.userData = null;
+  localStorage.clear();
+  window.dispatchEvent(new CustomEvent('logout', { bubbles: true, composed: true }));
+}
+
+// Update the refreshAccessToken function:
+async function refreshAccessToken(refreshToken: string): Promise<any> {
+  try {
+    console.log('Attempting to refresh access token...');
+    
+    const res = await fetch('/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: refreshToken }),
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Token refresh failed');
+    }
+    
+    const data = await res.json();
+    console.log('Token refresh successful');
+    return data;
+  } catch (error: any) {
+    console.error('Token refresh error:', error);
+    return { error: error.message || 'Token refresh failed' };
+  }
+}
