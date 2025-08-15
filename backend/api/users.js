@@ -18,6 +18,12 @@ const {
     dbAll,
     authenticateToken
 } = require('./utils');
+const path = require('path');
+const fs = require('fs');
+const { pipeline } = require('stream');
+const { promisify } = require('util');
+
+const pump = promisify(pipeline);
 
 async function userRoutes(fastify, options) {
     const db = fastify.db;
@@ -247,7 +253,23 @@ async function userRoutes(fastify, options) {
     });
 
     fastify.get('/current-user', { preHandler: authenticateToken }, (req, res) => {
-        res.send({ username: req.user.username, userId: req.user.userId, email: req.user.email });
+        // Get user data including avatar from database
+        db.get(`SELECT userId, username, email, avatar FROM users WHERE userId = ?`, 
+            [req.user.userId], (err, row) => {
+            if (err) {
+                return res.status(500).send({ error: 'Error fetching user data' });
+            }
+            if (!row) {
+                return res.status(404).send({ error: 'User not found' });
+            }
+            
+            res.send({ 
+                username: row.username, 
+                userId: row.userId, 
+                email: row.email,
+                avatar: row.avatar  // Include avatar in response
+            });
+        });
     });
 
     fastify.get('/users', { preHandler: authenticateToken }, async (req, res) => {
@@ -462,8 +484,55 @@ async function userRoutes(fastify, options) {
     fastify.post('/users/addfriend/:userId', async (request, reply) => {
         const { userId } = request.params;
         
-//missing code
         reply.send({ message: MSG.FRIEND_FUNCTIONALITY_NOT_IMPLEMENTED });
+    });
+
+    // Avatar upload route
+    fastify.post('/upload-avatar', {
+        preHandler: authenticateToken
+    }, async (req, reply) => {
+        try {
+            const data = await req.file();
+            
+            if (!data) {
+                return reply.status(400).send({ error: 'No file uploaded' });
+            }
+
+            // Validate file type
+            if (!data.mimetype.startsWith('image/')) {
+                return reply.status(400).send({ error: 'Only image files are allowed' });
+            }
+
+            // Create uploads directory if it doesn't exist
+            const uploadDir = path.join(__dirname, '../uploads/avatars');
+            if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+            }
+
+            // Generate filename
+            const ext = path.extname(data.filename);
+            const filename = `${req.user.userId}-${Date.now()}${ext}`;
+            const filepath = path.join(uploadDir, filename);
+
+            // Save file
+            await pump(data.file, fs.createWriteStream(filepath));
+
+            const avatarUrl = `/uploads/avatars/${filename}`;
+            
+            // Update user's avatar in database
+            await dbRun(db, 
+                `UPDATE users SET avatar = ? WHERE userId = ?`,
+                [avatarUrl, req.user.userId]
+            );
+
+            reply.send({
+                message: 'Avatar uploaded successfully',
+                avatarUrl
+            });
+        } catch (error) {
+            console.error('Avatar upload error:', error);
+            reply.status(500).send({ error: 'Failed to upload avatar' });
+        }
     });
 }
 

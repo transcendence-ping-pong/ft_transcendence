@@ -77,6 +77,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       refreshToken: refreshToken,
     };
     
+    // ADD THIS: Load user profile data including avatar
+    await loadUserProfile();
+    
     // Clean URL (remove tokens from address bar)
     window.history.replaceState({}, document.title, "/");
     
@@ -92,6 +95,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     }));
     
     console.log('Google OAuth login successful for:', decodeURIComponent(username));
+  } else {
+    // ADD THIS: Also load profile for existing users (on page refresh)
+    const existingToken = localStorage.getItem('accessToken');
+    const existingUsername = localStorage.getItem('loggedInUser');
+    const existingEmail = localStorage.getItem('userEmail');
+    
+    if (existingToken && existingUsername && existingEmail) {
+      console.log('Loading existing user session...');
+      state.userData = {
+        username: existingUsername,
+        email: existingEmail,
+        accessToken: existingToken,
+        refreshToken: localStorage.getItem('refreshToken') || '',
+      };
+      
+      // Load user profile data including avatar
+      await loadUserProfile();
+    }
   }
 
   // translations by default will be in english
@@ -144,3 +165,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.key === 'ArrowRight') window.history.forward();
   });
 });
+
+// ADD THIS FUNCTION: Load user profile data
+async function loadUserProfile() {
+  try {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    console.log('Loading user profile data...');
+    
+    // Get current user info including avatar
+    const response = await fetch('/api/current-user', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (response.ok) {
+      const userData = await response.json();
+      console.log('Loaded user profile:', userData);
+      
+      // Update state with fetched data including avatar
+      state.userData = {
+        ...state.userData,
+        ...userData
+      };
+      
+      console.log('Updated state.userData with avatar:', state.userData.avatar);
+    } else {
+      console.log('Failed to load user profile, response not ok');
+    }
+  } catch (error) {
+    console.error('Failed to load user profile:', error);
+  }
+}

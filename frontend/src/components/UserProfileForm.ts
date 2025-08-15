@@ -1,6 +1,7 @@
 import { t } from '@/locales/Translations';
 import { actionIcons } from '@/utils/Constants';
 import '@/components/CustomTag.js';
+import { state } from '@/state';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -236,6 +237,7 @@ export class UserProfileForm extends HTMLElement {
   private saveBtn: HTMLButtonElement;
   private viewMatchesBtn: HTMLButtonElement;
   private isEditMode = false;
+  private pendingAvatarFile: File | null = null;
 
   private mockData = {
     username: 'mockuser',
@@ -281,10 +283,16 @@ export class UserProfileForm extends HTMLElement {
       window.dispatchEvent(new CustomEvent('view-matches-history', { bubbles: true, composed: true }));
     });
 
-    this.saveBtn.addEventListener('click', (e: Event) => {
-      e.preventDefault();
+    // Listen for avatar changes
+    window.addEventListener('avatar-changed', (e: CustomEvent) => {
+      console.log('Avatar changed event received:', e.detail);
+      this.pendingAvatarFile = e.detail.file;
+      console.log('Pending avatar file set:', this.pendingAvatarFile);
+    });
 
-      alert("Call BE and save information");
+    this.saveBtn.addEventListener('click', async (e: Event) => {
+      e.preventDefault();
+      await this.saveChanges();
     });
 
     this.toggleEditMode();
@@ -292,19 +300,143 @@ export class UserProfileForm extends HTMLElement {
   }
 
   private renderForm() {
-    this.usernameInput.value = this.mockData.username;
-    this.emailInput.value = this.mockData.email;
-    this.passwordInput.value = this.mockData.password;
+    this.usernameInput.value = state.userData.username;
+    this.emailInput.value = state.userData.email;
+    this.passwordInput.value = ''; // Don't show password - not safe
+    
+    // Disable password and 2FA fields for Google accounts
+    this.disableGoogleAccountFields();
+  }
+
+  private disableGoogleAccountFields() {
+    const isGoogleAccount = this.isGoogleAccount();
+    
+    if (isGoogleAccount) {
+        // Disable password fields
+        this.passwordInput.disabled = true;
+        this.confirmPasswordInput.disabled = true;
+        
+        // Disable 2FA checkbox
+        const enable2faCheckbox = this.shadowRoot.getElementById('enable2fa') as HTMLInputElement;
+        if (enable2faCheckbox) {
+            enable2faCheckbox.disabled = true;
+        }
+    }
+  }
+
+  private isGoogleAccount(): boolean {
+    // Check if user logged in via Google
+    const loginMethod = localStorage.getItem('loginMethod');
+    return loginMethod === 'google';
   }
 
   private toggleEditMode() {
     const editable = this.isEditMode;
+    const isGoogleAccount = this.isGoogleAccount();
+    
     this.usernameInput.disabled = !editable;
-    this.emailInput.disabled = !editable;
-    this.passwordInput.disabled = !editable;
-    this.confirmPasswordInput.disabled = !editable;
+    this.emailInput.disabled = true; // Always disable email
+    
+    if (!isGoogleAccount) {
+        this.passwordInput.disabled = !editable;
+        this.confirmPasswordInput.disabled = !editable;
+    }
+    
     if (this.saveBtn) this.saveBtn.disabled = !editable;
   }
+
+  private async saveChanges() {
+    try {
+        console.log('Save changes called');
+        console.log('Pending avatar file:', this.pendingAvatarFile);
+        
+        const isGoogleAccount = this.isGoogleAccount();
+        let hasChanges = false;
+
+        // For regular accounts, check and update other profile data
+        if (!isGoogleAccount) {
+            const newUsername = this.usernameInput.value.trim();
+            const newPassword = this.passwordInput.value;
+            const confirmPassword = this.confirmPasswordInput.value;
+            
+            // Update username if changed
+            if (newUsername && newUsername !== state.userData.username) {
+                await this.updateUsername(newUsername);
+                hasChanges = true;
+            }
+            
+            // Update password if provided
+            if (newPassword && newPassword.length > 6) {
+                if (newPassword !== confirmPassword) {
+                    throw new Error('Passwords do not match');
+                }
+                await this.updatePassword(newPassword);
+                hasChanges = true;
+            }
+        }
+        
+        if (hasChanges) {
+            alert("Profile updated successfully!");
+            // Clear password fields after successful update
+            this.passwordInput.value = '';
+            this.confirmPasswordInput.value = '';
+            // Refresh the form with new data
+            this.renderForm();
+        } else {
+            alert("No changes to save.");
+        }
+        
+    } catch (error) {
+        console.error('Error saving profile:', error);
+        alert(`Error updating profile: ${error.message}`);
+    }
+}
+
+private async updateUsername(newUsername: string): Promise<void> {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+        throw new Error('No access token available');
+    }
+
+    const response = await fetch('/api/change-username', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ newUsername })
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update username');
+    }
+
+    // Update state with new username
+    state.userData.username = newUsername;
+    localStorage.setItem('loggedInUser', newUsername);
+}
+
+private async updatePassword(newPassword: string): Promise<void> {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+        throw new Error('No access token available');
+    }
+
+    const response = await fetch('/api/change-password', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ newPassword })
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update password');
+    }
+}
 };
 
 customElements.define('user-profile-form', UserProfileForm);

@@ -12,20 +12,30 @@ const db = new sqlite3.Database(db_path, sqlite3.OPEN_READWRITE);
 
 fastify.decorate('db', db);
 
+fastify.register(require('@fastify/multipart'));
+
+// Register API routes
 fastify.register(require('./api/matches'), { prefix: '/api' });
 fastify.register(require('./api/users'), { prefix: '/api' });
 
 const port = 4000;
 
 let html_path = path.join(__dirname, 'temp');
+let uploads_path = path.join(__dirname, 'uploads');
 
 fastify.register(fastifyStatic, {
     root: html_path,
     prefix: '/',
 });
 
+fastify.register(fastifyStatic, {
+    root: uploads_path,
+    prefix: '/uploads/',
+    decorateReply: false
+});
+
 fastify.register(fastifyCors, {
-    origin: true, // TODO: Change allowed origin - Allow all origins (for development)
+    origin: true,
     credentials: true
 });
 

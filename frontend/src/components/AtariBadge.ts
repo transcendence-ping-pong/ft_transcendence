@@ -1,4 +1,5 @@
 import { t } from '@/locales/Translations';
+import { state } from '@/state';
 
 // VIRTUAL_WIDTH and VIRTUAL_HEIGHT define the "design" size of the badge.
 // The badge and all its content will always render at these dimensions (in px).
@@ -65,6 +66,37 @@ template.innerHTML = `
       background: #222;
       border: 3px solid #fff;
       margin-bottom: 0.7em;
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+    }
+    .avatar:hover {
+      opacity: 0.8;
+    }
+    .avatar-upload-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+      color: white;
+      font-size: 0.8rem;
+    }
+    .avatar-container {
+      position: relative;
+    }
+    .avatar-container:hover .avatar-upload-overlay {
+      opacity: 1;
+    }
+    .hidden-file-input {
+      display: none;
     }
     .badge-username {
       font-size: 2.1rem;
@@ -136,13 +168,19 @@ template.innerHTML = `
   />
   <div class="badge-content-outer">
     <div class="profile-card atari-badge">
-      <img class="avatar" />
+      <div class="avatar-container">
+        <img class="avatar" />
+        <div class="avatar-upload-overlay">
+          📷 Change
+        </div>
+      </div>
+      <input type="file" class="hidden-file-input" accept="image/*" />
       <h2 class="badge-username"></h2>
       <div class="badge__container--row">
         <hr class="badge-hr" />
       </div>
       <span class="username-label">${t("auth.username")}</span>
-      <span class="visitor-number">#042</span>
+      <span class="visitor-number">${t("auth.userID")}</span>
       <div class="badge__container--row">
         <span class="visitor-label">${t("profile.visitorNo")}</span>
         <hr class="badge-hr" />
@@ -156,6 +194,9 @@ template.innerHTML = `
 `;
 
 export class AtariBadge extends HTMLElement {
+  private fileInput: HTMLInputElement;
+  private avatar: HTMLImageElement;
+
   static get observedAttributes() {
     return ['username'];
   }
@@ -166,22 +207,164 @@ export class AtariBadge extends HTMLElement {
   }
 
   connectedCallback() {
+    this.avatar = this.shadowRoot.querySelector('.avatar') as HTMLImageElement;
+    this.fileInput = this.shadowRoot.querySelector('.hidden-file-input') as HTMLInputElement;
+    
+    // Add click handler for avatar
+    this.avatar.addEventListener('click', () => {
+      this.fileInput.click();
+    });
+
+    // Add file change handler
+    this.fileInput.addEventListener('change', (e) => {
+      this.handleFileSelect(e);
+    });
+
+    // Listen for avatar updates from upload
+    window.addEventListener('avatar-updated', (e: CustomEvent) => {
+        console.log('Avatar updated event received:', e.detail);
+        if (this.avatar && e.detail.avatarUrl) {
+            // Force immediate update with cache busting
+            this.avatar.src = e.detail.avatarUrl;
+            // Also trigger a re-render to update state
+            this.render();
+        }
+    });
+
     this.render();
   }
 
   attributeChangedCallback() {
     this.render();
   }
+  private printFirstName(username: string): string {
+    return username.split(' ')[0];
+  }
+  private handleFileSelect(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
 
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (e.g., max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      this.avatar.src = result;
+    };
+    reader.readAsDataURL(file);
+
+    // Trigger the actual upload to server
+    this.uploadAvatarToServer(file);
+}
+
+private async uploadAvatarToServer(file: File) {
+    try {
+        console.log('Starting upload for file:', file.name, 'Size:', file.size);
+        
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            throw new Error('No access token available. Please log in again.');
+        }
+
+        console.log('Sending request to /api/upload-avatar');
+        
+        const response = await fetch('/api/upload-avatar', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        console.log('Response status:', response.status);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Upload failed:', response.status, errorText);
+            throw new Error(`Failed to upload avatar: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('Upload result:', result);
+        
+        // Check what we got back
+        if (!result.avatarUrl) {
+            console.error('No avatarUrl in response:', result);
+            throw new Error('Invalid response from server');
+        }
+        
+        // Save clean URL to state (without cache-busting)
+        state.userData.avatar = result.avatarUrl;
+        console.log('Updated state.userData.avatar to:', state.userData.avatar);
+
+        // Update display with cache-busting
+        const avatarUrl = `${result.avatarUrl}?t=${Date.now()}`;
+        this.avatar.src = avatarUrl;
+        
+        console.log('Avatar uploaded successfully, reloading page...');
+
+        // Reload the page to show updated values everywhere
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000); // Increased delay to see console logs
+
+    } catch (error) {
+        console.error('Error uploading avatar:', error);
+        alert(`Failed to upload avatar: ${error.message}`);
+        
+        // Revert to original avatar on error
+        this.render();
+    }
+}
   render() {
     const username = this.getAttribute('username') || '';
-    const avatarUrl = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`;
-    const avatar = this.shadowRoot.querySelector('.avatar') as HTMLImageElement;
+    console.log('AtariBadge render() called for username:', username);
+    console.log('Current state.userData.avatar:', state.userData.avatar);
+    
+    // Check if user has custom avatar in state, otherwise use generated one
+    const customAvatar = state.userData.avatar;
+    let avatarUrl;
+    
+    if (customAvatar) {
+        // Remove any existing cache-busting parameters before adding new ones
+        const baseUrl = customAvatar.split('?')[0];
+        avatarUrl = `${baseUrl}?t=${Date.now()}`;
+        console.log('Using custom avatar:', avatarUrl);
+    } else {
+        avatarUrl = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`;
+        console.log('Using generated avatar:', avatarUrl);
+    }
+    
+    if (this.avatar) {
+      this.avatar.src = avatarUrl;
+      this.avatar.alt = "Avatar";
+      console.log('Set avatar.src to:', avatarUrl);
+    }
+    
     const h2 = this.shadowRoot.querySelector('.badge-username');
-    avatar.src = avatarUrl;
-    avatar.alt = "Avatar";
-    if (h2) h2.textContent = username;
-  }
+    if (h2) h2.textContent = this.printFirstName(username);
+    
+    // Update other elements with values from state
+    const visitorNumber = this.shadowRoot.querySelector('.visitor-number');
+    if (visitorNumber) visitorNumber.textContent = state.userData.userId?.toString() || '';
+    
+    const usernameLabel = this.shadowRoot.querySelector('.username-label');
+    if (usernameLabel) usernameLabel.textContent = state.userData.username || '';
+}
 }
 
 customElements.define('atari-badge', AtariBadge);

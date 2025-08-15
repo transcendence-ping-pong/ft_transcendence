@@ -19,18 +19,21 @@ services:
       - ./backend/.env
     volumes:
       - db_data:/app/database
+      - uploads_data:/app/uploads  # Add this line
 
   nginx:
     image: nginx:alpine
     ports:
       - "80:80"
     volumes:
-      # - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - uploads_data:/var/www/uploads  # Add this line
     depends_on:
       - frontend
       - backend
 
 volumes:
   db_data:
-   driver: local
+    driver: local
+  uploads_data:  # Add this volume
+    driver: local
