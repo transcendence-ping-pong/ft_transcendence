@@ -97,6 +97,9 @@ template.innerHTML = `
 
     .input-error {
       border-color:var(--warning);
+    }  
+    .input-success {
+      border-color:var(--success);
     }
     .error {
       font-size: 0.75rem;
@@ -125,7 +128,7 @@ template.innerHTML = `
       width: 4rem;
       height: 4rem;
       display: block;
-      filter: invert(var(--invert));
+      filter: invert(1);
     }
     .verify-output__description {
       font-size: var(--main-font-size);
@@ -215,9 +218,10 @@ class QrAuthentication extends HTMLElement {
     });
 
     this.verifyBtn.addEventListener('click', () => {
+      this._clearError();
       const code = this.codeInput.value.trim();
       if (!/^\d{6}$/.test(code)) {
-        alert('Please enter a valid 6-digit code.');
+        this._setError(t("profile.invalidCode"));
         return;
       }
       this.showSpinner()
@@ -255,20 +259,21 @@ class QrAuthentication extends HTMLElement {
 
   private async verifyToken(email: string, code: string) {
     const secret = this.authData['secret'];
-    
     const res = await authService.verifyToken(email, code, secret);
-    
+
     if (res.error) {
       this.codeInput.classList.add('input-error');
       this._setError(err(res.error));
-      console.log('Error verifying token:', res.error);
       this._renderVerifyOutput('close', 'var(--warning)');
       return;
     }
 
-    this._renderVerifyOutput('dino', 'var(--success)');
-    this._clearError();
-    this._setError('');
+    this._renderVerifyOutput('check', 'var(--success)');
+    this.codeInput.classList.remove('input-error');
+    this.codeInput.classList.add('input-success');
+    setTimeout(() => {
+      this.dispatchEvent(new CustomEvent('modal-dismiss', { bubbles: true }));
+    }, 400);
   }
 
   _renderVerifyOutput(icon: string, color: string) {
@@ -286,6 +291,7 @@ class QrAuthentication extends HTMLElement {
 
   _setError(msg: string) {
     this.shadowRoot.getElementById('error').textContent = msg;
+    this.codeInput.classList.add('input-error');
   }
 
   _clearError() {
