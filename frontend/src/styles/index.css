@@ -5,6 +5,7 @@
 :root {
   /* 16" screens */
   --header-font-size: 1.25rem;
+  --title-font-size: 2.25rem;
   --main-font-size: 1rem;
   --secondary-font-size: 0.85rem;
 
@@ -18,6 +19,7 @@
 
   --logo-size: 40px;
   --avatar-size: 40px;
+  --qr-size: 200px;
   --icon-size: 20px;
   /* 16px horizontal padding */
   --component-h-padding: 0 1rem;
@@ -28,6 +30,10 @@
 
   --modal-height: 50vh;
   --modal-width: 40vw;
+  --modal-small-height: 25vh;
+  --modal-small-width: 35vw;
+  --modal-large-height: 60vh;
+  --modal-large-width: 50vw;
   --button-height: 2.5rem;
   --button-min-width: 150px;
 }
@@ -37,6 +43,7 @@
   /* 14" screens */
   :root {
     --header-font-size: 1rem;
+    --title-font-size: 2rem;
     --main-font-size: 0.85rem;
     --secondary-font-size: 0.7rem;
 
@@ -50,6 +57,7 @@
 
     --logo-size: 32px;
     --avatar-size: 32px;
+    --qr-size: 180px;
     --icon-size: 16px;
     /* 12px horizontal padding */
     --component-h-padding: 0 0.75rem;
@@ -57,6 +65,10 @@
 
     --modal-height: 50vh;
     --modal-width: 40vw;
+    --modal-small-height: 25vh;
+    --modal-small-width: 35vw;
+    --modal-large-height: 60vh;
+    --modal-large-width: 50vw;
     --button-height: 2rem;
     --button-min-width: 120px;
   }
@@ -67,6 +79,7 @@
   /* Large desktop */
   :root {
     --header-font-size: 1.5rem;
+    --title-font-size: 3rem;
     --main-font-size: 1.1rem;
     --secondary-font-size: 0.95rem;
 
@@ -80,6 +93,7 @@
 
     --logo-size: 48px;
     --avatar-size: 48px;
+    --qr-size: 250px;
     --icon-size: 24px;
     /* 20px horizontal padding */
     --component-h-padding: 0 1.25rem;
@@ -87,7 +101,10 @@
 
     --modal-height: 50vh;
     --modal-width: 35vw;
-
+    --modal-small-height: 25vh;
+    --modal-small-width: 35vw;
+    --modal-large-height: 60vh;
+    --modal-large-width: 50vw;
     --button-height: 3rem;
     --button-min-width: 180px;
   }
@@ -122,7 +139,11 @@
 }
 
 .screen-1 {
-  background-image: var(--gradient) !important;
+  background-image: var(--gradient-1) !important;
+}
+
+.screen-2 {
+  background-image: var(--gradient-2) !important;
 }
 
 .game-area.with-overlay::before {
@@ -133,6 +154,21 @@
   z-index: 99;
   pointer-events: auto;
   transition: opacity 0.3s;
+}
+
+.page-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+@media (max-width: 1024px) {
+  .page-container {
+    max-width: 1024px;
+  }
 }
 
 /* GOOGLE */
@@ -167,7 +203,8 @@
 
 .theme-primary {
   --body: #e2d7b7;
-  --gradient: linear-gradient(178.7deg, rgb(184, 167, 122) 1.7%, rgba(226, 215, 183, 1) 63%);
+  --gradient-1: linear-gradient(178.7deg, rgb(184, 167, 122) 1.7%, rgba(226, 215, 183, 1) 63%);
+  --gradient-2: linear-gradient(178.7deg, rgba(226, 215, 183, 1) 1.7%, rgb(184, 167, 122) 63%);
   --fade: linear-gradient(to bottom,
       rgba(0, 0, 0, 0) 0%,
       rgba(255, 255, 255, 0.01) 80%,
@@ -177,8 +214,9 @@
   --accent-tertiary: #560126;
   --border: #8a7676;
   --invert: 0;
-  --success: #45796d;
+  --success: #006d18;
   --warning: #ff5733;
+  --warning-secondary: #c32400;
   --loading: #b8a77a;
   --text: #000000;
   --text-secondary: #4a4a4a;
@@ -187,6 +225,7 @@
   --google-hover: #EEEEEE;
   --shadow: 0 8px 32px #0004;
   --shadow-soft: 0 4px 16px #0004;
+  --avatar-bg: rgba(0, 0, 0, 0.35);
   --game-gradient-start: #f8c434;
   --game-gradient-end: #b8a77a;
   --game-transition-bg: rgb(255, 255, 255);
@@ -195,7 +234,8 @@
 
 .theme-secondary {
   --body: #06022f;
-  --gradient: linear-gradient(178.7deg, rgb(2, 0, 20) 1.7%, rgba(31, 15, 92, 1) 63%);
+  --gradient-1: linear-gradient(178.7deg, rgb(2, 0, 20) 1.7%, rgba(31, 15, 92, 1) 63%);
+  --gradient-2: linear-gradient(178.7deg, rgba(31, 15, 92, 1) 1.7%, rgb(2, 0, 20) 63%);
   --fade: linear-gradient(to bottom,
       rgba(0, 0, 0, 0) 0%,
       rgba(255, 255, 255, 0.01) 60%,
@@ -205,8 +245,9 @@
   --accent-tertiary: #4285F4;
   --border: #8982ac;
   --invert: 1;
-  --success: #00ff1a;
+  --success: #018e1f;
   --warning: #ff5733;
+  --warning-secondary: #c32400;
   --loading: #1f0f5c;
   --text: #ecebed;
   --text-secondary: #b8a77a;
@@ -215,6 +256,7 @@
   --google-hover: #1e1e1e;
   --shadow: 0 8px 32px #8982ac;
   --shadow-soft: 0 4px 8px #8982ac;
+  --avatar-bg: rgba(255, 255, 255, 0.35);
   --game-gradient-start: #1f0f5c;
   --game-gradient-end: #1a2233;
   --game-transition-bg: rgb(0, 0, 0);

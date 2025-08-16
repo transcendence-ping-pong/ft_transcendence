@@ -188,7 +188,7 @@ template.innerHTML = `
 
     <div class="top-bar__right">
       <button class="top-bar__avatar" id="avatar" type="button">
-        <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=robot" alt="Avatar" />
+        <img src="" alt="Avatar" />
       </button>
       <slot name="toggle"></slot>
       <slot name="language"></slot>
@@ -224,9 +224,31 @@ export class TopBar extends HTMLElement {
     this.logoutButton.addEventListener('click', (e) => this.handleLogout(e));
     this.profileButton.addEventListener('click', (e) => this.handleProfile(e));
 
-    // check logout visibility on mount
+    // SIMPLIFIED: Just one listener
+    window.addEventListener('username-updated', () => this.updateAvatar());
+    
+    this.updateAvatar();
     this.updateButtons();
   }
+
+  private updateAvatar() {
+    const avatarImg = this.shadowRoot?.querySelector('.top-bar__avatar img') as HTMLImageElement;
+    if (!avatarImg) return;
+
+    const username = state.userData?.username;
+    const customAvatar = state.userData?.avatar;
+    
+    if (customAvatar) {
+        // Use custom uploaded avatar
+        avatarImg.src = `${customAvatar}?t=${Date.now()}`;
+    } else if (username) {
+        // Use generated avatar based on username
+        avatarImg.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`;
+    } else {
+        // Fallback to default
+        avatarImg.src = "https://api.dicebear.com/7.x/pixel-art/svg?seed=robot";
+    }
+}
 
   private updateButtons() {
     const isGame = this.getAttribute('mode') === 'game';

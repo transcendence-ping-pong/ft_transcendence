@@ -1,10 +1,10 @@
-
 CREATE TABLE IF NOT EXISTS users (
 	userId INTEGER PRIMARY KEY AUTOINCREMENT,
 	username TEXT NOT NULL UNIQUE,
-	password TEXT NOT NULL,
-	secret TEXT NOT NULL,
+	password TEXT, -- Remove NOT NULL constraint
+	secret TEXT,   -- Remove NOT NULL constraint
 	googleID TEXT UNIQUE,
+	avatar TEXT,
 	email TEXT
 );
 

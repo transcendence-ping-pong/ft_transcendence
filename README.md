@@ -198,7 +198,8 @@ Connected to a transient in-memory database.
 Use ".open FILENAME" to reopen on a persistent database.
 sqlite> .open database.db
 sqlite> .tables
-friend_list    match_history  match_stats    user_stats     users        
+friend_list    match_history  match_stats    user_stats     users    
+sqlite> SELECT * FROM users;
 sqlite> .quit
 exit
 ```
