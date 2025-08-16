@@ -1,4 +1,5 @@
 import { UserData } from '@/utils/playerUtils/types';
+import { Players } from '@/utils/playerUtils/types';
 /*
   State responsabilities:
   - persist state in localStorage
@@ -38,7 +39,7 @@ const initialState = savedState ? JSON.parse(savedState) : {
   soundEnabled: true,
   scaleFactor: {},
   userData: {} as UserData, // user data will be set after login
-  tournamentData: {} as TournamentData,
+  Players: {} as Players,
   // TODO: add other state properties that we need to persist
 };
 
