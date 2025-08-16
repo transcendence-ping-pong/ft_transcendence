@@ -49,7 +49,7 @@ export class gameOrchestrator {
     // } else {
     //   this.setupMenuFlow();
     // }
-	this.setupMultiplayerEvents();
+    this.setupMultiplayerEvents();
     this.setupMenuFlow();
     this.babylonCanvas.startRenderLoop();
 
@@ -121,7 +121,7 @@ export class gameOrchestrator {
       }, 3000);
     });
 
-	// TODO: think its somewhat buggy
+    // TODO: think its somewhat buggy
     window.addEventListener('player-disconnected', (e: CustomEvent) => {
       if (this.isMultiplayerMode) {
         this.isMultiplayerMode = false;
@@ -216,9 +216,9 @@ export class gameOrchestrator {
   }
 
   private setupMenuFlow() {
-	if (this.isMultiplayerMode) {
-		return;
-	}
+    if (this.isMultiplayerMode) {
+        return;
+    }
     // user starts the game from the main menu. Flow starting point
     this.gui.showStartButton(() => {
       // wants to play in which level? HARD, MEDIUM, EASY
@@ -231,13 +231,19 @@ export class gameOrchestrator {
           this.gameMode = selectedMode as GameMode;
 
           if (this.gameMode === GameMode.LOCAL) {
-
             // wants to play a single match or a tournament?
             // if one match, the flow is simpler. User can play with a bot or with another player
             // then, the game is ready to start
             this.gui.showGameTypeButton((gameType) => {
               this.gameType = gameType as GameType;
               if (gameType === GameType.ONE_MATCH) {
+                state.Players = {
+                  p1: "Cenas",
+                  p2: "WTV" // needs to be string since Players expects strings
+                };
+				state.UserData = {
+					userId: 5
+				}
                 this.gui.showPlayerSelector((mode) => {
                   if (mode === PlayerMode.ONE_PLAYER) {
                     this.gameCanvas.enableBotForPlayer(1);

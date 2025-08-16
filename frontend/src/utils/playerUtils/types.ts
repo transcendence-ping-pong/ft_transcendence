@@ -1,9 +1,15 @@
 export type UserData = {
   username: string;
+  userId: number;
   email: string;
   accessToken: string;
   refreshToken: string;
   expiresAt?: number; // optional, for token expiry
+};
+
+export type Players = {
+  p1: string;
+  p2: string;
 };
 
 export interface PlayerDataType {
