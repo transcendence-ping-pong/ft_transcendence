@@ -8,6 +8,7 @@ import { renderLoading } from '@/pages/loading.js';
 import { initRouter } from '@/utils/Router.js';
 import { notificationService } from "@/services/notificationService";
 import { startMockNotifications } from "@/services/mockNotifications.js";
+import { websocketService } from "@/services/websocketService.js";
 import '@/styles/index.css';
 import '@babylonjs/loaders';
 import { renderBracket } from '@/pages/tournament.js';
@@ -24,6 +25,7 @@ import { renderBracket } from '@/pages/tournament.js';
   - manage specific game scenes or components directly
   - handle user authentication or session management directly
 */
+// import { getUsers } from './services/api.js';
 
 const routes = {
   "/": renderHome,
@@ -41,7 +43,7 @@ notificationService.listen((notif) => {
 });
 
 // TODO SOCKET: REMOVE MOCK
-startMockNotifications();
+// startMockNotifications();
 
 document.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(window.location.search);
@@ -169,6 +171,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     state.translations = await getTranslations(newLang);
 
     const render = routes[window.location.pathname];
+
     if (render) render('app');
     window.location.reload(); // TODO: improve it, a full reload is not necessary (?)
   });
@@ -179,6 +182,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.key === 'ArrowLeft') window.history.back();
     if (e.key === 'ArrowRight') window.history.forward();
   });
+
+  // connects to websocket server
+  websocketService.connect(`ws://${window.location.hostname}:4001`);
 });
 
 

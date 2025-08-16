@@ -31,13 +31,6 @@ CREATE TABLE IF NOT EXISTS friendList (
 	FOREIGN KEY (friendId) REFERENCES users (userId)
 );
 
-CREATE TABLE IF NOT EXISTS matchHistory (
-	userId INTEGER NOT NULL,
-	matchId INTEGER NOT NULL,
-	FOREIGN KEY (userId) REFERENCES users (userId),
-	FOREIGN KEY (matchId) REFERENCES matches (matchId)
-);
-
 CREATE TABLE IF NOT EXISTS matches (
 	matchId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	tournamentId INTEGER,
