@@ -1,5 +1,5 @@
 import { getTranslations } from './locales/Translations.js';
-import { getValidUserId, state } from './state.js';
+import { state } from './state.js';
 import { renderHome } from './pages/home.js';
 import { renderLogin } from '@/pages/login.js';
 import { renderGame } from '@/pages/game.js';
@@ -128,6 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.body.classList.toggle('theme-secondary', state.theme === 'secondary');
 
   navigate = initRouter(routes, 'app');
+
 
   window.addEventListener('login-success', async (e: CustomEvent) => {
     if (state.userData && !localStorage.getItem('accessToken')) {
