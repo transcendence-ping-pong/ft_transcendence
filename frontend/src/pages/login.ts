@@ -1,3 +1,4 @@
+import * as authService from '@/services/authService.js';
 import '@/components/ThemeToggle.js';
 import '@/components/LanguagesDropdown.js';
 import '@/components/TopBar.js';
@@ -76,6 +77,7 @@ export function renderLogin(containerId: string) {
         el = document.createElement('user-signup');
         el.addEventListener('switch-to-login', (e: CustomEvent) => transitionTo('login', e.detail));
         break;
+      case 'token':
     }
 
     content.appendChild(el);

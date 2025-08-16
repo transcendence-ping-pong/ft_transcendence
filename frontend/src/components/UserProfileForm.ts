@@ -135,62 +135,6 @@ template.innerHTML = `
       opacity: 0.85;
     }
 
-
-    .profile-form__auth-checkbox--label {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      cursor: pointer;
-      font-size: 1rem;
-      color: var(--text);
-    }
-    .profile-form__auth-checkbox {
-      width: 1.5rem;
-      height: 1.5rem;
-      background-color: var(--body);
-      border: 2px solid var(--border);
-      border-radius: 0;
-      appearance: none;
-      -webkit-appearance: none;
-      outline: none;
-      cursor: pointer;
-      position: relative;
-      transition: box-shadow 0.2s;
-    }
-    .profile-form__auth-checkbox:checked {
-      background-color: var(--accent-tertiary);
-      border-color: var(--accent-tertiary);
-    }
-    .profile-form__auth-checkbox:checked::before,
-    .profile-form__auth-checkbox:checked::after {
-      content: '';
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 0.8rem;
-      height: 2px;
-      background: #fff;
-      border-radius: 1px;
-      transform: translate(-50%, -50%) rotate(45deg);
-      display: block;
-    }
-    .profile-form__auth-checkbox:checked::after {
-      transform: translate(-50%, -50%) rotate(-45deg);
-    }
-    .profile-form__auth-checkbox:focus {
-      box-shadow: 0 0 0 2px var(--accent-secondary);
-    }
-    .profile-form__auth-checkbox.enabled {
-      background-color: var(--success) !important;
-      border-color: var(--success) !important;
-      cursor: not-allowed;
-    }
-    .profile-form__auth-checkbox.enabled:checked::before,
-    .profile-form__auth-checkbox.enabled:checked::after {
-      background: #fff;
-    }
-
-
     .profile-form__footer {
       display: flex;
       justify-content: space-between;
@@ -345,7 +289,7 @@ export class UserProfileForm extends HTMLElement {
     });
 
     window.addEventListener('modal-dismiss', () => {
-      this.renderForm();
+      setTimeout(() => this.renderForm(), 0);
     });
 
     this.toggleEditMode();
@@ -363,6 +307,7 @@ export class UserProfileForm extends HTMLElement {
       if (enabled) {
         this.enable2fa.disabled = true;
         this.enable2fa.textContent = t('profile.success2FA');
+        this.enable2fa.classList.add('profile-form__auth-btn--success');
       } else {
         this.enable2fa.disabled = false;
         this.enable2fa.textContent = t('profile.enable2FA');
