@@ -237,13 +237,10 @@ export class gameOrchestrator {
             this.gui.showGameTypeButton((gameType) => {
               this.gameType = gameType as GameType;
               if (gameType === GameType.ONE_MATCH) {
-                state.Players = {
-                  p1: "Cenas",
-                  p2: "WTV" // needs to be string since Players expects strings
-                };
-				state.UserData = {
-					userId: 5
-				}
+                state.Players = { p1: "Player1", p2: "Player2" };
+				// state.UserData = {
+				// 	userId: 5
+				// }
                 this.gui.showPlayerSelector((mode) => {
                   if (mode === PlayerMode.ONE_PLAYER) {
                     this.gameCanvas.enableBotForPlayer(1);

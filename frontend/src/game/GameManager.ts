@@ -29,7 +29,7 @@ export class GameManager {
     this.isStarted = true; 
     this.isGameOver = false;
 	this.tempnumber = 0;
-	const match = await createMatch(state.UserData.userId, this.tempnumber, this.tempnumber, state.Players.p1, state.Players.p2);
+	const match = await createMatch(state.userData.userId, this.tempnumber, this.tempnumber, state.Players.p1, state.Players.p2);
 	this.matchId = match.id;
     this.reset();
     this._onFinish = onFinish;

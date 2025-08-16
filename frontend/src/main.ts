@@ -187,6 +187,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   websocketService.connect(`ws://${window.location.hostname}:4001`);
 });
 
+// @ts-ignore
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 async function loadUserProfile() {
   try {
@@ -195,7 +197,7 @@ async function loadUserProfile() {
 
     console.log('Loading user profile data...');
     
-    let response = await fetch('/api/current-user', {
+    let response = await fetch(`${BASE_URL}/current-user`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -218,7 +220,7 @@ async function loadUserProfile() {
       }
 
       try {
-        const refreshResponse = await fetch('/api/token', {
+        const refreshResponse = await fetch(`${BASE_URL}/token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token: refreshToken })
@@ -231,7 +233,7 @@ async function loadUserProfile() {
             localStorage.setItem('refreshToken', refreshData.refreshToken);
           }
           
-          response = await fetch('/api/current-user', {
+          response = await fetch(`${BASE_URL}/current-user`, {
             headers: {
               'Authorization': `Bearer ${refreshData.accessToken}`
             }
@@ -357,7 +359,7 @@ async function refreshAccessToken(refreshToken: string): Promise<any> {
   try {
     console.log('Attempting to refresh access token...');
     
-    const res = await fetch('/api/token', {
+    const res = await fetch(`${BASE_URL}/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: refreshToken }),
