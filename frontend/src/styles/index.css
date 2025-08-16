@@ -19,6 +19,7 @@
 
   --logo-size: 40px;
   --avatar-size: 40px;
+  --qr-size: 200px;
   --icon-size: 20px;
   /* 16px horizontal padding */
   --component-h-padding: 0 1rem;
@@ -29,6 +30,10 @@
 
   --modal-height: 50vh;
   --modal-width: 40vw;
+  --modal-small-height: 25vh;
+  --modal-small-width: 35vw;
+  --modal-large-height: 60vh;
+  --modal-large-width: 50vw;
   --button-height: 2.5rem;
   --button-min-width: 150px;
 }
@@ -52,6 +57,7 @@
 
     --logo-size: 32px;
     --avatar-size: 32px;
+    --qr-size: 180px;
     --icon-size: 16px;
     /* 12px horizontal padding */
     --component-h-padding: 0 0.75rem;
@@ -59,6 +65,10 @@
 
     --modal-height: 50vh;
     --modal-width: 40vw;
+    --modal-small-height: 25vh;
+    --modal-small-width: 35vw;
+    --modal-large-height: 60vh;
+    --modal-large-width: 50vw;
     --button-height: 2rem;
     --button-min-width: 120px;
   }
@@ -83,6 +93,7 @@
 
     --logo-size: 48px;
     --avatar-size: 48px;
+    --qr-size: 250px;
     --icon-size: 24px;
     /* 20px horizontal padding */
     --component-h-padding: 0 1.25rem;
@@ -90,7 +101,10 @@
 
     --modal-height: 50vh;
     --modal-width: 35vw;
-
+    --modal-small-height: 25vh;
+    --modal-small-width: 35vw;
+    --modal-large-height: 60vh;
+    --modal-large-width: 50vw;
     --button-height: 3rem;
     --button-min-width: 180px;
   }

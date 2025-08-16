@@ -127,6 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   navigate = initRouter(routes, 'app');
 
+
   window.addEventListener('login-success', async (e: CustomEvent) => {
     if (state.userData && !localStorage.getItem('accessToken')) {
         localStorage.setItem('accessToken', state.userData.accessToken);

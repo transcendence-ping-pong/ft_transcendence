@@ -5,11 +5,18 @@ import '@/components/CustomTag.js';
 const template = document.createElement('template');
 template.innerHTML = `
   <style>
-    .matches-section {
+    :host {
+      display: block;
+      width: 100%;
       height: 100%;
+      margin: 0 auto;
+      box-sizing: border-box;
+      overflow: hidden; /* Prevent double scrollbars */
+    }
+    .matches-section {
+      height: 90%;
       display: flex;
       flex-direction: column;
-      overflow: hidden; /* Prevent double scrollbars */
     }
     .matches-title {
       font-size: var(--title-font-size);
@@ -29,7 +36,26 @@ template.innerHTML = `
       overflow-y: auto;
       padding: 1.5rem 0;
       position: relative;
+      /* Customize scrollbar color and size - Firefox */
+      scrollbar-color: var(--accent-secondary, #b3b3b3) transparent;
+      scrollbar-width: thin;
     }
+    /* Customize scrollbar color and size - Chrome, Edge, Safari */
+    .timeline-outer::-webkit-scrollbar {
+      width: 8px;
+      background: transparent;
+    }
+    .timeline-outer::-webkit-scrollbar-thumb {
+      background: var(--accent-secondary, #b3b3b3);
+      border-radius: 6px;
+    }
+    .timeline-outer::-webkit-scrollbar-thumb:hover {
+      background: var(--accent, #888);
+    }
+    .timeline-outer::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
     .timeline {
       position: relative;
       margin: 0 auto;

@@ -161,7 +161,7 @@ template.innerHTML = `
       margin-top: 2rem;
     }
     .profile-form__footer-btn {
-      padding: 1rem 0;
+      padding: 1rem 1rem;
       border: none;
       background: var(--accent-secondary);
       color: var(--body);
@@ -241,6 +241,7 @@ export class UserProfileForm extends HTMLElement {
   private emailInput: HTMLInputElement;
   private passwordInput: HTMLInputElement;
   private confirmPasswordInput: HTMLInputElement;
+  private enable2fa: HTMLInputElement;
   private errorText: HTMLParagraphElement;
   private viewBtn: HTMLSpanElement;
   private saveBtn: HTMLButtonElement;
@@ -269,9 +270,10 @@ export class UserProfileForm extends HTMLElement {
     this.emailInput = shadowRoot.getElementById('email') as HTMLInputElement;
     this.passwordInput = shadowRoot.getElementById('password') as HTMLInputElement;
     this.confirmPasswordInput = shadowRoot.getElementById('confirm-password') as HTMLInputElement;
+    this.enable2fa = shadowRoot.getElementById('enable2fa') as HTMLInputElement;
     this.errorText = shadowRoot.getElementById('error') as HTMLParagraphElement;
     this.viewBtn = shadowRoot.getElementById('viewBtn') as HTMLSpanElement;
-    this.saveBtn = shadowRoot.getElementById('saveBtn') as HTMLButtonElement;
+    this.saveBtn = shadowRoot.getElementById('saveBtn') as HTMLButtonElement; // Fix: properly initialize saveBtn
     this.deleteBtn = shadowRoot.getElementById('deleteBtn') as HTMLButtonElement;
 
     this.viewBtn.addEventListener('click', () => {
@@ -287,7 +289,15 @@ export class UserProfileForm extends HTMLElement {
       this.toggleEditMode();
     });
 
-    // ADD THIS: Save button event listener
+    this.enable2fa.addEventListener('change', (e: Event) => {
+      e.preventDefault();
+      if (this.enable2fa.checked) {
+        this.enable2fa.parentElement?.classList.add('active');
+        window.dispatchEvent(new CustomEvent('enable2fa', { bubbles: true, composed: true }));
+      }
+    });
+
+    // Save button event listener
     this.saveBtn.addEventListener('click', async (e: Event) => {
         e.preventDefault();
         await this.saveChanges();
@@ -298,7 +308,7 @@ export class UserProfileForm extends HTMLElement {
       window.dispatchEvent(new CustomEvent('delete-profile', { bubbles: true, composed: true }));
     });
 
-    // Listen for avatar changes from AtariBadge
+    // Listen for avatar changes from AvatarBadge
     window.addEventListener('avatar-changed', (e: CustomEvent) => {
         this.pendingAvatarFile = e.detail.file;
         
@@ -312,9 +322,15 @@ export class UserProfileForm extends HTMLElement {
         console.log('Avatar changed, edit mode enabled');
     });
     
-    // Listen for profile data updates
+    // Listen for profile data updates and avatar updates
     window.addEventListener('profile-loaded', () => {
         console.log('Profile loaded event received, re-rendering form');
+        this.renderForm();
+    });
+
+    // Add listener for avatar updates to refresh display
+    window.addEventListener('avatar-updated', () => {
+        console.log('Avatar updated, refreshing profile display');
         this.renderForm();
     });
     
@@ -468,8 +484,9 @@ private async saveChanges() {
         }
         
         if (hasChanges) {
-            // SIMPLIFIED: Just dispatch one event
+            // Dispatch events to update other components
             window.dispatchEvent(new CustomEvent('username-updated'));
+            window.dispatchEvent(new CustomEvent('profile-loaded')); // Add this to refresh profile display
             
             alert("Profile updated successfully!");
             this.passwordInput.value = '';
