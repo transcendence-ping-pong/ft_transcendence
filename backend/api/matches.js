@@ -1,7 +1,6 @@
 
 const { splitIntoRandomPairs } = require('./utils');
 const { dbRun } = require('./utils');
-const { dbGet } = require('./utils');
 const { getWinner } = require('./utils');
 
 async function matchRoutes(fastify, options) {
