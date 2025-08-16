@@ -64,7 +64,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const email = extractEmailFromToken(accessToken);
     
-    // Store tokens in localStorage
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('loggedInUser', decodeURIComponent(username));
@@ -78,10 +77,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       refreshToken: refreshToken,
     };
     
-    // ADD THIS: Load user profile data including avatar
     await loadUserProfile();
     
-    // Clean URL (remove tokens from address bar)
     window.history.replaceState({}, document.title, "/");
     
     window.dispatchEvent(new CustomEvent('login-success', { 
@@ -97,7 +94,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     console.log('Google OAuth login successful for:', decodeURIComponent(username));
   } else {
-    // ADD THIS: Also load profile for existing users (on page refresh)
     const existingToken = localStorage.getItem('accessToken');
     const existingUsername = localStorage.getItem('loggedInUser');
     const existingEmail = localStorage.getItem('userEmail');
@@ -105,10 +101,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (existingToken && existingUsername && existingEmail) {
       console.log('Loading existing user session...');
       
-      // Check if loginMethod exists, if not default to 'regular'
       let loginMethod = localStorage.getItem('loginMethod');
       if (!loginMethod) {
-        // For existing users without loginMethod, assume regular login
         loginMethod = 'regular';
         localStorage.setItem('loginMethod', 'regular');
       }
@@ -120,7 +114,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         refreshToken: localStorage.getItem('refreshToken') || '',
       };
       
-      // Load user profile data including avatar
       await loadUserProfile();
     }
   }
@@ -135,16 +128,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   navigate = initRouter(routes, 'app');
 
   window.addEventListener('login-success', async (e: CustomEvent) => {
-    // Check if this is a regular login (not Google OAuth)
     if (state.userData && !localStorage.getItem('accessToken')) {
-        // Store tokens for regular login
         localStorage.setItem('accessToken', state.userData.accessToken);
         localStorage.setItem('refreshToken', state.userData.refreshToken);
         localStorage.setItem('loggedInUser', state.userData.username);
         localStorage.setItem('userEmail', state.userData.email);
         localStorage.setItem('loginMethod', 'regular');
         
-        // Load user profile data
         await loadUserProfile();
     }
     
@@ -190,7 +180,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-// ADD THIS FUNCTION: Load user profile data
+
 async function loadUserProfile() {
   try {
     let token = localStorage.getItem('accessToken');
@@ -198,21 +188,25 @@ async function loadUserProfile() {
 
     console.log('Loading user profile data...');
     
-    // First, try the request with current token
     let response = await fetch('/api/current-user', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
 
-    // If token expired (401), try to refresh it automatically
-    if (response.status === 401) {
-      console.log('Token expired, attempting automatic refresh...');
+    if (response.status === 404) {
+      console.log('User not found in database, clearing cache and redirecting to login');
+      clearCacheAndRedirectToLogin();
+      return;
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      console.log('Token expired, attempting refresh...');
       
       const refreshToken = localStorage.getItem('refreshToken');
       if (!refreshToken) {
-        console.log('No refresh token, logging out...');
-        window.dispatchEvent(new CustomEvent('logout'));
+        console.log('No refresh token, redirecting to login');
+        clearCacheAndRedirectToLogin();
         return;
       }
 
@@ -225,29 +219,30 @@ async function loadUserProfile() {
 
         if (refreshResponse.ok) {
           const refreshData = await refreshResponse.json();
-          
-          // Update stored tokens
           localStorage.setItem('accessToken', refreshData.accessToken);
           if (refreshData.refreshToken) {
             localStorage.setItem('refreshToken', refreshData.refreshToken);
           }
           
-          console.log('Token refreshed successfully, retrying request...');
-          
-          // Retry the original request with new token
           response = await fetch('/api/current-user', {
             headers: {
               'Authorization': `Bearer ${refreshData.accessToken}`
             }
           });
+          
+          if (!response.ok) {
+            console.log('Still failed after refresh, redirecting to login');
+            clearCacheAndRedirectToLogin();
+            return;
+          }
         } else {
-          console.log('Token refresh failed, logging out...');
-          window.dispatchEvent(new CustomEvent('logout'));
+          console.log('Token refresh failed, redirecting to login');
+          clearCacheAndRedirectToLogin();
           return;
         }
       } catch (refreshError) {
         console.error('Error refreshing token:', refreshError);
-        window.dispatchEvent(new CustomEvent('logout'));
+        clearCacheAndRedirectToLogin();
         return;
       }
     }
@@ -256,22 +251,29 @@ async function loadUserProfile() {
       const userData = await response.json();
       console.log('Loaded user profile:', userData);
       
-      // Update state with fetched data including avatar
       state.userData = {
         ...state.userData,
         ...userData
       };
       
-      console.log('Updated state.userData with avatar:', state.userData.avatar);
+      console.log('Updated state.userData with profile data');
     } else {
-      console.log('Failed to load user profile after token refresh');
+      console.log('Failed to load user profile, redirecting to login');
+      clearCacheAndRedirectToLogin();
     }
   } catch (error) {
     console.error('Failed to load user profile:', error);
+    clearCacheAndRedirectToLogin();
   }
 }
 
-// Replace the makeAuthenticatedRequest function:
+function clearCacheAndRedirectToLogin() {
+  localStorage.clear();
+  state.userData = null;
+  
+  navigate('/login');
+}
+
 
 export async function makeAuthenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
   let accessToken = state.userData?.accessToken || localStorage.getItem('accessToken');
@@ -281,7 +283,6 @@ export async function makeAuthenticatedRequest(url: string, options: RequestInit
     throw new Error('No access token available');
   }
 
-  // Try the request with current access token
   let response = await fetch(url, {
     ...options,
     headers: {
@@ -290,7 +291,6 @@ export async function makeAuthenticatedRequest(url: string, options: RequestInit
     }
   });
   
-  // If unauthorized (401 or 403), try to refresh or logout
   if (response.status === 401 || response.status === 403) {
     console.log(`Request failed with ${response.status}, attempting token refresh...`);
     
@@ -301,14 +301,12 @@ export async function makeAuthenticatedRequest(url: string, options: RequestInit
         if (refreshResult.accessToken) {
           console.log('Token refreshed successfully, retrying request...');
           
-          // Update both state and localStorage with new token
           if (state.userData) {
             state.userData.accessToken = refreshResult.accessToken;
           }
           localStorage.setItem('accessToken', refreshResult.accessToken);
           accessToken = refreshResult.accessToken;
           
-          // Retry the original request with new token
           response = await fetch(url, {
             ...options,
             headers: {
@@ -317,7 +315,6 @@ export async function makeAuthenticatedRequest(url: string, options: RequestInit
             }
           });
           
-          // If it still fails after refresh, logout
           if (response.status === 401 || response.status === 403) {
             console.log('Request still failed after token refresh, logging out...');
             logoutUser();
@@ -343,14 +340,12 @@ export async function makeAuthenticatedRequest(url: string, options: RequestInit
   return response;
 }
 
-// Add helper function to centralize logout logic:
 function logoutUser() {
   state.userData = null;
   localStorage.clear();
   window.dispatchEvent(new CustomEvent('logout', { bubbles: true, composed: true }));
 }
 
-// Update the refreshAccessToken function:
 async function refreshAccessToken(refreshToken: string): Promise<any> {
   try {
     console.log('Attempting to refresh access token...');

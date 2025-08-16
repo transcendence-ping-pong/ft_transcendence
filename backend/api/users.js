@@ -260,7 +260,7 @@ async function userRoutes(fastify, options) {
                 'SELECT userId, username, email, avatar FROM users WHERE userId = ?', 
                 [userId]
             );
-            
+            console.log(user);
             if (!user) {
                 return reply.code(404).send({ error: 'User not found' });
             }
