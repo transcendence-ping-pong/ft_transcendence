@@ -6,6 +6,9 @@ frontend-install:
 frontend-dev:
 	@cd frontend && VITE_API_BASE_URL="http://localhost:4000/api" npm run dev -- --host
 
+frontend-dev-dani:
+	@cd frontend && VITE_API_BASE_URL="http://localhost:4000/api" npm run dev
+
 frontend-build:
 	@cd frontend && VITE_API_BASE_URL="/api" npm run build
 

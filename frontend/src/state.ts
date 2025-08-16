@@ -57,7 +57,7 @@ export const state = new Proxy(initialState, {
 });
 
 export interface TournamentData {
-  //userId: number;
+  userId: number;
   players: string[];
   matches: Match[];
   currentMatchIndex: number;
