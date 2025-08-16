@@ -225,6 +225,8 @@ async function userRoutes(fastify, options) {
                     res.send({
                         message: MSG.LOGIN_SUCCESSFUL,
                         username: row.username,
+                        userId: row.userId,
+                        avatar: row.avatar, 
                         accessToken: accessToken,
                         refreshToken: refreshToken
                     });

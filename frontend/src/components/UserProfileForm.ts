@@ -3,7 +3,6 @@ import { actionIcons } from '@/utils/Constants';
 import * as authService from '@/services/authService.js';
 import { state } from '@/state.js';
 import '@/components/CustomTag.js';
-import { state } from '@/state';
 import { makeAuthenticatedRequest } from '@/main.js';
 
 const template = document.createElement('template');
@@ -282,8 +281,8 @@ export class UserProfileForm extends HTMLElement {
 
     // Save button event listener
     this.saveBtn.addEventListener('click', async (e: Event) => {
-        e.preventDefault();
-        await this.saveChanges();
+      e.preventDefault();
+      await this.saveChanges();
     });
 
     this.deleteBtn.addEventListener('click', (e: Event) => {
@@ -293,28 +292,28 @@ export class UserProfileForm extends HTMLElement {
 
     // Listen for avatar changes from AvatarBadge
     window.addEventListener('avatar-changed', (e: CustomEvent) => {
-        this.pendingAvatarFile = e.detail.file;
-        
-        // Enable edit mode when avatar is changed
-        if (e.detail.enableEditMode && !this.isEditMode) {
-            this.isEditMode = true;
-            this.editButton.style.backgroundColor = 'var(--accent-secondary)';
-            this.toggleEditMode();
-        }
-        
-        console.log('Avatar changed, edit mode enabled');
+      this.pendingAvatarFile = e.detail.file;
+
+      // Enable edit mode when avatar is changed
+      if (e.detail.enableEditMode && !this.isEditMode) {
+        this.isEditMode = true;
+        this.editButton.style.backgroundColor = 'var(--accent-secondary)';
+        this.toggleEditMode();
+      }
+
+      console.log('Avatar changed, edit mode enabled');
     });
-    
+
     // Listen for profile data updates and avatar updates
     window.addEventListener('profile-loaded', () => {
-        console.log('Profile loaded event received, re-rendering form');
-        this.renderForm();
+      console.log('Profile loaded event received, re-rendering form');
+      this.renderForm();
     });
 
     // Add listener for avatar updates to refresh display
     window.addEventListener('avatar-updated', () => {
-        console.log('Avatar updated, refreshing profile display');
-        this.renderForm();
+      console.log('Avatar updated, refreshing profile display');
+      this.renderForm();
     });
 
     window.addEventListener('modal-dismiss', () => {
@@ -326,45 +325,20 @@ export class UserProfileForm extends HTMLElement {
   }
 
   private renderForm() {
+    
     console.log('=== RENDER FORM DEBUG ===');
     console.log('state.userData:', state.userData);
     console.log('localStorage items:', {
-        accessToken: !!localStorage.getItem('accessToken'),
-        loginMethod: localStorage.getItem('loginMethod'),
-        loggedInUser: localStorage.getItem('loggedInUser'),
-        userEmail: localStorage.getItem('userEmail')
+      accessToken: !!localStorage.getItem('accessToken'),
+      loginMethod: localStorage.getItem('loginMethod'),
+      loggedInUser: localStorage.getItem('loggedInUser'),
+      userEmail: localStorage.getItem('userEmail')
     });
     console.log('========================');
-    
+
     this.usernameInput.value = state.userData?.username || '';
     this.emailInput.value = state.userData?.email || '';
     this.passwordInput.value = ''; // Don't show password - not safe
-    
-    // Disable password and 2FA fields for Google accounts
-    this.disableGoogleAccountFields();
-  }
-
-  private disableGoogleAccountFields() {
-    const isGoogleAccount = this.isGoogleAccount();
-    
-    if (isGoogleAccount) {
-        // Disable password fields
-        this.passwordInput.disabled = true;
-        this.confirmPasswordInput.disabled = true;
-        
-        // Disable 2FA checkbox
-        const enable2faCheckbox = this.shadowRoot.getElementById('enable2fa') as HTMLInputElement;
-        if (enable2faCheckbox) {
-            enable2faCheckbox.disabled = true;
-        }
-    }
-  }
-
-  private isGoogleAccount(): boolean {
-    // Check if user logged in via Google
-    const loginMethod = localStorage.getItem('loginMethod');
-    return loginMethod === 'google';
-
     authService.check2FAStatus(state.userData?.email || '').then((status) => {
       const enabled = !!status.has2FA;
       if (enabled) {
@@ -380,153 +354,178 @@ export class UserProfileForm extends HTMLElement {
       this.enable2fa.disabled = false;
       this.enable2fa.textContent = t('profile.enable2FA');
     });
+    // Disable password and 2FA fields for Google accounts
+    this.disableGoogleAccountFields();
+  }
+
+  private disableGoogleAccountFields() {
+    const isGoogleAccount = this.isGoogleAccount();
+
+    if (isGoogleAccount) {
+      // Disable password fields
+      this.passwordInput.disabled = true;
+      this.confirmPasswordInput.disabled = true;
+
+      // Disable 2FA checkbox
+      const enable2faCheckbox = this.shadowRoot.getElementById('enable2fa') as HTMLInputElement;
+      if (enable2faCheckbox) {
+        enable2faCheckbox.disabled = true;
+      }
+    }
+  }
+  
+  private isGoogleAccount(): boolean {
+    // Check if user logged in via Google
+    const loginMethod = localStorage.getItem('loginMethod');
+    return loginMethod === 'google';
   }
 
   private toggleEditMode() {
     const editable = this.isEditMode;
     const isGoogleAccount = this.isGoogleAccount();
-    
+
     this.usernameInput.disabled = !editable;
     this.emailInput.disabled = true; // Always disable email
-    
+
     if (!isGoogleAccount) {
-        this.passwordInput.disabled = !editable;
-        this.confirmPasswordInput.disabled = !editable;
+      this.passwordInput.disabled = !editable;
+      this.confirmPasswordInput.disabled = !editable;
     }
-    
+
     if (this.saveBtn) this.saveBtn.disabled = !editable;
   }
 
-private async updateUsername(newUsername: string): Promise<void> {
+  private async updateUsername(newUsername: string): Promise<void> {
     const response = await makeAuthenticatedRequest('/api/change-username', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ newUsername })
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ newUsername })
     });
 
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update username');
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update username');
     }
 
     // Update state with new username
     if (state.userData) {
-        state.userData.username = newUsername;
+      state.userData.username = newUsername;
     }
     localStorage.setItem('loggedInUser', newUsername);
-}
+  }
 
-private async updatePassword(newPassword: string): Promise<void> {
+  private async updatePassword(newPassword: string): Promise<void> {
     const response = await makeAuthenticatedRequest('/api/change-password', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ newPassword })
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ newPassword })
     });
 
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update password');
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update password');
     }
-}
+  }
 
-// Add this method to your UserProfileForm class:
+  // Add this method to your UserProfileForm class:
 
-private updateAvatarDisplay(avatarUrl: string): void {
+  private updateAvatarDisplay(avatarUrl: string): void {
     // Update the state with new avatar
     if (state.userData) {
-        state.userData.avatar = avatarUrl;
+      state.userData.avatar = avatarUrl;
     }
-    
+
     // Dispatch an event to update other components that might display the avatar
     window.dispatchEvent(new CustomEvent('avatar-updated', {
-        bubbles: true,
-        composed: true,
-        detail: { avatarUrl }
+      bubbles: true,
+      composed: true,
+      detail: { avatarUrl }
     }));
-    
+
     console.log('Avatar display updated with URL:', avatarUrl);
-}
+  }
 
-// Also modify your saveChanges method to handle avatar upload:
-private async saveChanges() {
+  // Also modify your saveChanges method to handle avatar upload:
+  private async saveChanges() {
     try {
-        const isGoogleAccount = this.isGoogleAccount();
-        let hasChanges = false;
+      const isGoogleAccount = this.isGoogleAccount();
+      let hasChanges = false;
 
-        // Upload avatar if there's a pending file
-        if (this.pendingAvatarFile) {
-            await this.uploadAvatar(this.pendingAvatarFile);
-            this.pendingAvatarFile = null;
-            hasChanges = true;
+      // Upload avatar if there's a pending file
+      if (this.pendingAvatarFile) {
+        await this.uploadAvatar(this.pendingAvatarFile);
+        this.pendingAvatarFile = null;
+        hasChanges = true;
+      }
+      
+
+      // For regular accounts, check and update other profile data
+      if (!isGoogleAccount) {
+        const newUsername = this.usernameInput.value.trim();
+        const newPassword = this.passwordInput.value;
+        const confirmPassword = this.confirmPasswordInput.value;
+
+        // Update username if changed
+        if (newUsername && newUsername !== state.userData.username) {
+          await this.updateUsername(newUsername);
+          hasChanges = true;
         }
 
-        // For regular accounts, check and update other profile data
-        if (!isGoogleAccount) {
-            const newUsername = this.usernameInput.value.trim();
-            const newPassword = this.passwordInput.value;
-            const confirmPassword = this.confirmPasswordInput.value;
-            
-            // Update username if changed
-            if (newUsername && newUsername !== state.userData.username) {
-                await this.updateUsername(newUsername);
-                hasChanges = true;
-            }
-            
-            // Update password if provided
-            if (newPassword && newPassword.length > 6) {
-                if (newPassword !== confirmPassword) {
-                    throw new Error('Passwords do not match');
-                }
-                await this.updatePassword(newPassword);
-                hasChanges = true;
-            }
+        // Update password if provided
+        if (newPassword && newPassword.length > 6) {
+          if (newPassword !== confirmPassword) {
+            throw new Error('Passwords do not match');
+          }
+          await this.updatePassword(newPassword);
+          hasChanges = true;
         }
-        
-        if (hasChanges) {
-            // Dispatch events to update other components
-            window.dispatchEvent(new CustomEvent('username-updated'));
-            window.dispatchEvent(new CustomEvent('profile-loaded')); // Add this to refresh profile display
-            
-            alert("Profile updated successfully!");
-            this.passwordInput.value = '';
-            this.confirmPasswordInput.value = '';
-            this.isEditMode = false;
-            this.editButton.style.backgroundColor = 'var(--accent)';
-            this.toggleEditMode();
-        } else {
-            alert("No changes to save.");
-        }
-        
+      }
+
+      if (hasChanges) {
+        // Dispatch events to update other components
+        window.dispatchEvent(new CustomEvent('username-updated'));
+        window.dispatchEvent(new CustomEvent('profile-loaded')); // Add this to refresh profile display
+
+        alert("Profile updated successfully!");
+        this.passwordInput.value = '';
+        this.confirmPasswordInput.value = '';
+        this.isEditMode = false;
+        this.editButton.style.backgroundColor = 'var(--accent)';
+        this.toggleEditMode();
+      } else {
+        alert("No changes to save.");
+      }
+
     } catch (error) {
-        console.error('Error saving profile:', error);
-        alert(`Error updating profile: ${error.message}`);
+      console.error('Error saving profile:', error);
+      alert(`Error updating profile: ${error.message}`);
     }
-}
+  }
 
-// Replace your uploadAvatar method:
-private async uploadAvatar(file: File): Promise<void> {
+  // Replace your uploadAvatar method:
+  private async uploadAvatar(file: File): Promise<void> {
     const formData = new FormData();
     formData.append('file', file);
 
     const response = await makeAuthenticatedRequest('/api/upload-avatar', {
-        method: 'POST',
-        body: formData
+      method: 'POST',
+      body: formData
     });
 
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Upload failed');
+      const error = await response.json();
+      throw new Error(error.error || 'Upload failed');
     }
 
     const result = await response.json();
     if (result.avatarUrl) {
-        this.updateAvatarDisplay(result.avatarUrl);
+      this.updateAvatarDisplay(result.avatarUrl);
     }
-}
+  }
 };
 
 customElements.define('user-profile-form', UserProfileForm);
