@@ -1,6 +1,7 @@
 
 const { splitIntoRandomPairs } = require('./utils');
 const { dbRun } = require('./utils');
+const { dbGet } = require('./utils');
 const { getWinner } = require('./utils');
 
 async function matchRoutes(fastify, options) {
@@ -36,9 +37,8 @@ async function matchRoutes(fastify, options) {
 		const date = event.toLocaleDateString("pt-PT");
 		
 		try {
-			const match = await dbRun(db, `INSERT INTO matches (creatorUserId, remoteUserId, player1DisplayName, player2DisplayName, date, time) VALUES (?, ?, ?, ?, ?, ?)`, [creatorUserId, remoteUserId, player1DisplayName, player2DisplayName, date, time]);
-			const matchId = match.lastID;
-			
+			const matchId = await dbRun(db, `INSERT INTO matches (creatorUserId, remoteUserId, player1DisplayName, player2DisplayName, date, time) VALUES (?, ?, ?, ?, ?, ?)`, [creatorUserId, remoteUserId, player1DisplayName, player2DisplayName, date, time]);
+
 			if (tournId)
 			{
 				db.run(`UPDATE matches SET tournamentId = ? WHERE matchId = ?`, [tournId, matchId]);
@@ -71,11 +71,13 @@ async function matchRoutes(fastify, options) {
 	fastify.get('/matches/:matchId', (request, reply) => {
 		const { matchId } = request.params;
 
-		db.get(`SELECT creatorUserId, remoteUserId, player1DisplayName, player2DisplayName, winnerDisplayName, scorePlayer1, scorePlayer2, date, time FROM matches WHERE matchId = ?`, matchId, (err, rows) => {
-			if (err) {
+		db.get(`SELECT creatorUserId, remoteUserId, tournamentId, player1DisplayName, player2DisplayName, winnerDisplayName, scorePlayer1, scorePlayer2, date, time FROM matches WHERE matchId = ?`, matchId, function(err, row) {
+			if (err || !row) {
 				return reply.status(500).send({ error: 'Error fetching match' });
 			}
-			reply.send(rows);
+			const object = [];
+			object.push({ creatorId: row.creatorUserId, remoteId: row.remoteUserId, tournId: row.tournamentId, winner: row.winnerDisplayName, p1: row.player1DisplayName, p2: row.player2DisplayName, scorep1: row.scorePlayer1, scorep2: row.scorePlayer2, date: row.date, time: row.time});
+			reply.send({ result: object });
 		});
 	});
 
@@ -118,8 +120,8 @@ async function matchRoutes(fastify, options) {
 		const shuffle = splitIntoRandomPairs(players);
 
 		try{
-			const tourn = await dbRun(db, `INSERT INTO tournaments (creatorId) VALUES (?)`, [userId]);
-			reply.send({ message: 'Tournament created', id: tourn.lastID, players: shuffle });
+			const tournId = await dbRun(db, `INSERT INTO tournaments (creatorId) VALUES (?)`, [userId]);
+			reply.send({ message: 'Tournament created', id: tournId, players: shuffle });
 		} catch (err) {
 			return reply.status(500).send({ error: 'Error creating tournament' });
 		}
@@ -136,13 +138,13 @@ async function matchRoutes(fastify, options) {
 			const quarterIds = [row.quarterId1, row.quarterId2, row.quarterId3, row.quarterId4];
 
 			if (quarterIds.some(id => !id)) {
-  				return reply.status(500).send({ error: 'Quarterfinals incomplete' });
+				return reply.status(500).send({ error: 'Quarterfinals incomplete' });
 			}
 
 			const winners = await Promise.all(quarterIds.map(matchId => getWinner(db, matchId)));
 
 			if (winners.some(name => !name)) {
-  				return reply.status(500).send({ error: 'Quarterfinals incomplete' });
+				return reply.status(500).send({ error: 'Quarterfinals incomplete' });
 			}
 
 			const result = [];
@@ -164,7 +166,7 @@ async function matchRoutes(fastify, options) {
 			const semiIds = [row.semiId1, row.semiId2];
 
 			if (semiIds.some(id => !id)) {
-  				return reply.status(500).send({ error: 'Semifinals incomplete' });
+				return reply.status(500).send({ error: 'Semifinals incomplete' });
 			}
 
 			const winners = await Promise.all(semiIds.map(matchId => getWinner(db, matchId)));
