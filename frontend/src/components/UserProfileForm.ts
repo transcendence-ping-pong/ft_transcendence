@@ -117,12 +117,12 @@ template.innerHTML = `
       font-weight: bold;
       margin: 0;
     }
+    .profile-form__auth-btn--success,
     .profile-form__auth-btn {
       padding: 0.5rem 1.2rem;
       font-size: var(--main-font-size);
       font-weight: bold;
       border: none;
-      border-radius: 0.3rem;
       background: var(--accent-secondary);
       color: var(--body);
       cursor: pointer;
@@ -130,6 +130,10 @@ template.innerHTML = `
       margin-left: 0;
     }
     .profile-form__auth-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+    .profile-form__auth-btn--success:disabled {
       background: var(--success);
       color: #fff;
       cursor: not-allowed;
@@ -232,13 +236,6 @@ export class UserProfileForm extends HTMLElement {
   private isEditMode = false;
   private pendingAvatarFile: File | null = null;
 
-  private mockData = {
-    username: 'mockuser',
-    email: 'mock@email.com',
-    password: '123456565',
-    enable2fa: true,
-  };
-
   constructor() {
     super();
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
@@ -317,81 +314,54 @@ export class UserProfileForm extends HTMLElement {
     });
 
     window.addEventListener('modal-dismiss', () => {
-      setTimeout(() => this.renderForm(), 0);
+     alert("HEY");
     });
 
     this.toggleEditMode();
     this.renderForm();
+
   }
 
   private renderForm() {
-    
-    console.log('=== RENDER FORM DEBUG ===');
-    console.log('state.userData:', state.userData);
-    console.log('localStorage items:', {
-      accessToken: !!localStorage.getItem('accessToken'),
-      loginMethod: localStorage.getItem('loginMethod'),
-      loggedInUser: localStorage.getItem('loggedInUser'),
-      userEmail: localStorage.getItem('userEmail')
-    });
-    console.log('========================');
-
     this.usernameInput.value = state.userData?.username || '';
     this.emailInput.value = state.userData?.email || '';
-    this.passwordInput.value = ''; // Don't show password - not safe
+    this.emailInput.disabled = true;
+    this.passwordInput.value = '';
+    if (this.isGoogleAccount()) {
+      this.passwordInput.disabled = true;
+      this.confirmPasswordInput.disabled = true;
+    }
+
     authService.check2FAStatus(state.userData?.email || '').then((status) => {
       const enabled = !!status.has2FA;
       if (enabled) {
-        this.enable2fa.disabled = true;
-        this.enable2fa.textContent = t('profile.success2FA');
-        this.enable2fa.classList.add('profile-form__auth-btn--success');
+          this.enable2fa.textContent = t('profile.success2FA');
+          this.enable2fa.classList.add('profile-form__auth-btn--success');
+          this.enable2fa.disabled = true;
       } else {
-        this.enable2fa.disabled = false;
+        this.enable2fa.disabled = this.isGoogleAccount();
         this.enable2fa.textContent = t('profile.enable2FA');
+        this.enable2fa.classList.remove('profile-form__auth-btn--success');
       }
     }).catch((error) => {
       console.error('Error checking 2FA status:', error);
       this.enable2fa.disabled = false;
       this.enable2fa.textContent = t('profile.enable2FA');
+      this.enable2fa.classList.remove('profile-form__auth-btn--success');
     });
-    // Disable password and 2FA fields for Google accounts
-    this.disableGoogleAccountFields();
-  }
-
-  private disableGoogleAccountFields() {
-    const isGoogleAccount = this.isGoogleAccount();
-
-    if (isGoogleAccount) {
-      // Disable password fields
-      this.passwordInput.disabled = true;
-      this.confirmPasswordInput.disabled = true;
-
-      // Disable 2FA checkbox
-      const enable2faCheckbox = this.shadowRoot.getElementById('enable2fa') as HTMLInputElement;
-      if (enable2faCheckbox) {
-        enable2faCheckbox.disabled = true;
-      }
-    }
   }
   
-  private isGoogleAccount(): boolean {
-    // Check if user logged in via Google
+  private isGoogleAccount(): boolean {  
     const loginMethod = localStorage.getItem('loginMethod');
     return loginMethod === 'google';
   }
 
   private toggleEditMode() {
     const editable = this.isEditMode;
-    const isGoogleAccount = this.isGoogleAccount();
-
     this.usernameInput.disabled = !editable;
-    this.emailInput.disabled = true; // Always disable email
-
-    if (!isGoogleAccount) {
-      this.passwordInput.disabled = !editable;
-      this.confirmPasswordInput.disabled = !editable;
-    }
-
+    this.emailInput.disabled = true; // always disable email
+    this.passwordInput.disabled = !editable || this.isGoogleAccount();
+    this.confirmPasswordInput.disabled = !editable || this.isGoogleAccount();
     if (this.saveBtn) this.saveBtn.disabled = !editable;
   }
 
