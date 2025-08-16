@@ -18,6 +18,12 @@ const {
     dbAll,
     authenticateToken
 } = require('./utils');
+const path = require('path');
+const fs = require('fs');
+const { pipeline } = require('stream');
+const { promisify } = require('util');
+
+const pump = promisify(pipeline);
 
 async function userRoutes(fastify, options) {
     const db = fastify.db;
@@ -219,6 +225,8 @@ async function userRoutes(fastify, options) {
                     res.send({
                         message: MSG.LOGIN_SUCCESSFUL,
                         username: row.username,
+                        userId: row.userId,
+                        avatar: row.avatar, 
                         accessToken: accessToken,
                         refreshToken: refreshToken
                     });
@@ -246,8 +254,24 @@ async function userRoutes(fastify, options) {
         res.send({ message: MSG.LOGOUT_SUCCESSFUL });
     });
 
-    fastify.get('/current-user', { preHandler: authenticateToken }, (req, res) => {
-        res.send({ username: req.user.username, userId: req.user.userId, email: req.user.email });
+    fastify.get('/current-user', { preHandler: authenticateToken }, async (request, reply) => {
+        try {
+            const userId = request.user.userId;
+            
+            const user = await dbGet(db, 
+                'SELECT userId, username, email, avatar FROM users WHERE userId = ?', 
+                [userId]
+            );
+            console.log(user);
+            if (!user) {
+                return reply.code(404).send({ error: 'User not found' });
+            }
+            
+            return reply.send(user);
+        } catch (error) {
+            console.error('Error fetching current user:', error);
+            return reply.code(500).send({ error: 'Internal server error' });
+        }
     });
 
     fastify.get('/users', { preHandler: authenticateToken }, async (req, res) => {
@@ -298,10 +322,10 @@ async function userRoutes(fastify, options) {
 
         console.log('VERIFY', { email, token, secret });
         const expectedToken = speakeasy.totp({
-            secret: row.secret,
+            secret: secret,
             encoding: 'base32'
         });
-        console.log(`Expected TOTP token for secret ${expectedToken}`);
+        console.log('EXPECTED', {expectedToken});
 
         if (!email || !token) {
             return res.status(400).send({ error: MSG.EMAIL_AND_TOKEN_REQUIRED });
@@ -469,8 +493,55 @@ async function userRoutes(fastify, options) {
     fastify.post('/users/addfriend/:userId', async (request, reply) => {
         const { userId } = request.params;
         
-//missing code
         reply.send({ message: MSG.FRIEND_FUNCTIONALITY_NOT_IMPLEMENTED });
+    });
+
+    // Avatar upload route
+    fastify.post('/upload-avatar', {
+        preHandler: authenticateToken
+    }, async (req, reply) => {
+        try {
+            const data = await req.file();
+            
+            if (!data) {
+                return reply.status(400).send({ error: 'No file uploaded' });
+            }
+
+            // Validate file type
+            if (!data.mimetype.startsWith('image/')) {
+                return reply.status(400).send({ error: 'Only image files are allowed' });
+            }
+
+            // Create uploads directory if it doesn't exist
+            const uploadDir = path.join(__dirname, '../uploads/avatars');
+            if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+            }
+
+            // Generate filename
+            const ext = path.extname(data.filename);
+            const filename = `${req.user.userId}-${Date.now()}${ext}`;
+            const filepath = path.join(uploadDir, filename);
+
+            // Save file
+            await pump(data.file, fs.createWriteStream(filepath));
+
+            const avatarUrl = `/uploads/avatars/${filename}`;
+            
+            // Update user's avatar in database
+            await dbRun(db, 
+                `UPDATE users SET avatar = ? WHERE userId = ?`,
+                [avatarUrl, req.user.userId]
+            );
+
+            reply.send({
+                message: 'Avatar uploaded successfully',
+                avatarUrl
+            });
+        } catch (error) {
+            console.error('Avatar upload error:', error);
+            reply.status(500).send({ error: 'Failed to upload avatar' });
+        }
     });
 }
 

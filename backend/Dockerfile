@@ -12,6 +12,7 @@ COPY api ./api
 COPY database ./database
 COPY app.js app.js
 
+RUN mkdir -p /app/temp /app/uploads/avatars
 
 RUN apk add --no-cache sqlite
 

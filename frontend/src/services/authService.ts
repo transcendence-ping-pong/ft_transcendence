@@ -9,6 +9,8 @@ export interface AuthResponse {
   secret?: string;
   accessToken?: string;
   refreshToken?: string;
+  userId?: number;
+  avatar?: string;
 }
 
 // VITE_API_BASE_URL variable is set in Makefile...

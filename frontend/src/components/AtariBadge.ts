@@ -1,4 +1,5 @@
 import { t } from '@/locales/Translations';
+import { state } from '@/state';
 
 // VIRTUAL_WIDTH and VIRTUAL_HEIGHT define the "design" size of the badge.
 // The badge and all its content will always render at these dimensions (in px).
@@ -65,6 +66,37 @@ template.innerHTML = `
       background: #222;
       border: 3px solid #fff;
       margin-bottom: 0.7em;
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+    }
+    .avatar:hover {
+      opacity: 0.8;
+    }
+    .avatar-upload-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+      color: white;
+      font-size: 0.8rem;
+    }
+    .avatar-container {
+      position: relative;
+    }
+    .avatar-container:hover .avatar-upload-overlay {
+      opacity: 1;
+    }
+    .hidden-file-input {
+      display: none;
     }
     .badge-username {
       font-size: 2.1rem;
@@ -136,13 +168,19 @@ template.innerHTML = `
   />
   <div class="badge-content-outer">
     <div class="profile-card atari-badge">
-      <img class="avatar" />
+      <div class="avatar-container">
+        <img class="avatar" />
+        <div class="avatar-upload-overlay">
+          📷 Change
+        </div>
+      </div>
+      <input type="file" class="hidden-file-input" accept="image/*" />
       <h2 class="badge-username"></h2>
       <div class="badge__container--row">
         <hr class="badge-hr" />
       </div>
       <span class="username-label">${t("auth.username")}</span>
-      <span class="visitor-number">#042</span>
+      <span class="visitor-number">${t("auth.userID")}</span>
       <div class="badge__container--row">
         <span class="visitor-label">${t("profile.visitorNo")}</span>
         <hr class="badge-hr" />
@@ -156,6 +194,9 @@ template.innerHTML = `
 `;
 
 export class AtariBadge extends HTMLElement {
+  private fileInput: HTMLInputElement;
+  private avatar: HTMLImageElement;
+
   static get observedAttributes() {
     return ['username'];
   }
@@ -166,22 +207,101 @@ export class AtariBadge extends HTMLElement {
   }
 
   connectedCallback() {
+    this.avatar = this.shadowRoot.querySelector('.avatar') as HTMLImageElement;
+    this.fileInput = this.shadowRoot.querySelector('.hidden-file-input') as HTMLInputElement;
+    
+    this.avatar.addEventListener('click', () => {
+        this.fileInput.click();
+    });
+
+    this.fileInput.addEventListener('change', (e) => {
+        this.handleFileSelect(e);
+    });
+
+    // SIMPLIFIED: Just listen for username updates
+    window.addEventListener('username-updated', () => {
+        console.log('Username updated, re-rendering badge');
+        this.render();
+    });
+
     this.render();
   }
 
   attributeChangedCallback() {
     this.render();
   }
-
-  render() {
-    const username = this.getAttribute('username') || '';
-    const avatarUrl = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`;
-    const avatar = this.shadowRoot.querySelector('.avatar') as HTMLImageElement;
-    const h2 = this.shadowRoot.querySelector('.badge-username');
-    avatar.src = avatarUrl;
-    avatar.alt = "Avatar";
-    if (h2) h2.textContent = username;
+  private printFirstName(username: string): string {
+    return username.split(' ')[0];
   }
+  private handleFileSelect(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    // Validate file type and size
+    if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB');
+        return;
+    }
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const result = e.target?.result as string;
+        this.avatar.src = result;
+    };
+    reader.readAsDataURL(file);
+
+    // Dispatch event to UserProfileForm to handle the actual upload
+    window.dispatchEvent(new CustomEvent('avatar-changed', {
+        bubbles: true,
+        composed: true,
+        detail: { 
+            file,
+            enableEditMode: true
+         }
+    }));
+}
+  render() {
+    const username = state.userData?.username || this.getAttribute('username') || '';
+    
+    const h2 = this.shadowRoot.querySelector('.badge-username');
+    if (h2) {
+        const displayName = this.printFirstName(username).toUpperCase();
+        h2.textContent = displayName;
+    }
+    
+    const visitorNumber = this.shadowRoot.querySelector('.visitor-number');
+    if (visitorNumber) {
+        const visitorNum = state.userData?.userId?.toString() || '';
+        visitorNumber.textContent = visitorNum;
+    }
+    
+    const usernameLabel = this.shadowRoot.querySelector('.username-label');
+    if (usernameLabel) {
+        usernameLabel.textContent = username;
+    }
+    
+    // Handle avatar
+    const customAvatar = state.userData?.avatar;
+    let avatarUrl;
+    
+    if (customAvatar) {
+        const baseUrl = customAvatar.split('?')[0];
+        avatarUrl = `${baseUrl}?t=${Date.now()}`;
+    } else {
+        avatarUrl = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}&t=${Date.now()}`;
+    }
+    
+    if (this.avatar) {
+        this.avatar.src = avatarUrl;
+        this.avatar.alt = "Avatar";
+    }
+}
 }
 
 customElements.define('atari-badge', AtariBadge);

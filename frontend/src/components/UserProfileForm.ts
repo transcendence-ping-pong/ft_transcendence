@@ -3,6 +3,7 @@ import { actionIcons } from '@/utils/Constants';
 import * as authService from '@/services/authService.js';
 import { state } from '@/state.js';
 import '@/components/CustomTag.js';
+import { makeAuthenticatedRequest } from '@/main.js';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -116,12 +117,12 @@ template.innerHTML = `
       font-weight: bold;
       margin: 0;
     }
+    .profile-form__auth-btn--success,
     .profile-form__auth-btn {
       padding: 0.5rem 1.2rem;
       font-size: var(--main-font-size);
       font-weight: bold;
       border: none;
-      border-radius: 0.3rem;
       background: var(--accent-secondary);
       color: var(--body);
       cursor: pointer;
@@ -129,6 +130,10 @@ template.innerHTML = `
       margin-left: 0;
     }
     .profile-form__auth-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+    .profile-form__auth-btn--success:disabled {
       background: var(--success);
       color: #fff;
       cursor: not-allowed;
@@ -229,13 +234,7 @@ export class UserProfileForm extends HTMLElement {
   private saveBtn: HTMLButtonElement;
   private deleteBtn: HTMLButtonElement;
   private isEditMode = false;
-
-  private mockData = {
-    username: 'mockuser',
-    email: 'mock@email.com',
-    password: '123456565',
-    enable2fa: true,
-  };
+  private pendingAvatarFile: File | null = null;
 
   constructor() {
     super();
@@ -254,7 +253,7 @@ export class UserProfileForm extends HTMLElement {
     this.enable2fa = shadowRoot.getElementById('enable2fa') as HTMLButtonElement;
     this.errorText = shadowRoot.getElementById('error') as HTMLParagraphElement;
     this.viewBtn = shadowRoot.getElementById('viewBtn') as HTMLSpanElement;
-    this.saveBtn = shadowRoot.getElementById('saveBtn') as HTMLButtonElement;
+    this.saveBtn = shadowRoot.getElementById('saveBtn') as HTMLButtonElement; // Fix: properly initialize saveBtn
     this.deleteBtn = shadowRoot.getElementById('deleteBtn') as HTMLButtonElement;
 
     this.viewBtn.addEventListener('click', () => {
@@ -277,15 +276,47 @@ export class UserProfileForm extends HTMLElement {
       }
     });
 
+    // Save button event listener
+    this.saveBtn.addEventListener('click', async (e: Event) => {
+      e.preventDefault();
+      await this.saveChanges();
+    });
+
+    // Save button event listener
+    this.saveBtn.addEventListener('click', async (e: Event) => {
+      e.preventDefault();
+      await this.saveChanges();
+    });
+
     this.deleteBtn.addEventListener('click', (e: Event) => {
       e.preventDefault();
       window.dispatchEvent(new CustomEvent('delete-profile', { bubbles: true, composed: true }));
     });
 
-    this.saveBtn.addEventListener('click', (e: Event) => {
-      e.preventDefault();
+    // Listen for avatar changes from AvatarBadge
+    window.addEventListener('avatar-changed', (e: CustomEvent) => {
+      this.pendingAvatarFile = e.detail.file;
 
-      alert("Call BE and save information");
+      // Enable edit mode when avatar is changed
+      if (e.detail.enableEditMode && !this.isEditMode) {
+        this.isEditMode = true;
+        this.editButton.style.backgroundColor = 'var(--accent-secondary)';
+        this.toggleEditMode();
+      }
+
+      console.log('Avatar changed, edit mode enabled');
+    });
+
+    // Listen for profile data updates and avatar updates
+    window.addEventListener('profile-loaded', () => {
+      console.log('Profile loaded event received, re-rendering form');
+      this.renderForm();
+    });
+
+    // Add listener for avatar updates to refresh display
+    window.addEventListener('avatar-updated', () => {
+      console.log('Avatar updated, refreshing profile display');
+      this.renderForm();
     });
 
     window.addEventListener('modal-dismiss', () => {
@@ -294,38 +325,185 @@ export class UserProfileForm extends HTMLElement {
 
     this.toggleEditMode();
     this.renderForm();
+
   }
 
-  public renderForm() {
-    this.usernameInput.value = this.mockData.username;
-    this.emailInput.value = this.mockData.email;
-    this.emailInput.disabled = true; // email should not be editable
-    this.passwordInput.value = this.mockData.password;
+  private renderForm() {
+    this.usernameInput.value = state.userData?.username || '';
+    this.emailInput.value = state.userData?.email || '';
+    this.emailInput.disabled = true;
+    this.passwordInput.value = '';
+    if (this.isGoogleAccount()) {
+      this.passwordInput.disabled = true;
+      this.confirmPasswordInput.disabled = true;
+    }
 
     authService.check2FAStatus(state.userData?.email || '').then((status) => {
       const enabled = !!status.has2FA;
       if (enabled) {
-        this.enable2fa.disabled = true;
         this.enable2fa.textContent = t('profile.success2FA');
         this.enable2fa.classList.add('profile-form__auth-btn--success');
+        this.enable2fa.disabled = true;
       } else {
-        this.enable2fa.disabled = false;
+        this.enable2fa.disabled = this.isGoogleAccount();
         this.enable2fa.textContent = t('profile.enable2FA');
+        this.enable2fa.classList.remove('profile-form__auth-btn--success');
       }
     }).catch((error) => {
       console.error('Error checking 2FA status:', error);
       this.enable2fa.disabled = false;
       this.enable2fa.textContent = t('profile.enable2FA');
+      this.enable2fa.classList.remove('profile-form__auth-btn--success');
     });
+  }
+
+  private isGoogleAccount(): boolean {
+    const loginMethod = localStorage.getItem('loginMethod');
+    return loginMethod === 'google';
   }
 
   private toggleEditMode() {
     const editable = this.isEditMode;
     this.usernameInput.disabled = !editable;
-    this.passwordInput.disabled = !editable;
-    this.confirmPasswordInput.disabled = !editable;
+    this.emailInput.disabled = true; // always disable email
+    this.passwordInput.disabled = !editable || this.isGoogleAccount();
+    this.confirmPasswordInput.disabled = !editable || this.isGoogleAccount();
     if (this.saveBtn) this.saveBtn.disabled = !editable;
+  }
+
+  private async updateUsername(newUsername: string): Promise<void> {
+    const response = await makeAuthenticatedRequest('/api/change-username', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ newUsername })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update username');
+    }
+
+    // Update state with new username
+    if (state.userData) {
+      state.userData.username = newUsername;
+    }
+    localStorage.setItem('loggedInUser', newUsername);
+  }
+
+  private async updatePassword(newPassword: string): Promise<void> {
+    const response = await makeAuthenticatedRequest('/api/change-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ newPassword })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update password');
+    }
+  }
+
+  // Add this method to your UserProfileForm class:
+
+  private updateAvatarDisplay(avatarUrl: string): void {
+    // Update the state with new avatar
+    if (state.userData) {
+      state.userData.avatar = avatarUrl;
+    }
+
+    // Dispatch an event to update other components that might display the avatar
+    window.dispatchEvent(new CustomEvent('avatar-updated', {
+      bubbles: true,
+      composed: true,
+      detail: { avatarUrl }
+    }));
+
+    console.log('Avatar display updated with URL:', avatarUrl);
+  }
+
+  // Also modify your saveChanges method to handle avatar upload:
+  private async saveChanges() {
+    try {
+      const isGoogleAccount = this.isGoogleAccount();
+      let hasChanges = false;
+
+      // Upload avatar if there's a pending file
+      if (this.pendingAvatarFile) {
+        await this.uploadAvatar(this.pendingAvatarFile);
+        this.pendingAvatarFile = null;
+        hasChanges = true;
+      }
+
+
+      // For regular accounts, check and update other profile data
+      if (!isGoogleAccount) {
+        const newUsername = this.usernameInput.value.trim();
+        const newPassword = this.passwordInput.value;
+        const confirmPassword = this.confirmPasswordInput.value;
+
+        // Update username if changed
+        if (newUsername && newUsername !== state.userData.username) {
+          await this.updateUsername(newUsername);
+          hasChanges = true;
+        }
+
+        // Update password if provided
+        if (newPassword && newPassword.length > 6) {
+          if (newPassword !== confirmPassword) {
+            throw new Error('Passwords do not match');
+          }
+          await this.updatePassword(newPassword);
+          hasChanges = true;
+        }
+      }
+
+      if (hasChanges) {
+        // Dispatch events to update other components
+        window.dispatchEvent(new CustomEvent('username-updated'));
+        window.dispatchEvent(new CustomEvent('profile-loaded')); // Add this to refresh profile display
+
+        alert("Profile updated successfully!");
+        this.passwordInput.value = '';
+        this.confirmPasswordInput.value = '';
+        this.isEditMode = false;
+        this.editButton.style.backgroundColor = 'var(--accent)';
+        this.toggleEditMode();
+      } else {
+        alert("No changes to save.");
+      }
+
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      alert(`Error updating profile: ${error.message}`);
+    }
+  }
+
+  // Replace your uploadAvatar method:
+  private async uploadAvatar(file: File): Promise<void> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await makeAuthenticatedRequest('/api/upload-avatar', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Upload failed');
+    }
+
+    const result = await response.json();
+    if (result.avatarUrl) {
+      this.updateAvatarDisplay(result.avatarUrl);
+    }
   }
 };
 
 customElements.define('user-profile-form', UserProfileForm);
+
+export { makeAuthenticatedRequest };
