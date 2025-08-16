@@ -225,7 +225,11 @@ class QrAuthentication extends HTMLElement {
         return;
       }
       this.showSpinner()
-      setTimeout(() => { this.verifyToken(this.authData['email'], code); }, 600);
+      const secret = this.authData['secret'] || '';
+      const email = this.authData['email'] || '';
+      if (!email || !secret) return; // TODO: add error handling
+
+      setTimeout(() => { this.verifyToken(email, code, secret); }, 600);
     });
   }
 
@@ -246,6 +250,8 @@ class QrAuthentication extends HTMLElement {
   private async getQrCode() {
     const email = state.userData?.email || '';
     const accessToken = state.userData?.accessToken || '';
+    if (this.authData['qrCodeUrl']) return this.authData;
+
     try {
       this.authData = await authService.generateSecret(email, accessToken);
       this.authData['email'] = email;
@@ -257,8 +263,8 @@ class QrAuthentication extends HTMLElement {
     return this.authData;
   }
 
-  private async verifyToken(email: string, code: string) {
-    const secret = this.authData['secret'];
+  private async verifyToken(email: string, code: string, secret: string) {
+    console.log('Verifying token:', { email, code, secret });
     const res = await authService.verifyToken(email, code, secret);
 
     if (res.error) {

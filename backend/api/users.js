@@ -296,7 +296,14 @@ async function userRoutes(fastify, options) {
     fastify.post('/verify-token', (req, res) => {
         const { email, token, secret } = req.body;
 
-        if (!email || !token || !secret) {
+        console.log('VERIFY', { email, token, secret });
+        const expectedToken = speakeasy.totp({
+            secret: row.secret,
+            encoding: 'base32'
+        });
+        console.log(`Expected TOTP token for secret ${expectedToken}`);
+
+        if (!email || !token) {
             return res.status(400).send({ error: MSG.EMAIL_AND_TOKEN_REQUIRED });
         }
 

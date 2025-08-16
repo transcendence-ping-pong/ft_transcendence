@@ -1,9 +1,10 @@
 import { BabylonCanvas } from '@/game/babylon/BabylonCanvas';
 import { BabylonGUI } from '@/game/babylon/BabylonGUI.js';
-// import GameCanvas for its type and to access its methods/control game state
 import { GameCanvas } from '@/game/GameCanvas.js';
-import { GameLevel, PlayerMode, GameMode, GameType, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, VIRTUAL_BORDER_X, VIRTUAL_BORDER_BOTTOM, VIRTUAL_BORDER_TOP } from '@/utils/gameUtils/GameConstants.js';
+import { MultiplayerGameCanvas } from '@/multiplayer/MultiplayerGameCanvas.js';
+import { GameLevel, PlayerMode, GameMode, GameType, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, VIRTUAL_BORDER_X, VIRTUAL_BORDER_TOP, VIRTUAL_BORDER_BOTTOM } from '@/utils/gameUtils/GameConstants.js';
 import { state } from '@/state';
+
 
 /*
   Game Orchestrator responsabilities:
@@ -20,7 +21,11 @@ import { state } from '@/state';
 export class gameOrchestrator {
   private babylonCanvas: BabylonCanvas;
   private gui: BabylonGUI;
-  private gameCanvas: GameCanvas;
+  private gameCanvas: GameCanvas | MultiplayerGameCanvas;
+  private isMultiplayerMode: boolean = false;
+  private multiplayerKeyDownHandler?: (event: KeyboardEvent) => void;
+  private multiplayerKeyUpHandler?: (event: KeyboardEvent) => void;
+
   private gameLevel: GameLevel = GameLevel.EASY;
   private gameMode: GameMode = GameMode.LOCAL;
   private gameType: GameType = GameType.ONE_MATCH;
@@ -44,7 +49,7 @@ export class gameOrchestrator {
     // } else {
     //   this.setupMenuFlow();
     // }
-
+	this.setupMultiplayerEvents();
     this.setupMenuFlow();
     this.babylonCanvas.startRenderLoop();
 
@@ -86,6 +91,80 @@ export class gameOrchestrator {
       gameAreaTop,
     };
   }
+
+  setupMultiplayerEvents() {
+    window.addEventListener('game-start', (e: CustomEvent) => {
+      this.isMultiplayerMode = true;
+      this.babylonCanvas.createMultiplayerGameCanvas();
+      this.gameCanvas = this.babylonCanvas.getGameCanvas();
+      
+      if (this.gameCanvas instanceof MultiplayerGameCanvas) {
+        (this.gameCanvas as any).isMultiplayerMode = true;
+        (this.gameCanvas as any).currentRoomId = e.detail.room?.id || null;
+        (this.gameCanvas as any).playerIndex = (this.gameCanvas as any).getPlayerIndex();
+        (this.gameCanvas as any).startGame();
+      }
+      
+      this.gui.hideAllGUI();
+      window.dispatchEvent(new CustomEvent('hide-multiplayer-ui'));
+      this.setupMultiplayerInput();
+    });
+
+    window.addEventListener('game-end', (e: CustomEvent) => {
+      this.isMultiplayerMode = false;
+      window.dispatchEvent(new CustomEvent('show-multiplayer-ui'));
+      this.removeMultiplayerInput();
+      this.gui.showGameOver('Player 1', { LEFT: 0, RIGHT: 0 });
+      setTimeout(() => {
+        this.gui.clearGUI();
+        this.babylonCanvas.initPlaneMaterial();
+      }, 3000);
+    });
+
+	// TODO: think its somewhat buggy
+    window.addEventListener('player-disconnected', (e: CustomEvent) => {
+      if (this.isMultiplayerMode) {
+        this.isMultiplayerMode = false;
+        this.removeMultiplayerInput();
+        this.gui.showGameOver('Player 1', { LEFT: 0, RIGHT: 0 });
+        this.gui.clearGUI();
+        this.babylonCanvas.initPlaneMaterial();
+        window.dispatchEvent(new CustomEvent('show-multiplayer-ui'));
+      }
+    });
+  }
+
+  private setupMultiplayerInput() {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (this.isMultiplayerMode && this.gameCanvas instanceof MultiplayerGameCanvas) {
+        this.gameCanvas.handleMultiplayerKeyDown(event);
+      }
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (this.isMultiplayerMode && this.gameCanvas instanceof MultiplayerGameCanvas) {
+        this.gameCanvas.handleMultiplayerKeyUp(event);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    // Store references for cleanup TODO: remove?
+    this.multiplayerKeyDownHandler = handleKeyDown;
+    this.multiplayerKeyUpHandler = handleKeyUp;
+  }
+
+  private removeMultiplayerInput() {
+    if (this.multiplayerKeyDownHandler) {
+      window.removeEventListener('keydown', this.multiplayerKeyDownHandler);
+    }
+    if (this.multiplayerKeyUpHandler) {
+      window.removeEventListener('keyup', this.multiplayerKeyUpHandler);
+    }
+  }
+
+
 
   // keep track of score changes and update the GUI accordingly
   // reminder: the score is a Babylon.js GUI element
@@ -137,6 +216,9 @@ export class gameOrchestrator {
   }
 
   private setupMenuFlow() {
+	if (this.isMultiplayerMode) {
+		return;
+	}
     // user starts the game from the main menu. Flow starting point
     this.gui.showStartButton(() => {
       // wants to play in which level? HARD, MEDIUM, EASY

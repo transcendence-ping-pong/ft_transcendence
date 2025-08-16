@@ -1,4 +1,5 @@
 import { gameOrchestrator } from '@/game/gameOrchestrator.js';
+import { multiplayerToggle } from '@/multiplayer/MultiplayerToggle.js';
 import '@/components/TopBar.js';
 import '@/components/GenericModal.js';
 import '@/components/CreateTournament.js';
@@ -44,10 +45,17 @@ export function renderGame(containerId: string) {
         alt="TV Frame"
         class="absolute top-0 left-0 w-full h-full z-20 pointer-events-none"
       />
+	  <div id="multiplayer-toggle-container"></div>
     </div>
   `;
 
   const orchestrator = new gameOrchestrator('game-screen');
+
+  // multiplayer test toggle
+  const toggleContainer = document.getElementById('multiplayer-toggle-container');
+  if (toggleContainer) {
+	multiplayerToggle.render(toggleContainer);
+  }
 
   // listen for tournament-created globally, so it works for every round
   // this is important because in the case of a TOURNAMENT, the view modal will be triggered many times

@@ -1,4 +1,5 @@
 import { GameCanvas } from '@/game/GameCanvas.js';
+import { MultiplayerGameCanvas } from '@/multiplayer/MultiplayerGameCanvas.js';
 import { crtFragmentShader } from '@/utils/gameUtils/CrtFragmentShader.js';
 import { GameLevel, PlayerMode, VIRTUAL_BORDER_TOP, VIRTUAL_BORDER_X, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, VIRTUAL_BORDER_BOTTOM } from '@/utils/gameUtils/GameConstants.js';
 import { getThemeColors, ThemeColors } from '@/utils/gameUtils/BabylonColors.js';
@@ -26,7 +27,7 @@ import { state } from '@/state.js';
 // ground.material = createPBRMaterial(scene, PBRMaterialLibrary.asphalt, { invertNormalMap: true });
 export class BabylonCanvas {
   private canvas: HTMLCanvasElement;
-  private gameCanvas: GameCanvas;
+  private gameCanvas: GameCanvas | MultiplayerGameCanvas;
   private engine: Engine;
   private scene: Scene;
   private dynamicTexture?: any;
@@ -124,6 +125,41 @@ export class BabylonCanvas {
     this.gameCanvas = new GameCanvas(level, "", this.canvas.width, this.canvas.height);
     this.gameCanvas.setLevel(level);
     this.applyDynamicTextureToMesh("gameScreen", this.gameCanvas.getCanvasElement());
+  }
+
+  public createMultiplayerGameCanvas() {
+    try {
+      const level = GameLevel.MEDIUM;
+      this.gameCanvas = new MultiplayerGameCanvas(level, "", this.canvas.width, this.canvas.height);
+      
+      this.gameCanvas.setLevel(level);
+      this.applyDynamicTextureToMesh("gameScreen", this.gameCanvas.getCanvasElement());
+    } catch (error) {
+      console.error('Error creating multiplayer canvas:', error);
+      this.createFallbackCanvas();
+    }
+  }
+
+  // TODO: remove?
+  private createFallbackCanvas() {
+    const canvas = document.createElement('canvas');
+    canvas.width = this.canvas.width;
+    canvas.height = this.canvas.height;
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'white';
+      ctx.font = '24px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Multiplayer Game Active', canvas.width / 2, canvas.height / 2);
+    }
+    
+    this.applyDynamicTextureToMesh("gameScreen", canvas);
   }
 
   // constantly update the scene, i.e. animations
