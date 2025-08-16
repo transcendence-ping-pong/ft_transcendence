@@ -57,10 +57,12 @@ export const state = new Proxy(initialState, {
 });
 
 export interface TournamentData {
+  //userId: number;
   players: string[];
   matches: Match[];
   currentMatchIndex: number;
   tournamentId: number | null;
+  playerPair: [number, number][]; // Array of player pairs for matches
 }
 
 export interface Match {
@@ -70,6 +72,20 @@ export interface Match {
   winnerDisplayName: string | null;
   scorePlayer1: number | null;
   scorePlayer2: number | null;
+}
+
+export function getValidUserId(): number {
+  // Try to get userId from state
+  if (state.userData && state.userData.userId) {
+    return state.userData.userId;
+  }
+  // Fallback: try to get from localStorage (if you store it there)
+  const stored = localStorage.getItem('userId');
+  if (stored) {
+    return Number(stored);
+  }
+  // If not found, return a default value or throw an error
+  throw new Error('No valid userId found');
 }
 
 export let currentMatches: Match[] = [];

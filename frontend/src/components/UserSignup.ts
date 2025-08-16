@@ -1,5 +1,7 @@
 import { t, err } from '@/locales/Translations.js';
 import * as authService from '@/services/authService.js';
+import { state } from '@/state';
+import { UserData } from '@/utils/playerUtils/types';
 
 // TODO IMPROVEMENT: signin and signup can be abstracted
 // there are too many similarities and repetition

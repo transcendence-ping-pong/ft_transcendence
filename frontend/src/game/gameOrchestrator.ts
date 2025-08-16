@@ -185,10 +185,18 @@ export class gameOrchestrator {
       if (this.gameType === GameType.TOURNAMENT) {
         this.babylonCanvas.cleanupGame();
         window.dispatchEvent(new CustomEvent('tournament-created', {
-          detail: { matches: [{ player1: "tchau", player2: "ola" }] },
+          detail: { matches: state.tournamentData.playerPair.map(pair => ({
+            player1: pair[0],
+            player2: pair[1]
+          })) },
           bubbles: true,
           composed: true
         }));
+        // window.dispatchEvent(new CustomEvent('tournament-created', {
+        //   detail: { matches: [{ player1: "tchau", player2: "ola" }] },
+        //   bubbles: true,
+        //   composed: true
+        // }));
       } else {
         this.babylonCanvas.endingGame();
         setTimeout(() => {

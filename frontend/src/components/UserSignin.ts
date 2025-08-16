@@ -154,6 +154,7 @@ export class UserSignin extends HTMLElement {
       email,
       accessToken: res.accessToken || '',
       refreshToken: res.refreshToken || '',
+      userId: res.userId,
     } as UserData;
   }
 

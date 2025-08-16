@@ -16,7 +16,7 @@ export async function createTournament(userId: number, players: string[]) {
   const res = await fetch(`${BASE_URL}/tournament`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ creatorId: userId, players }),
+    body: JSON.stringify({ userId, players }),
   });
   if (!res.ok) {
     const text = await res.text();

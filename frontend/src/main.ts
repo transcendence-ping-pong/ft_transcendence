@@ -1,5 +1,5 @@
 import { getTranslations } from './locales/Translations.js';
-import { state } from './state.js';
+import { getValidUserId, state } from './state.js';
 import { renderHome } from './pages/home.js';
 import { renderLogin } from '@/pages/login.js';
 import { renderGame } from '@/pages/game.js';

@@ -1,5 +1,7 @@
 import { t } from "@/locales/Translations";
 import { actionIcons } from '@/utils/Constants';
+import { createTournament } from "@/services/matchService";
+import { state, getValidUserId } from '@/state.js';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -218,27 +220,38 @@ export class CreateTournament extends HTMLElement {
     // TODO: Implement backend communication to create tournament sending this.players
     // If create is successful, reset players list, show loading, and then show next matches
     // THIS IS A MOCK, REPLACE IT WITH ACTUAL BACKEND LOGIC
-    this.createBtn.addEventListener('click', (e) => {
+    this.createBtn.addEventListener('click', async (e) => {
       e.preventDefault();
+
+      const userId = getValidUserId();
+      const response = await createTournament(userId, this.players);
+
+      state.TournamentData = {
+        userId,
+        players: this.players,
+        tournamentId: response.tournamentId,
+        playerPair: response.playerPair,
+        matches: [],
+      };
 
       // START MOCK
       // shuffle and pair players
-      const players = [...this.players];
-      for (let i = players.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [players[i], players[j]] = [players[j], players[i]];
-      }
-      const matches = [
-        { player1: players[0], player2: players[1] },
-        { player1: players[2], player2: players[3] },
-        { player1: players[4], player2: players[5] },
-        { player1: players[6], player2: players[7] },
-      ];
-      // END MOCK
+      // const players = [...this.players];
+      // for (let i = players.length - 1; i > 0; i--) {
+      //   const j = Math.floor(Math.random() * (i + 1));
+      //   [players[i], players[j]] = [players[j], players[i]];
+      // }
+      // const matches = [
+      //   { player1: players[0], player2: players[1] },
+      //   { player1: players[2], player2: players[3] },
+      //   { player1: players[4], player2: players[5] },
+      //   { player1: players[6], player2: players[7] },
+      // ];
+      // // END MOCK
 
       // emit custom event with matches data
       this.dispatchEvent(new CustomEvent('tournament-created', {
-        detail: { matches },
+        detail: { matches: response.playerPair },
         bubbles: true,
         composed: true
       }));
