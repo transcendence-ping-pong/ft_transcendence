@@ -5,6 +5,7 @@ import '@/components/TopBar.js';
 import '@/components/UserSignin.js';
 import '@/components/UserSignup.js';
 import '@/components/GenericModal.js';
+import '@/components/UserToken.js';
 
 export function renderLogin(containerId: string) {
   const container = document.getElementById(containerId);
@@ -56,6 +57,18 @@ export function renderLogin(containerId: string) {
     passwordInput: HTMLInputElement;
   }
 
+  function setLoginPrefill(el: UserLoginElement, prefillData: { email?: string; password?: string }) {
+    // after signup, prefill fields if details (aka email and password) are present...
+    // or after login credentials are provided and token is required
+    // ATTENTION: manipulate the DOM after the <user-signin> component is rendered
+    setTimeout(() => {
+      const loginEl = el;
+      if (prefillData.email) loginEl.emailInput.value = prefillData.email;
+      if (prefillData.password) loginEl.passwordInput.value = prefillData.password;
+      prefillData = {}; // clear prefill data after use
+    }, 0);
+  }
+
   function renderAuthComponent() {
     content.innerHTML = '';
     let el: HTMLElement;
@@ -64,20 +77,18 @@ export function renderLogin(containerId: string) {
       case 'login':
         el = document.createElement('user-signin');
         el.addEventListener('switch-to-signup', () => transitionTo('signup'));
+        el.addEventListener('switch-to-token', (e: CustomEvent) => transitionTo('token', e.detail));
 
-        // prefill fields if details (aka email and password) are present
-        setTimeout(() => {
-          const loginEl = el as unknown as UserLoginElement;
-          if (loginPrefill.email) loginEl.emailInput.value = loginPrefill.email;
-          if (loginPrefill.password) loginEl.passwordInput.value = loginPrefill.password;
-          loginPrefill = {};
-        }, 0);
+        setLoginPrefill(el as unknown as UserLoginElement, loginPrefill);
         break;
       case 'signup':
         el = document.createElement('user-signup');
         el.addEventListener('switch-to-login', (e: CustomEvent) => transitionTo('login', e.detail));
         break;
       case 'token':
+        el = document.createElement('user-token');
+        setLoginPrefill(el as unknown as UserLoginElement, loginPrefill);
+        break;
     }
 
     content.appendChild(el);

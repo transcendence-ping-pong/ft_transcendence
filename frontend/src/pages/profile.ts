@@ -53,13 +53,15 @@ export function renderProfile(containerId: string, params: Record<string, string
     `);
     });
 
-    window.addEventListener('enable2fa', (e: CustomEvent) => {
+    function handleEnable2fa() {
       if (!container) return;
       container.insertAdjacentHTML('beforeend', `
       <generic-modal dismissible="true" large appear-delay="500">
         <qr-authentication slot="body"></qr-authentication>
       </generic-modal>
     `);
-    });
+    }
+    window.removeEventListener('configenable2fa', handleEnable2fa);
+    window.addEventListener('config-enable2fa', handleEnable2fa);
   }
 }

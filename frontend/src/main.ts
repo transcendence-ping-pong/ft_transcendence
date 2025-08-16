@@ -48,10 +48,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const accessToken = params.get('accessToken');
   const refreshToken = params.get('refreshToken');
   const username = params.get('username');
-  
+
   if (accessToken && refreshToken && username) {
     console.log('Google OAuth tokens detected, processing login...');
-    
+
     const extractEmailFromToken = (token: string): string => {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -61,36 +61,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         return '';
       }
     };
-    
+
     const email = extractEmailFromToken(accessToken);
-    
+
     // Store tokens in localStorage
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('loggedInUser', decodeURIComponent(username));
     localStorage.setItem('userEmail', email);
-    
+
     state.userData = {
       username: decodeURIComponent(username),
       email: email,
       accessToken: accessToken,
       refreshToken: refreshToken,
     };
-    
+
     // Clean URL (remove tokens from address bar)
     window.history.replaceState({}, document.title, "/");
-    
-    window.dispatchEvent(new CustomEvent('login-success', { 
-      bubbles: true, 
+
+    window.dispatchEvent(new CustomEvent('login-success', {
+      bubbles: true,
       composed: true,
-      detail: { 
-        username: decodeURIComponent(username), 
+      detail: {
+        username: decodeURIComponent(username),
         email,
-        accessToken, 
-        refreshToken 
-      } 
+        accessToken,
+        refreshToken
+      }
     }));
-    
+
     console.log('Google OAuth login successful for:', decodeURIComponent(username));
   }
 
@@ -104,7 +104,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   navigate = initRouter(routes, 'app');
 
   window.addEventListener('login-success', () => {
-    renderLoading('app'); 
+    alert("Login successful!");
+    renderLoading('app');
     setTimeout(() => {
       navigate('/');
     }, 1200);
@@ -112,19 +113,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   window.addEventListener('logout', () => {
     console.log('Logout event triggered, clearing user data...');
-    
+
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('loggedInUser');
     localStorage.removeItem('userEmail');
-    
+
     state.userData = null;
-    
+
     renderLoading('app');
     setTimeout(() => {
       navigate('/login');
     }, 1200);
-    
+
     console.log('User logged out successfully');
   });
 

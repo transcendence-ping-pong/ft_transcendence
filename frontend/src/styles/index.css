@@ -6,6 +6,7 @@
   /* 16" screens */
   --header-font-size: 1.25rem;
   --title-font-size: 2.25rem;
+  --title-modal-font-size: 1.85rem;
   --main-font-size: 1rem;
   --secondary-font-size: 0.85rem;
 
@@ -44,6 +45,7 @@
   :root {
     --header-font-size: 1rem;
     --title-font-size: 2rem;
+    --title-modal-font-size: 1.5rem;
     --main-font-size: 0.85rem;
     --secondary-font-size: 0.7rem;
 
@@ -80,6 +82,7 @@
   :root {
     --header-font-size: 1.5rem;
     --title-font-size: 3rem;
+    --title-modal-font-size: 2.5rem;
     --main-font-size: 1.1rem;
     --secondary-font-size: 0.95rem;
 
@@ -171,36 +174,6 @@
   }
 }
 
-/* GOOGLE */
-/*  // background: #4285F4; */
-/* .theme-primary {
-  --body: #181818;
-  --accent: #222;
-  --border: #fff;
-  --invert: 1;
-  --success: #4caf50;
-  --warning: #ff5733;
-  --nav-hover: #333;
-  --shadow: 0 8px 32px #000a;
-  --game-gradient-start: #1f0f5c;
-  --game-gradient-end: #1a2233;
-  --game-gui: #222;
-}
-
-.theme-secondary {
-  --body: #fff;
-  --accent: #f4f4f4;
-  --border: #181818;
-  --invert: 0;
-  --success: #4caf50;
-  --warning: #ff5733;
-  --nav-hover: #e0e0e0;
-  --shadow: 0 8px 32px #0002;
-  --game-gradient-start: #eaf1ff;
-  --game-gradient-end: #b8d1ff;
-  --game-gui: #f4f4f4;
-} */
-
 .theme-primary {
   --body: #e2d7b7;
   --gradient-1: linear-gradient(178.7deg, rgb(184, 167, 122) 1.7%, rgba(226, 215, 183, 1) 63%);
@@ -262,28 +235,3 @@
   --game-transition-bg: rgb(0, 0, 0);
   --video-transition-bg: rgba(255, 255, 255, 0.1);
 }
-
-/* .theme-secondary {
-  --body: #101c19;
-  --accent: #45796d;
-  --border: #93ffe6;
-  --warning: #ff5733;
-  --nav-hover: #77ceba;
-  --shadow: 0 8px 32px #525151;
-  --game-gradient-start: #101c19;
-  --game-gradient-end: #203832;
-} */
-
-/* --primaryColorRef: #93ffe6;
-    --mixedColor1Ref: #84e6cf;
-    --mixedColor1_5Ref: #7ddac4;
-    --mixedColor2Ref: #77ceba;
-    --mixedColor3Ref: #6ab8a5;
-    --mixedColor4Ref: #5da292;
-    --mixedColor5Ref: #518d7f;
-    --mixedColor6Ref: #45796d;
-    --mixedColor7Ref: #3a665b;
-    --mixedColor7_5Ref: #355c53;
-    --mixedColor8Ref: #1e352f;
-    --secondaryColorRef: #101c19;
-    --tertiaryColorRef: #e4001c; */

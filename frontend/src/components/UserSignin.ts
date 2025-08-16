@@ -157,10 +157,22 @@ export class UserSignin extends HTMLElement {
     } as UserData;
   }
 
-  async _onLogin(e: Event) {
+  public async _onLogin(e: Event) {
     e.preventDefault();
     const email = this.emailInput.value.trim();
     const password = this.passwordInput.value;
+
+    authService.check2FAStatus(email).then((status) => {
+      const enabled = !!status.has2FA;
+      if (enabled) {
+        // redirect to token component, send signin credentials
+        this.dispatchEvent(new CustomEvent('switch-to-token', { bubbles: true, composed: true, detail: { email, password } }));
+        return;
+      }
+    }).catch((error) => {
+      this._setError(err(error.message || 'Failed to check 2FA status'));
+      return;
+    });
 
     const res = await authService.login(email, password);
     if (res.error) {

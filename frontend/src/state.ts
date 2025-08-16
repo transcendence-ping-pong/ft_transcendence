@@ -15,7 +15,7 @@ import { UserData } from '@/utils/playerUtils/types';
 
 const savedState = localStorage.getItem('appState');
 const initialState = savedState ? JSON.parse(savedState) : {
-  language: 'en',
+  language: 'GB',
   translations: {} as any,
   errorTranslations: {} as any,
   availableLanguages: [] as string[],

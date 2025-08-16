@@ -273,7 +273,7 @@ export class UserProfileForm extends HTMLElement {
     this.enable2fa.addEventListener('click', (e: Event) => {
       e.preventDefault();
       if (!this.enable2fa.disabled) {
-        window.dispatchEvent(new CustomEvent('enable2fa', { bubbles: true, composed: true }));
+        window.dispatchEvent(new CustomEvent('config-enable2fa', { bubbles: true, composed: true }));
       }
     });
 
@@ -289,14 +289,14 @@ export class UserProfileForm extends HTMLElement {
     });
 
     window.addEventListener('modal-dismiss', () => {
-      setTimeout(() => this.renderForm(), 0);
+      this.renderForm();
     });
 
     this.toggleEditMode();
     this.renderForm();
   }
 
-  private renderForm() {
+  public renderForm() {
     this.usernameInput.value = this.mockData.username;
     this.emailInput.value = this.mockData.email;
     this.emailInput.disabled = true; // email should not be editable

@@ -272,7 +272,7 @@ class QrAuthentication extends HTMLElement {
     this.codeInput.classList.remove('input-error');
     this.codeInput.classList.add('input-success');
     setTimeout(() => {
-      this.dispatchEvent(new CustomEvent('modal-dismiss', { bubbles: true }));
+      window.dispatchEvent(new CustomEvent('modal-dismiss', { bubbles: true }));
     }, 400);
   }
 

@@ -94,7 +94,7 @@ export async function verifyToken(email: string, token: string, secret?: string)
   const res = await fetch(`${BASE_URL}/verify-token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({email,token,secret}),
+    body: JSON.stringify({ email, token, secret }),
   });
   return await res.json();
 }
