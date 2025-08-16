@@ -1,5 +1,7 @@
 import { t } from '@/locales/Translations';
 import { actionIcons } from '@/utils/Constants';
+import * as authService from '@/services/authService.js';
+import { state } from '@/state.js';
 import '@/components/CustomTag.js';
 import { state } from '@/state';
 import { makeAuthenticatedRequest } from '@/main.js';
@@ -103,55 +105,36 @@ template.innerHTML = `
       filter: invert(var(--invert));
     }
 
+    .profile-form__auth {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      border: 2px solid var(--accent);
+      background: var(--body);
+      padding: 1rem;
+    }
     .profile-form__auth-title {
       font-size: 1.2rem;
       font-weight: bold;
-      margin-bottom: 0.5rem;
-      margin-top: 2rem;
+      margin: 0;
     }
-    .profile-form__auth-checkbox--label {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+    .profile-form__auth-btn {
+      padding: 0.5rem 1.2rem;
+      font-size: var(--main-font-size);
+      font-weight: bold;
+      border: none;
+      border-radius: 0.3rem;
+      background: var(--accent-secondary);
+      color: var(--body);
       cursor: pointer;
-      font-size: 1rem;
-      color: var(--text);
+      transition: background 0.2s, color 0.2s;
+      margin-left: 0;
     }
-    .profile-form__auth-checkbox {
-      width: 1.5rem;
-      height: 1.5rem;
-      background-color: var(--body);
-      border: 2px solid var(--border);
-      border-radius: 0;
-      appearance: none;
-      -webkit-appearance: none;
-      outline: none;
-      cursor: pointer;
-      position: relative;
-      transition: box-shadow 0.2s;
-    }
-    .profile-form__auth-checkbox:checked {
-      background-color: var(--accent-tertiary);
-      border-color: var(--accent-tertiary);
-    }
-    .profile-form__auth-checkbox:checked::before,
-    .profile-form__auth-checkbox:checked::after {
-      content: '';
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 0.8rem;
-      height: 2px;
-      background: #fff;
-      border-radius: 1px;
-      transform: translate(-50%, -50%) rotate(45deg);
-      display: block;
-    }
-    .profile-form__auth-checkbox:checked::after {
-      transform: translate(-50%, -50%) rotate(-45deg);
-    }
-    .profile-form__auth-checkbox:focus {
-      box-shadow: 0 0 0 2px var(--accent-secondary);
+    .profile-form__auth-btn:disabled {
+      background: var(--success);
+      color: #fff;
+      cursor: not-allowed;
+      opacity: 0.85;
     }
 
     .profile-form__footer {
@@ -222,11 +205,12 @@ template.innerHTML = `
 
     <p class="profile-form__error" id="error"></p>
 
-    <h2 class="profile-form__auth-title">${t('profile.authentication')}</h2>
-    <div class="profile-form__auth-checkbox--label">
-      <input id="enable2fa" name="enable2fa" class="profile-form__auth-checkbox" type="checkbox" />
-      <label>${t('profile.enable2FA')}</label>
-    </div>
+    <section class="profile-form__auth">
+      <h2 class="profile-form__auth-title">${t('profile.authentication')}</h2>
+      <div class="profile-form__auth-checkbox--label">
+        <button id="enable2fa" class="profile-form__auth-btn" type="button"></button>
+      </div>
+    </section>
 
     <div class="profile-form__footer">
       <button id="deleteBtn" class="profile-form__footer-btn delete-btn" type="button">${t('profile.deleteAccount')}</button>
@@ -241,7 +225,7 @@ export class UserProfileForm extends HTMLElement {
   private emailInput: HTMLInputElement;
   private passwordInput: HTMLInputElement;
   private confirmPasswordInput: HTMLInputElement;
-  private enable2fa: HTMLInputElement;
+  private enable2fa: HTMLButtonElement;
   private errorText: HTMLParagraphElement;
   private viewBtn: HTMLSpanElement;
   private saveBtn: HTMLButtonElement;
@@ -270,7 +254,7 @@ export class UserProfileForm extends HTMLElement {
     this.emailInput = shadowRoot.getElementById('email') as HTMLInputElement;
     this.passwordInput = shadowRoot.getElementById('password') as HTMLInputElement;
     this.confirmPasswordInput = shadowRoot.getElementById('confirm-password') as HTMLInputElement;
-    this.enable2fa = shadowRoot.getElementById('enable2fa') as HTMLInputElement;
+    this.enable2fa = shadowRoot.getElementById('enable2fa') as HTMLButtonElement;
     this.errorText = shadowRoot.getElementById('error') as HTMLParagraphElement;
     this.viewBtn = shadowRoot.getElementById('viewBtn') as HTMLSpanElement;
     this.saveBtn = shadowRoot.getElementById('saveBtn') as HTMLButtonElement; // Fix: properly initialize saveBtn
@@ -289,10 +273,9 @@ export class UserProfileForm extends HTMLElement {
       this.toggleEditMode();
     });
 
-    this.enable2fa.addEventListener('change', (e: Event) => {
+    this.enable2fa.addEventListener('click', (e: Event) => {
       e.preventDefault();
-      if (this.enable2fa.checked) {
-        this.enable2fa.parentElement?.classList.add('active');
+      if (!this.enable2fa.disabled) {
         window.dispatchEvent(new CustomEvent('enable2fa', { bubbles: true, composed: true }));
       }
     });
@@ -333,7 +316,11 @@ export class UserProfileForm extends HTMLElement {
         console.log('Avatar updated, refreshing profile display');
         this.renderForm();
     });
-    
+
+    window.addEventListener('modal-dismiss', () => {
+      setTimeout(() => this.renderForm(), 0);
+    });
+
     this.toggleEditMode();
     this.renderForm();
   }
@@ -377,6 +364,22 @@ export class UserProfileForm extends HTMLElement {
     // Check if user logged in via Google
     const loginMethod = localStorage.getItem('loginMethod');
     return loginMethod === 'google';
+
+    authService.check2FAStatus(state.userData?.email || '').then((status) => {
+      const enabled = !!status.has2FA;
+      if (enabled) {
+        this.enable2fa.disabled = true;
+        this.enable2fa.textContent = t('profile.success2FA');
+        this.enable2fa.classList.add('profile-form__auth-btn--success');
+      } else {
+        this.enable2fa.disabled = false;
+        this.enable2fa.textContent = t('profile.enable2FA');
+      }
+    }).catch((error) => {
+      console.error('Error checking 2FA status:', error);
+      this.enable2fa.disabled = false;
+      this.enable2fa.textContent = t('profile.enable2FA');
+    });
   }
 
   private toggleEditMode() {

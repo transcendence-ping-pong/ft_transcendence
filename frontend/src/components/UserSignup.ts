@@ -8,8 +8,7 @@ template.innerHTML = `
   <style>
     :host {
       display: block;
-      min-width: 400px;
-      min-width: 465px;
+      padding: 0 4rem;
       margin: 0 auto;
     }
     .form-title {
