@@ -279,10 +279,12 @@ export class UserProfileForm extends HTMLElement {
     window.addEventListener('avatar-changed', this.handleAvatarChanged.bind(this));
     window.addEventListener('profile-loaded', this.handleProfileLoaded.bind(this));
     window.addEventListener('avatar-updated', this.handleAvatarUpdated.bind(this));
-    window.addEventListener('modal-dismiss', this.handleModalDismiss.bind(this));
+    // { once: true } ensures the event listener is removed after the first invocation
+    // it was necessary for fixing a bug: modal was triggered multiple times
+    window.addEventListener('modal-dismiss', this.handleModalDismiss.bind(this), { once: true });
   }
 
-  // Event handlers - track user interactions
+  // event handlers - track user interactions
   // removed from connectedCallback to keep it clean
   private handleViewBtnClick() {
     const isPasswordVisible = this.passwordInput.type === 'text';
@@ -376,13 +378,15 @@ export class UserProfileForm extends HTMLElement {
   }
 
   private renderFormVisitor() {
+    // TODO: define the type for profileData, what will be returned from the service?
+    // @ts-ignore
     this.usernameInput.value = this.profileData?.username || '';
     this.usernameInput.disabled = true;
+    // @ts-ignore
     this.emailInput.value = this.profileData?.email || '';
     this.emailInput.disabled = true;
 
-    // hide, show simplified profile form
-    // hide, show simplified profile form
+    // hide, show simplified profile form for visitors, i.e. no password fields, no delete profile
     const hiddenElements = ["passwordInput", "confirmPasswordInput", "viewBtn", "authSection", "editButton"];
     for (const element of hiddenElements) {
       if (this[element]) {
