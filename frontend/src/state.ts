@@ -24,28 +24,16 @@ const initialState = savedState ? JSON.parse(savedState) : {
   scaleFactor: {},
   userData: {} as UserData, // user data will be set after login
   tournamentData: {} as TournamentData,
+  // chat state
+  chatOpen: false,
+  chatMessages: [] as ChatMessage[],
+  directMessages: [] as DirectMessage[],
+  blockedUsers: [] as string[],
+  onlineUsers: [] as OnlineUser[],
   // TODO: add other state properties that we need to persist
 };
 
-// generate unique client ID for socket connections
-const generateClientId = (): string => {
-  return 'client-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-};
-
-// get or create client ID - ensures we always have one
-const getOrCreateClientId = (): string => {
-  let clientId = localStorage.getItem('clientId');
-  if (!clientId) {
-    clientId = generateClientId();
-    localStorage.setItem('clientId', clientId);
-  }
-  return clientId;
-};
-
-// ensure clientId is always available
-initialState.clientId = getOrCreateClientId();
-
-console.log('State initialized with Client ID:', initialState.clientId);
+console.log('State initialized with Username:', initialState.userData?.username);
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
 export const state = new Proxy(initialState, {
@@ -88,6 +76,33 @@ export interface Match {
   winnerDisplayName: string | null;
   scorePlayer1: number | null;
   scorePlayer2: number | null;
+}
+
+// chat types
+export interface ChatMessage {
+  id: number;
+  senderId: number;
+  senderUsername: string;
+  message: string;
+  timestamp: number;
+  type: 'global' | 'system';
+}
+
+export interface DirectMessage {
+  id: number;
+  senderId: number;
+  senderUsername: string;
+  receiverId: number;
+  receiverUsername: string;
+  message: string;
+  timestamp: number;
+  type: 'direct';
+}
+
+export interface OnlineUser {
+  userId: number;
+  username: string;
+  status: 'online' | 'offline';
 }
 
 export let currentMatches: Match[] = [];
