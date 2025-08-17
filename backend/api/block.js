@@ -6,7 +6,6 @@ async function blockRoutes(fastify, options) {
 	fastify.post('/block/:Id', (request, reply) => {
 		const { Id } = request.params;
 		const { userId } = request.body
-		// const currentId = request.user?.userid;
 
 		db.run(`INSERT INTO blockedUsers (userId, blockedId) VALUES (?, ?)`, [userId, Id], (err) => {
 			if (err) {
@@ -28,9 +27,8 @@ async function blockRoutes(fastify, options) {
 		});
 	});
 
-	//TODO: Check if currentId can be retrieved this way!!
-	fastify.get('/blocked', (request, reply) => {
-		const currentId = request.user?.userid;
+	fastify.get('/blocked/:userId', (request, reply) => {
+		const { currentId } = request.params;
 
 		db.all(`SELECT blockedId FROM blockedUsers WHERE userId = ?`, [currentId], (err, rows) => {
 			if (err) {
