@@ -1,127 +1,126 @@
 import { t, err } from '@/locales/Translations.js';
 import * as authService from '@/services/authService.js';
+import '@/components/_templates/AuthFormLayout.js';
 
-// TODO IMPROVEMENT: signin and signup can be abstracted
-// there are too many similarities and repetition
+// because of shadow DOM, styles are encapsulated here...
+// ... even so all auth components share the same behaviour
+// TODO: light DOM? render all markup inside the layout component?
 const template = document.createElement('template');
 template.innerHTML = `
   <style>
     :host {
       display: block;
-      padding: 0 4rem;
+      width: 100%;
+      max-width: var(--auth-form-max-width, 400px);
       margin: 0 auto;
-    }
-    .form-title {
-      font-size: var(--title-modal-font-size);
-      font-weight: bold;
-      margin-bottom: 1rem;
-      text-align: center;
     }
     form {
       display: flex;
       flex-direction: column;
       gap: 1rem;
-      align-items: stretch;
+      width: 100%;
     }
-    input {
+    .auth-form__input {
       padding: 1rem;
       border: 1.5px solid var(--accent);
-      font-size: 1rem;
+      font-size: var(--main-font-size);
       background: var(--body);
       color: var(--border);
       outline: none;
       transition: border-color 0.2s;
     }
-    input:focus {
+    .auth-form__input:focus {
       border-color: var(--border);
     }
-    .input-error:focus,
     .input-error {
-      border-color:var(--warning);
+      border-color: var(--warning);
     }
-    button {
+    .auth-form__primary-button {
       padding: 1rem 0;
       border: none;
       background: var(--accent-secondary);
       color: var(--body);
-      font-size: 1.125rem;
+      font-size: var(--main-font-size);
       font-weight: bold;
       min-height: 59px;
       cursor: pointer;
       transition: background 0.2s, color 0.2s;
     }
-    button:hover, button:focus {
+    .auth-form__primary-button:hover, .auth-form__primary-button:focus {
       background: var(--accent);
       color: var(--text);
     }
-    .google-btn {
-      background: var(--accent);
-      color: var(--text);
-    }
-    .footer {
-      text-align: center;
-      font-size: 1rem;
-      color: var(--text);
-    }
-    .footer button {
+    .auth-form__footer-link {
       background: none;
       color: var(--accent-secondary);
       border: none;
       font-weight: bold;
       cursor: pointer;
       padding: 0;
-      font-size: 1rem;
+      font-size: var(--main-font-size);
       margin-left: 0.25rem;
       text-decoration: none;
     }
-    .footer button:hover, .footer button:focus {
-      transform: scale(1.05);
-      text-decoration: underline;
+    .auth-form__footer-link:hover, .auth-form__footer-link:focus {
+      color: var(--accent);
     }
-    .error {
-      font-size: 0.75rem;
-      color: var(--warning);
-      text-align: start;
-      margin-top: -0.5rem;
+    .auth-form__footer {
+      margin-top: 1rem;
+      text-align: center;
+      font-size: var(--main-font-size);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      align-items: stretch;
+    }
+    .auth-form__error {
       min-height: 1.25rem;
-      display: block;
+      color: var(--warning);
+      font-size: var(--secondary-font-size);
+      text-align: start;
+    }
+    .auth-form__input-error {
+      border: 2px solid var(--warning);
     }
   </style>
-
-  <h1 class="form-title">${t('auth.signup')}</h1>
-  <form id="signupForm" autocomplete="off">
-    <input id="username" name="username" type="text" required autocomplete="username" placeholder="${t('auth.username')}" />
-    <input id="email" name="email" type="email" required autocomplete="email" placeholder="${t('auth.email')}" />
-    <input id="password" name="password" type="password" minlength=6 required autocomplete="new-password" placeholder="${t('auth.password')}" />
-    <p id="error" class="error"></p>
-    <button id="signup" type="submit">${t('auth.signup')}</button>
-  </form>
-  <div class="footer">
-    ${t('auth.alreadyHaveAccount')}
-    <button id="loginBtn" type="button">${t('auth.signin')}</button>
-  </div>
+  <auth-form-layout>
+    <h2 slot="header">${t('auth.signup')}</h2>
+    <form slot="content" id="signupForm" autocomplete="off">
+      <input id="username" class="auth-form__input" name="username" type="text" required autocomplete="username" placeholder="${t('auth.username')}" />
+      <input id="email" class="auth-form__input" name="email" type="email" required autocomplete="email" placeholder="${t('auth.email')}" />
+      <input id="password" class="auth-form__input" name="password" type="password" minlength="6" required autocomplete="new-password" placeholder="${t('auth.password')}" />
+    </form>
+    <div slot="error" id="error" class="auth-form__error"></div>
+    <div slot="footer" class="auth-form__footer">
+      <button id="signup" class="auth-form__primary-button" type="submit" form="signupForm">${t('auth.signup')}</button>
+      <div>
+        ${t('auth.alreadyHaveAccount')}
+        <button id="loginBtn" type="button" class="auth-form__footer-link">${t('auth.signin')}</button>
+      </div>
+    </div>
+  </auth-form-layout>
 `;
 
-export class UserSignup extends HTMLElement {
+export class UserSignup2 extends HTMLElement {
   emailInput!: HTMLInputElement;
   passwordInput!: HTMLInputElement;
   usernameInput!: HTMLInputElement;
+  layout!: HTMLElement;
 
   constructor() {
     super();
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
   }
 
-  // arrow functions automatically bind `this` to the class instance
-  // so we can use them as event handlers without binding
-  // e.g. this._onSignup = () => { ... } versus this._onSignup.bind(this)
   connectedCallback() {
-    const shadow = this.shadowRoot;
+    const shadow = this.shadowRoot!;
+    this.layout = shadow.querySelector('auth-form-layout')!;
     this.emailInput = shadow.getElementById('email') as HTMLInputElement;
     this.passwordInput = shadow.getElementById('password') as HTMLInputElement;
     this.usernameInput = shadow.getElementById('username') as HTMLInputElement;
-    shadow.getElementById('signupForm').onsubmit = this._onSignup.bind(this);
-    shadow.getElementById('loginBtn').onclick = this._onLoginClick.bind(this);
+    shadow.getElementById('signupForm')!.onsubmit = this._onSignup.bind(this);
+    shadow.getElementById('loginBtn')!.onclick = this._onLoginClick.bind(this);
 
     this.emailInput.addEventListener('input', () => this._clearError());
     this.passwordInput.addEventListener('input', () => this._clearError());
@@ -136,22 +135,20 @@ export class UserSignup extends HTMLElement {
 
     const res = await authService.signup(username, email, password);
     if (res.error) {
-      this.emailInput.classList.add('input-error');
-      this.usernameInput.classList.add('input-error');
-      this.passwordInput.classList.add('input-error');
+      this.emailInput.classList.add('auth-form__input-error');
+      this.usernameInput.classList.add('auth-form__input-error');
+      this.passwordInput.classList.add('auth-form__input-error');
       this._setError(err(res.error));
       return;
     }
 
-    // remove error styles if signup is successful and trigger event
     this._clearError();
     this._setError('');
-    this.dispatchEvent(new CustomEvent('switch-to-login',
-      {
-        detail: { email, password },
-        bubbles: true,
-        composed: true
-      }));
+    this.dispatchEvent(new CustomEvent('switch-to-login', {
+      detail: { email, password },
+      bubbles: true,
+      composed: true
+    }));
   }
 
   _onLoginClick(e: Event) {
@@ -160,15 +157,16 @@ export class UserSignup extends HTMLElement {
   }
 
   _setError(msg: string) {
-    this.shadowRoot.getElementById('error').textContent = msg;
+    (this.layout as any).setError(msg);
   }
 
   _clearError() {
-    this._setError('');
-    this.emailInput.classList.remove('input-error');
-    this.passwordInput.classList.remove('input-error');
-    this.usernameInput.classList.remove('input-error');
+    (this.layout as any).clearError(() => {
+      this.emailInput.classList.remove('auth-form__input-error');
+      this.passwordInput.classList.remove('auth-form__input-error');
+      this.usernameInput.classList.remove('auth-form__input-error');
+    });
   }
 }
 
-customElements.define('user-signup', UserSignup);
+customElements.define('user-signup2', UserSignup2);

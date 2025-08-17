@@ -13,8 +13,6 @@ export interface AuthResponse {
   avatar?: string;
 }
 
-
-
 // VITE_API_BASE_URL variable is set in Makefile...
 // for running on port 3000 locally and taking advantage of vite hot reload
 // mainly used for local development

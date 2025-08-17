@@ -3,14 +3,14 @@ import '@/components/navigation/ThemeToggle.js';
 import '@/components/navigation/LanguagesDropdown.js';
 import '@/components/navigation/TopBar.js';
 import '@/components/authentication/UserSignin.js';
-import '@/components/authentication/UserSignin2.js';
+import '@/components/authentication/UserSignin.js';
 
 import '@/components/authentication/UserSignup.js';
-import '@/components/authentication/UserSignup2.js';
+import '@/components/authentication/UserSignup.js';
 
 import '@/components/_templates/GenericModal.js';
 import '@/components/authentication/UserToken.js';
-import '@/components/authentication/UserToken2.js';
+import '@/components/authentication/UserToken.js';
 
 export function renderLogin(containerId: string) {
   const container = document.getElementById(containerId);
