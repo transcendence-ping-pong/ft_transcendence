@@ -20,7 +20,7 @@ template.innerHTML = `
       background: var(--body);
       border: 2px solid var(--border);
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-      padding: 24px;
+      padding: 2rem;
       position: relative;
       display: flex;
       align-items: center;
@@ -36,9 +36,12 @@ template.innerHTML = `
       transform: translateY(0);
     }
     .body-center {
-      display: block;
+      display: flex;
+      flex-direction: column;
       width: 100%;
       height: 100%;
+      min-height: 0;
+      min-width: 0;
     }
     .close-btn {
       position: absolute;

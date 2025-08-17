@@ -1,6 +1,7 @@
 import { t, err } from '@/locales/Translations.js';
 import { actionIcons } from '@/utils/Constants.js';
 import * as authService from '@/services/authService.js';
+import { setUserData } from '@/state';
 
 // when entering signin credentials, the user will be redirected to this component
 // this extra step is available only if user has 2FA enabled in their profile
@@ -9,7 +10,8 @@ template.innerHTML = `
   <style>
     :host {
       display: flex;
-      padding: 3rem;
+      padding: 0;
+      margin: 0;
       width: 100%;
       height: 100%;
     }
@@ -18,18 +20,16 @@ template.innerHTML = `
       height: 100%;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
       align-items: stretch;
     }
     .token-auth__header {
-      padding: 2rem 0 1rem 0;
-      text-align: center;
-      border: 2px solid red;
+      padding-bottom: 1rem;
+      justify-content: center;
     }
     .token-auth__title {
       color: var(--text);
       font-size: var(--title-modal-font-size);
-      margin: 0;
+      text-align: center;
     }
     hr {
       border: none;
@@ -37,26 +37,13 @@ template.innerHTML = `
       padding-bottom: 1rem;
     }
 
-    .token-auth__code {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-    }
-    .token-auth__code-description {
-      color: var(--border);
-      font-size: var(--secondary-font-size);
-      margin: 0.5rem 0 0 0;
-    }
-
     .token-auth__content {
-      flex: 1;
+      flex: 1 1 auto;
       display: flex;
-      height: 100%;
+      min-height: 0;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      border: 2px solid green;
     }
     .token-auth__edit {
       display: flex;
@@ -68,10 +55,11 @@ template.innerHTML = `
     }
     .token-auth__input {
       padding: 1rem;
+      min-height: var(--button-height);
       border: 1.5px solid var(--accent);
-      font-size: 1rem;
+      font-size: var(--main-font-size);
       background: var(--body);
-      color: var(--text);
+      color: var(--border);
       outline: none;
       transition: border-color 0.2s;
       box-sizing: border-box;
@@ -79,9 +67,7 @@ template.innerHTML = `
     }
     .token-auth__input:focus {
       border-color: var(--border);
-    }
-    .input-error {
-      border-color: var(--warning);
+      background: var(--body);
     }
     .token-auth__input-wrapper {
       position: relative;
@@ -106,27 +92,37 @@ template.innerHTML = `
       display: block;
       filter: invert(var(--invert));
     }
+
+    .token-auth__code {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      background: var(--accent-50);
+      padding: 0.5rem;
+    }
     .token-auth__code-input {
-      width: 100%;
-      max-width: 180px;
       font-size: 1.4rem;
       letter-spacing: 0.4em;
       text-align: center;
       padding: 0.5em 0.5em;
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--border);
       outline: none;
       background: var(--body);
       color: var(--text);
+      width: 50%;
+    }
+    .token-auth__code-description {
+      padding-left: 0.5rem;
+      color: var(--text);
+      font-size: var(--secondary-font-size);
     }
 
     .token-auth__footer {
-      flex: 1;
       display: flex;
       gap: 1rem;
       flex-direction: column;
       align-items: stretch;
       justify-content: center;
-      border: 2px solid blue;
     }
     .token-auth__footer-btn {
       padding: 1rem 1rem;
@@ -146,10 +142,12 @@ template.innerHTML = `
     }
     .error {
       color: var(--warning);
-      font-size: 0.95rem;
-      min-height: 1.2em;
-      margin-top: 0.5em;
-      text-align: center;
+      font-size: var(--secondary-font-size);
+      min-height: 1.5rem;
+      text-align: end;
+    }
+    .input-error {
+      border: 2.5px solid var(--warning);
     }
   </style>
 
@@ -164,12 +162,14 @@ template.innerHTML = `
           <input id="password" class="token-auth__input" name="password" type="password" minlength="7" disabled />
           <span id="viewBtn" class="token-auth__input--icon">${actionIcons.eye}</span>
         </div>
-        <div class="token-auth__code">
+        <div id="codeWrapper" class="token-auth__code">
           <p class="token-auth__code-description">${t('profile.invalidCode')}</p>
           <input id="codeInput" class="token-auth__code-input" name="2fa" type="text" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code" placeholder="------" required />
         </div>
-        <div id="error" class="error"></div>
       </form>
+      <div class="token-auth__error">
+        <p id="error" class="error"></p>
+      </div>
     </div>
     <div class="token-auth__footer">
       <button id="verifyBtn" class="token-auth__footer-btn" type="submit" form="tokenForm">${t('profile.verify')}</button>
@@ -181,7 +181,7 @@ export class UserToken extends HTMLElement {
   private emailInput!: HTMLInputElement;
   private passwordInput!: HTMLInputElement;
   private codeInput!: HTMLInputElement;
-  private errorDiv!: HTMLDivElement;
+  private errorDiv!: HTMLParagraphElement;
   private viewBtn!: HTMLSpanElement;
   private tokenForm!: HTMLFormElement;
 
@@ -201,19 +201,16 @@ export class UserToken extends HTMLElement {
 
     this.tokenForm.addEventListener('submit', (e) => this._onSubmit(e));
     this.viewBtn.addEventListener('click', () => this._togglePassword());
-
-    shadow.getElementById('cancelBtn')?.addEventListener('click', () => {
-      this.dispatchEvent(new CustomEvent('switch-to-login', { bubbles: true, composed: true }));
-    });
   }
 
-  setCredentials(email: string, password: string) {
-    this.emailInput.value = email || '';
-    this.passwordInput.value = password || '';
-  }
-
-  setError(message: string) {
+  _setError(message: string) {
     this.errorDiv.textContent = message;
+    this.shadowRoot.getElementById('codeWrapper').classList.add('input-error');
+  }
+
+  _clearError() {
+    this._setError('');
+    this.shadowRoot.getElementById('codeWrapper').classList.remove('input-error');
   }
 
   private _togglePassword() {
@@ -228,21 +225,19 @@ export class UserToken extends HTMLElement {
     const password = this.passwordInput.value;
     const token = this.codeInput.value.trim();
 
-    this.setError('');
-    this.emailInput.classList.remove('input-error');
-    this.passwordInput.classList.remove('input-error');
+    this._setError('');
     this.codeInput.classList.remove('input-error');
 
     const res = await authService.login(email, password, token);
-    console.log('TOKEN response:', res);
     if (res.error) {
       this.codeInput.classList.add('input-error');
-      this.setError(err(res.error));
+      this._setError(err(res.error));
       return;
     }
 
-    // Success: trigger login-success event for parent
-    this.setError('');
+    // trigger login-success event for parent
+    this._clearError();
+    setUserData(res, email);
     this.dispatchEvent(new CustomEvent('login-success', { bubbles: true, composed: true }));
   }
 }

@@ -54,7 +54,7 @@ export function renderGame(containerId: string) {
   // multiplayer test toggle
   const toggleContainer = document.getElementById('multiplayer-toggle-container');
   if (toggleContainer) {
-	multiplayerToggle.render(toggleContainer);
+    multiplayerToggle.render(toggleContainer);
   }
 
   // listen for tournament-created globally, so it works for every round

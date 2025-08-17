@@ -6,7 +6,7 @@
   /* 16" screens */
   --header-font-size: 1.25rem;
   --title-font-size: 2.25rem;
-  --title-modal-font-size: 1.85rem;
+  --title-modal-font-size: 1.5rem;
   --main-font-size: 1rem;
   --secondary-font-size: 0.85rem;
 
@@ -29,14 +29,16 @@
   --button-circle-size: 2.5rem;
   --button-default-height: 2.5rem;
 
-  --modal-height: 50vh;
-  --modal-width: 40vw;
+  --modal-height: 40vh;
+  --modal-width: 30vw;
   --modal-small-height: 25vh;
   --modal-small-width: 35vw;
   --modal-large-height: 60vh;
   --modal-large-width: 50vw;
   --button-height: 2.5rem;
   --button-min-width: 150px;
+
+  --auth-form-max-width: 400px;
 }
 
 @media (max-width: 1400px) {
@@ -45,7 +47,7 @@
   :root {
     --header-font-size: 1rem;
     --title-font-size: 2rem;
-    --title-modal-font-size: 1.5rem;
+    --title-modal-font-size: 1.25rem;
     --main-font-size: 0.85rem;
     --secondary-font-size: 0.7rem;
 
@@ -73,6 +75,8 @@
     --modal-large-width: 50vw;
     --button-height: 2rem;
     --button-min-width: 120px;
+
+    --auth-form-max-width: 340px;
   }
 }
 
@@ -82,7 +86,7 @@
   :root {
     --header-font-size: 1.5rem;
     --title-font-size: 3rem;
-    --title-modal-font-size: 2.5rem;
+    --title-modal-font-size: 2rem;
     --main-font-size: 1.1rem;
     --secondary-font-size: 0.95rem;
 
@@ -110,6 +114,8 @@
     --modal-large-width: 50vw;
     --button-height: 3rem;
     --button-min-width: 180px;
+
+    --auth-form-max-width: 500px;
   }
 }
 
@@ -183,6 +189,8 @@
       rgba(255, 255, 255, 0.01) 80%,
       rgba(184, 167, 122, 1) 100%);
   --accent: #b8a77a;
+  /* 80 = 50% alpha */
+  --accent-50: #b8a77a80;
   --accent-secondary: #856f35;
   --accent-tertiary: #560126;
   --border: #8a7676;
@@ -214,6 +222,8 @@
       rgba(255, 255, 255, 0.01) 60%,
       rgb(2, 0, 20) 100%);
   --accent: #2b1583;
+  /* 80 = 50% alpha */
+  --accent-50: #2b158380;
   --accent-secondary: #4724d5;
   --accent-tertiary: #4285F4;
   --border: #8982ac;

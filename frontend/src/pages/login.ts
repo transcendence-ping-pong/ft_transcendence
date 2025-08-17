@@ -3,7 +3,11 @@ import '@/components/ThemeToggle.js';
 import '@/components/LanguagesDropdown.js';
 import '@/components/TopBar.js';
 import '@/components/UserSignin.js';
+import '@/components/UserSignin2.js';
+
 import '@/components/UserSignup.js';
+import '@/components/UserSignup2.js';
+
 import '@/components/GenericModal.js';
 import '@/components/UserToken.js';
 
@@ -75,14 +79,14 @@ export function renderLogin(containerId: string) {
 
     switch (mode) {
       case 'login':
-        el = document.createElement('user-signin');
+        el = document.createElement('user-signin2');
         el.addEventListener('switch-to-signup', () => transitionTo('signup'));
         el.addEventListener('switch-to-token', (e: CustomEvent) => transitionTo('token', e.detail));
 
         setLoginPrefill(el as unknown as UserLoginElement, loginPrefill);
         break;
       case 'signup':
-        el = document.createElement('user-signup');
+        el = document.createElement('user-signup2');
         el.addEventListener('switch-to-login', (e: CustomEvent) => transitionTo('login', e.detail));
         break;
       case 'token':

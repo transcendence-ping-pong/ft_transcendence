@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // handle back/forward navigation - history API
-  // https://developer.mozilla.org/en-US/docs/We`${BASE_URL}/History_API
+  // https://developer.mozilla.org/en-US/docs/Web/API/History_API
   window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft') window.history.back();
     if (e.key === 'ArrowRight') window.history.forward();

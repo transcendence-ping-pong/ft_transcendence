@@ -13,6 +13,8 @@ export interface AuthResponse {
   avatar?: string;
 }
 
+
+
 // VITE_API_BASE_URL variable is set in Makefile...
 // for running on port 3000 locally and taking advantage of vite hot reload
 // mainly used for local development
@@ -20,18 +22,21 @@ export interface AuthResponse {
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 export async function signup(username: string, email: string, password: string) {
-  const res = await fetch(`${BASE_URL}/signup`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, email, password })
-  });
+  try {
+    const res = await fetch(`${BASE_URL}/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password })
+    });
 
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || 'Signup failed');
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Signup failed');
+    }
+    return data;
+  } catch (error: any) {
+    return { error: error.message || 'Network error' };
   }
-
-  return data;
 }
 
 export async function login(email: string, password: string, token?: string): Promise<AuthResponse> {

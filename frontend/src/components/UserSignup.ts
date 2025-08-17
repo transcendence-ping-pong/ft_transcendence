@@ -12,7 +12,7 @@ template.innerHTML = `
       margin: 0 auto;
     }
     .form-title {
-      font-size: 2rem;
+      font-size: var(--title-modal-font-size);
       font-weight: bold;
       margin-bottom: 1rem;
       text-align: center;

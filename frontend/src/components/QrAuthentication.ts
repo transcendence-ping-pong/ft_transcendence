@@ -10,6 +10,7 @@ template.innerHTML = `
       display: flex;
       width: 100%;
       height: 100%;
+      border: 1px solid red;
     }
 
     .qr-auth {
@@ -22,7 +23,7 @@ template.innerHTML = `
 
     .qr-auth__title {
       color: var(--text);
-      font-size: var(--title-font-size);
+      font-size: var(--title-modal-font-size);
     }
     .qr-auth__auth {
       display: flex;

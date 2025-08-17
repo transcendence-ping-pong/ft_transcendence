@@ -1,7 +1,6 @@
 import { t, err } from '@/locales/Translations.js';
 import * as authService from '@/services/authService.js';
-import { state } from '@/state';
-import { UserData } from '@/utils/playerUtils/types';
+import { setUserData } from '@/state';
 
 // TODO IMPROVEMENT: signin and signup can be abstracted
 // there are too many similarities and repetition
@@ -15,7 +14,7 @@ template.innerHTML = `
       margin: 0 auto;
     }
     .form-title {
-      font-size: 2rem;
+      font-size: var(--title-modal-font-size);;
       font-weight: bold;
       margin-bottom: 1rem;
       text-align: center;
@@ -145,27 +144,8 @@ export class UserSignin extends HTMLElement {
     this.passwordInput.addEventListener('input', () => this._clearError());
   }
 
-  // private method, set user data in state in a more structured way
-  // method is not part of the public API
+  // # prefix indicates it is not part of the public API
   // _ prefix indicates it's intended for internal use only, but not enforced
-  #setUserData(res: authService.AuthResponse, email: string) {
-    state.userData = {
-      username: res.username || '',
-      email,
-      accessToken: res.accessToken || '',
-      refreshToken: res.refreshToken || '',
-      userId: res.userId || 0, // Add userId from response
-      avatar: res.avatar || undefined, // Add avatar from response
-    } as UserData;
-
-    // Also store in localStorage as backup
-    localStorage.setItem('accessToken', res.accessToken || '');
-    localStorage.setItem('refreshToken', res.refreshToken || '');
-    localStorage.setItem('loggedInUser', res.username || '');
-    localStorage.setItem('userEmail', email);
-    localStorage.setItem('userId', String(res.userId || 0));
-  }
-
   private async _onLogin(e: Event) {
     e.preventDefault();
     const email = this.emailInput.value.trim();
@@ -194,10 +174,7 @@ export class UserSignin extends HTMLElement {
     // remove error styles if login is successful and trigger event
     this._clearError();
     this._setError('');
-    this.#setUserData(res, email);
-
-
-
+    setUserData(res, email);
     this.dispatchEvent(new CustomEvent('login-success', { bubbles: true, composed: true }));
   }
 
