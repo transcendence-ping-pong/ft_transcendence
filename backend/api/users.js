@@ -320,7 +320,14 @@ async function userRoutes(fastify, options) {
     fastify.post('/verify-token', (req, res) => {
         const { email, token, secret } = req.body;
 
-        if (!email || !token || !secret) {
+        console.log('VERIFY', { email, token, secret });
+        const expectedToken = speakeasy.totp({
+            secret: secret,
+            encoding: 'base32'
+        });
+        console.log('EXPECTED', {expectedToken});
+
+        if (!email || !token) {
             return res.status(400).send({ error: MSG.EMAIL_AND_TOKEN_REQUIRED });
         }
 
@@ -461,12 +468,30 @@ async function userRoutes(fastify, options) {
         });
     });
 
+    fastify.get('/users/username/:username', (request, reply) => {
+        const { username } = request.params;
+        db.get(
+            `SELECT u.userId, u.username, u.avatar, u.email, s.displayName, s.userStatus
+            FROM users u
+            LEFT JOIN userStats s ON u.userId = s.userId
+            WHERE u.username = ?`,
+            [username],
+            (err, row) => {
+            if (err) return reply.status(500).send({ error: 'Error fetching user' });
+            if (!row) return reply.status(404).send({ error: 'User not found' });
+            reply.send({ user: row });
+            }
+        );
+    });
+
     fastify.get('/users/stats/:userId', (request, reply) => {
         const { userId } = request.params;
-
         db.get(`SELECT * FROM userStats WHERE userId = ?`, [userId], (err, row) => {
             if (err) {
                 return reply.status(500).send({ error: MSG.ERROR_FETCHING_USER_FROM_DATABASE });
+            }
+            if (!row) {
+                return reply.status(404).send({ error: 'User stats not found' });
             }
             reply.send(row);
         });

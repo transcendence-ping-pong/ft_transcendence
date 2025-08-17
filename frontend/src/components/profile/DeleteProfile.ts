@@ -1,5 +1,5 @@
 import { t } from '@/locales/Translations';
-import { actionIcons } from '@/utils/Constants';
+import '@/components/_templates/AuthFormLayout.js';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -13,11 +13,6 @@ template.innerHTML = `
       font-size: var(--main-font-size);
       margin-bottom: 2rem;
     }
-    hr {
-      border: none;
-      border-top: 1px solid var(--border);
-    }
-
     .delete-profile__footer {
       display: flex;
       justify-content: space-between;
@@ -53,19 +48,20 @@ template.innerHTML = `
     .delete-btn:hover, .delete-btn:focus {
       background: var(--warning-secondary);
       color: #fff;
-    }    
+    }
   </style>
-
-  <section class="delete-profile">
-    <h1 class="delete-profile__title">${t('profile.deleteAccount')}</h1>
-    <hr/>
-    <p class="delete-profile__description">${t('profile.deleteAccountWarning')}</p>
-
-    <div class="delete-profile__footer">
+  <auth-form-layout style="--auth-form-max-width: 600px;">
+    <div slot="header">
+      <h1 class="delete-profile__title">${t('profile.deleteAccount')}</h1>
+    </div>
+    <div slot="content">
+      <p class="delete-profile__description">${t('profile.deleteAccountWarning')}</p>
+    </div>
+    <div slot="footer" class="delete-profile__footer">
       <button id="cancelBtn" class="delete-profile__footer-btn" type="button">${t('profile.cancel')}</button>
       <button id="confirmBtn" class="delete-profile__footer-btn delete-btn" type="button">${t('profile.deleteAccountConfirm')}</button>
     </div>
-  </section>
+  </auth-form-layout>
 `;
 
 class DeleteProfile extends HTMLElement {
@@ -90,7 +86,6 @@ class DeleteProfile extends HTMLElement {
       alert('DELETE PROFILE');
     });
   }
-
-};
+}
 
 customElements.define('delete-profile', DeleteProfile);

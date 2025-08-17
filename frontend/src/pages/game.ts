@@ -1,7 +1,8 @@
 import { gameOrchestrator } from '@/game/gameOrchestrator.js';
 import { multiplayerToggle } from '@/multiplayer/MultiplayerToggle.js';
-import '@/components/TopBar.js';
-import '@/components/GenericModal.js';
+import '@/components/navigation/TopBar.js';
+import '@/components/navigation/Logo.js';
+import '@/components/_templates/GenericModal.js';
 import '@/components/CreateTournament.js';
 import '@/components/ViewTournament.js';
 
@@ -22,16 +23,14 @@ export function renderGame(containerId: string) {
         <top-bar mode="game">
           <img slot="player1-avatar" src="${PLAYER_1.avatar}" alt="${PLAYER_1.name}" />
           <p slot="player1-username">${PLAYER_1.name}</p>
-          <img slot="logo-center" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=octopus" alt="Logo" />
-          <span slot="title-center">FOUR PING TWO PONG</span>
+          <pong-logo slot="logo"></logo>
           <p slot="player2-username">${PLAYER_2.name}</p>
           <img slot="player2-avatar" src="${PLAYER_2.avatar}" alt="${PLAYER_2.name}" />
         </top-bar>
       `
       : `
         <top-bar mode="game">
-          <img slot="logo-center" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=octopus" alt="Logo" />
-          <span slot="title-center">FOUR PING TWO PONG</span>
+          <pong-logo slot="logo-center"></logo>
         </top-bar>
       `;
   }
@@ -54,7 +53,7 @@ export function renderGame(containerId: string) {
   // multiplayer test toggle
   const toggleContainer = document.getElementById('multiplayer-toggle-container');
   if (toggleContainer) {
-	multiplayerToggle.render(toggleContainer);
+    multiplayerToggle.render(toggleContainer);
   }
 
   // listen for tournament-created globally, so it works for every round

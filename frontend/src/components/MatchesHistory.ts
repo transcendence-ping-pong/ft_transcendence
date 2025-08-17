@@ -1,6 +1,6 @@
 import { t } from '@/locales/Translations';
 import { actionIcons } from '@/utils/Constants';
-import '@/components/CustomTag.js';
+import '@/components/_templates/CustomTag.js';
 
 const template = document.createElement('template');
 template.innerHTML = `

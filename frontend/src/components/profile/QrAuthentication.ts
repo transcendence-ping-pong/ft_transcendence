@@ -10,6 +10,7 @@ template.innerHTML = `
       display: flex;
       width: 100%;
       height: 100%;
+      border: 1px solid red;
     }
 
     .qr-auth {
@@ -22,7 +23,7 @@ template.innerHTML = `
 
     .qr-auth__title {
       color: var(--text);
-      font-size: var(--title-font-size);
+      font-size: var(--title-modal-font-size);
     }
     .qr-auth__auth {
       display: flex;
@@ -225,7 +226,11 @@ class QrAuthentication extends HTMLElement {
         return;
       }
       this.showSpinner()
-      setTimeout(() => { this.verifyToken(this.authData['email'], code); }, 600);
+      const secret = this.authData['secret'] || '';
+      const email = this.authData['email'] || '';
+      if (!email || !secret) return; // TODO: add error handling
+
+      setTimeout(() => { this.verifyToken(email, code, secret); }, 600);
     });
   }
 
@@ -246,6 +251,8 @@ class QrAuthentication extends HTMLElement {
   private async getQrCode() {
     const email = state.userData?.email || '';
     const accessToken = state.userData?.accessToken || '';
+    if (this.authData['qrCodeUrl']) return this.authData;
+
     try {
       this.authData = await authService.generateSecret(email, accessToken);
       this.authData['email'] = email;
@@ -257,8 +264,8 @@ class QrAuthentication extends HTMLElement {
     return this.authData;
   }
 
-  private async verifyToken(email: string, code: string) {
-    const secret = this.authData['secret'];
+  private async verifyToken(email: string, code: string, secret: string) {
+    console.log('Verifying token:', { email, code, secret });
     const res = await authService.verifyToken(email, code, secret);
 
     if (res.error) {
@@ -272,7 +279,7 @@ class QrAuthentication extends HTMLElement {
     this.codeInput.classList.remove('input-error');
     this.codeInput.classList.add('input-success');
     setTimeout(() => {
-      this.dispatchEvent(new CustomEvent('modal-dismiss', { bubbles: true }));
+      window.dispatchEvent(new CustomEvent('modal-dismiss', { bubbles: true }));
     }, 400);
   }
 

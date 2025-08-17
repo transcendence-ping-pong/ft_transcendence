@@ -13,24 +13,9 @@ import { UserData } from '@/utils/playerUtils/types';
   - handle user authentication or session management directly
 */
 
-// Generate unique client ID for socket connections
-const generateClientId = (): string => {
-  return 'client-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-};
-
-// Get or create client ID - ensures we always have one
-const getOrCreateClientId = (): string => {
-  let clientId = localStorage.getItem('clientId');
-  if (!clientId) {
-    clientId = generateClientId();
-    localStorage.setItem('clientId', clientId);
-  }
-  return clientId;
-};
-
 const savedState = localStorage.getItem('appState');
 const initialState = savedState ? JSON.parse(savedState) : {
-  language: '   ',
+  language: null,
   translations: {} as any,
   errorTranslations: {} as any,
   availableLanguages: [] as string[],
@@ -42,7 +27,22 @@ const initialState = savedState ? JSON.parse(savedState) : {
   // TODO: add other state properties that we need to persist
 };
 
-// Ensure clientId is always available
+// generate unique client ID for socket connections
+const generateClientId = (): string => {
+  return 'client-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+};
+
+// get or create client ID - ensures we always have one
+const getOrCreateClientId = (): string => {
+  let clientId = localStorage.getItem('clientId');
+  if (!clientId) {
+    clientId = generateClientId();
+    localStorage.setItem('clientId', clientId);
+  }
+  return clientId;
+};
+
+// ensure clientId is always available
 initialState.clientId = getOrCreateClientId();
 
 console.log('State initialized with Client ID:', initialState.clientId);
@@ -55,6 +55,24 @@ export const state = new Proxy(initialState, {
     return true;
   }
 });
+
+// res comes from backend GET response
+export function setUserData(res: any, email: string) {
+  state.userData = {
+    username: res.username || '',
+    email,
+    accessToken: res.accessToken || '',
+    refreshToken: res.refreshToken || '',
+    userId: res.userId || 0,
+    avatar: res.avatar || undefined,
+  } as UserData;
+
+  localStorage.setItem('accessToken', res.accessToken || '');
+  localStorage.setItem('refreshToken', res.refreshToken || '');
+  localStorage.setItem('loggedInUser', res.username || '');
+  localStorage.setItem('userEmail', email);
+  localStorage.setItem('userId', String(res.userId || 0));
+}
 
 export interface TournamentData {
   players: string[];
@@ -74,4 +92,3 @@ export interface Match {
 
 export let currentMatches: Match[] = [];
 export let tournamentId: number | null = null;
-

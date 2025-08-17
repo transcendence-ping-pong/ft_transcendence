@@ -20,7 +20,7 @@ template.innerHTML = `
       background: var(--body);
       border: 2px solid var(--border);
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-      padding: 24px;
+      padding: 2rem;
       position: relative;
       display: flex;
       align-items: center;
@@ -36,9 +36,12 @@ template.innerHTML = `
       transform: translateY(0);
     }
     .body-center {
-      display: block;
+      display: flex;
+      flex-direction: column;
       width: 100%;
       height: 100%;
+      min-height: 0;
+      min-width: 0;
     }
     .close-btn {
       position: absolute;
@@ -130,18 +133,25 @@ export class GenericModal extends HTMLElement {
     }
   }
 
+  // TODO: set a width and height max for the modal
   private updateModalSize() {
     const modal = this.shadowRoot.querySelector('.modal') as HTMLElement;
     if (modal) {
+      modal.style.width = '';
+      modal.style.height = '';
+      modal.style.maxWidth = '';
+      modal.style.maxHeight = '';
+      modal.style.overflow = 'auto';
+
       if (this.hasAttribute('small')) {
-        modal.style.width = 'var(--modal-small-width)';
-        modal.style.height = 'var(--modal-small-height)';
+        modal.style.minWidth = 'var(--modal-small-width)';
+        modal.style.minHeight = 'var(--modal-small-height)';
       } else if (this.hasAttribute('large')) {
-        modal.style.width = 'var(--modal-large-width)';
-        modal.style.height = 'var(--modal-large-height)';
+        modal.style.minWidth = 'var(--modal-large-width)';
+        modal.style.minHeight = 'var(--modal-large-height)';
       } else {
-        modal.style.width = 'var(--modal-width)';
-        modal.style.height = 'var(--modal-height)';
+        modal.style.minWidth = 'var(--modal-width)';
+        modal.style.minHeight = 'var(--modal-height)';
       }
     }
   }
@@ -172,7 +182,7 @@ export class GenericModal extends HTMLElement {
   private dismiss(fromChild = false) {
     this.remove();
     if (!fromChild) {
-      this.dispatchEvent(new CustomEvent('modal-dismiss', { bubbles: true }));
+      window.dispatchEvent(new CustomEvent('modal-dismiss', { bubbles: true }));
     }
   }
 }
