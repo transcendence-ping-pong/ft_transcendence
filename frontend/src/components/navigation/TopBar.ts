@@ -24,7 +24,6 @@ template.innerHTML = `
       z-index: 9999;
       box-shadow: 0 2px 12px #0002;
       box-sizing: border-box;
-      user-select: none;
     }
     .top-bar__inner {
       width: 100%;
@@ -117,7 +116,6 @@ template.innerHTML = `
       gap: 1rem;
       width: auto;
       height: auto;
-      pointer-events: none;
     }
 
     .top-bar__center .top-bar__chat-button {
@@ -178,10 +176,9 @@ template.innerHTML = `
 
     ::slotted([slot="logo"]),
     ::slotted([slot="logo-center"]) {
-      width: var(--logo-size);
       height: var(--logo-size);
-      object-fit: contain;
-      display: block;
+      display: flex;
+      align-items: center;
     }
 
     ::slotted([slot="player1-avatar"]),
@@ -248,12 +245,11 @@ template.innerHTML = `
 
     <div class="top-bar__center">
       <slot name="logo-center"></slot>
-      <span class="title-center"><slot name="title-center"></slot></span>
     </div>
 
     <div class="top-bar__right">
       <button class="top-bar__avatar" id="avatar" type="button">
-        <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=robot" alt="Avatar" />
+        <img src="" alt="Avatar" />
       </button>
       <slot name="toggle"></slot>
       <slot name="language"></slot>
@@ -291,8 +287,30 @@ export class TopBar extends HTMLElement {
     this.profileButton.addEventListener('click', (e) => this.handleProfile(e));
     chatButton.addEventListener('click', (e) => this.handleChat(e));
 
-    // check logout visibility on mount
+    // SIMPLIFIED: Just one listener
+    window.addEventListener('username-updated', () => this.updateAvatar());
+
+    this.updateAvatar();
     this.updateButtons();
+  }
+
+  private updateAvatar() {
+    const avatarImg = this.shadowRoot?.querySelector('.top-bar__avatar img') as HTMLImageElement;
+    if (!avatarImg) return;
+
+    const username = state.userData?.username;
+    const customAvatar = state.userData?.avatar;
+
+    if (customAvatar) {
+      // Use custom uploaded avatar
+      avatarImg.src = `${customAvatar}?t=${Date.now()}`;
+    } else if (username) {
+      // Use generated avatar based on username
+      avatarImg.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`;
+    } else {
+      // Fallback to default
+      avatarImg.src = "https://api.dicebear.com/7.x/pixel-art/svg?seed=robot";
+    }
   }
 
   private updateButtons() {

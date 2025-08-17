@@ -1,10 +1,10 @@
-
 CREATE TABLE IF NOT EXISTS users (
 	userId INTEGER PRIMARY KEY AUTOINCREMENT,
 	username TEXT NOT NULL UNIQUE,
-	password TEXT NOT NULL,
-	secret TEXT NOT NULL,
+	password TEXT, -- Remove NOT NULL constraint
+	secret TEXT,   -- Remove NOT NULL constraint
 	googleID TEXT UNIQUE,
+	avatar TEXT,
 	email TEXT
 );
 
@@ -29,13 +29,6 @@ CREATE TABLE IF NOT EXISTS friendList (
 	friendStatus TEXT DEFAULT 'pending',
 	FOREIGN KEY (userId) REFERENCES users (userId),
 	FOREIGN KEY (friendId) REFERENCES users (userId)
-);
-
-CREATE TABLE IF NOT EXISTS matchHistory (
-	userId INTEGER NOT NULL,
-	matchId INTEGER NOT NULL,
-	FOREIGN KEY (userId) REFERENCES users (userId),
-	FOREIGN KEY (matchId) REFERENCES matches (matchId)
 );
 
 CREATE TABLE IF NOT EXISTS matches (

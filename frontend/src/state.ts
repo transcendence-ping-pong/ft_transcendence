@@ -15,7 +15,7 @@ import { UserData } from '@/utils/playerUtils/types';
 
 const savedState = localStorage.getItem('appState');
 const initialState = savedState ? JSON.parse(savedState) : {
-  language: 'en',
+  language: null,
   translations: {} as any,
   errorTranslations: {} as any,
   availableLanguages: [] as string[],
@@ -43,6 +43,24 @@ export const state = new Proxy(initialState, {
     return true;
   }
 });
+
+// res comes from backend GET response
+export function setUserData(res: any, email: string) {
+  state.userData = {
+    username: res.username || '',
+    email,
+    accessToken: res.accessToken || '',
+    refreshToken: res.refreshToken || '',
+    userId: res.userId || 0,
+    avatar: res.avatar || undefined,
+  } as UserData;
+
+  localStorage.setItem('accessToken', res.accessToken || '');
+  localStorage.setItem('refreshToken', res.refreshToken || '');
+  localStorage.setItem('loggedInUser', res.username || '');
+  localStorage.setItem('userEmail', email);
+  localStorage.setItem('userId', String(res.userId || 0));
+}
 
 export interface TournamentData {
   players: string[];
@@ -89,4 +107,3 @@ export interface OnlineUser {
 
 export let currentMatches: Match[] = [];
 export let tournamentId: number | null = null;
-

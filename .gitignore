@@ -32,3 +32,4 @@ docker-compose.override.yml
 
 # temporary files (backend)
 backend/temp/
+backend/database/database.db

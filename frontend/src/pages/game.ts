@@ -1,6 +1,7 @@
 import { gameOrchestrator } from '@/game/gameOrchestrator.js';
-import '@/components/TopBar.js';
-import '@/components/GenericModal.js';
+import '@/components/navigation/TopBar.js';
+import '@/components/navigation/Logo.js';
+import '@/components/_templates/GenericModal.js';
 import '@/components/CreateTournament.js';
 import '@/components/ViewTournament.js';
 
@@ -11,7 +12,7 @@ const PLAYER_2 = { name: '', avatar: 'https://api.dicebear.com/7.x/pixel-art/svg
 // // TODO FIX: use scale-100 if want to scale down border image
 // // remove 20px margin bottom from the border image?
 export function renderGame(containerId: string) {
-  document.body.classList.add('overflow-hidden');
+  document.body.classList.add('overflow-hidden'); // prevent scrolling during the game
   const container = document.getElementById(containerId);
   if (!container) return;
 
@@ -21,16 +22,14 @@ export function renderGame(containerId: string) {
         <top-bar mode="game">
           <img slot="player1-avatar" src="${PLAYER_1.avatar}" alt="${PLAYER_1.name}" />
           <p slot="player1-username">${PLAYER_1.name}</p>
-          <img slot="logo-center" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=octopus" alt="Logo" />
-          <span slot="title-center">FOUR PING TWO PONG</span>
+          <pong-logo slot="logo"></logo>
           <p slot="player2-username">${PLAYER_2.name}</p>
           <img slot="player2-avatar" src="${PLAYER_2.avatar}" alt="${PLAYER_2.name}" />
         </top-bar>
       `
       : `
         <top-bar mode="game">
-          <img slot="logo-center" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=octopus" alt="Logo" />
-          <span slot="title-center">FOUR PING TWO PONG</span>
+          <pong-logo slot="logo-center"></logo>
         </top-bar>
       `;
   }
