@@ -28,7 +28,7 @@ dev: frontend-dev backend-dev
 
 build: frontend-build
 
-a: clean
+a:
 	@echo "--------------------------------"
 	@echo "Multiplayer addresss:"
 	@ifconfig | grep "inet " | grep -v 127.0.0.1

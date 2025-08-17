@@ -86,20 +86,33 @@ export class gameOrchestrator {
 
   setupMultiplayerEvents() {
     window.addEventListener('gameStart', (e: CustomEvent) => {
-      this.isMultiplayerMode = true;
-      this.babylonCanvas.createMultiplayerGameCanvas();
-      this.gameCanvas = this.babylonCanvas.getGameCanvas();
-      
-      if (this.gameCanvas instanceof MultiplayerGameCanvas) {
-        (this.gameCanvas as any).isMultiplayerMode = true;
-        (this.gameCanvas as any).currentRoomId = e.detail.room?.id || null;
-        (this.gameCanvas as any).playerIndex = (this.gameCanvas as any).getPlayerIndex();
-        (this.gameCanvas as any).startGame();
+      try {
+        console.log('GameOrchestrator: gameStart event received', e.detail);
+        console.log('GameOrchestrator: Creating multiplayer game...');
+        
+        this.isMultiplayerMode = true;
+        this.babylonCanvas.createMultiplayerGameCanvas();
+        this.gameCanvas = this.babylonCanvas.getGameCanvas();
+        
+        if (this.gameCanvas instanceof MultiplayerGameCanvas) {
+          console.log('GameOrchestrator: MultiplayerGameCanvas created successfully');
+          (this.gameCanvas as any).isMultiplayerMode = true;
+          (this.gameCanvas as any).currentRoomId = e.detail.room?.id || null;
+          (this.gameCanvas as any).playerIndex = (this.gameCanvas as any).getPlayerIndex();
+          (this.gameCanvas as any).startGame();
+        }
+        
+        console.log('GameOrchestrator: Hiding GUI and setting up multiplayer input...');
+        this.gui.hideAllGUI();
+        window.dispatchEvent(new CustomEvent('hideMultiplayerUI'));
+        this.setupMultiplayerInput();
+        
+        console.log('GameOrchestrator: Multiplayer game setup complete');
+      } catch (error) {
+        console.error('GameOrchestrator: Error setting up multiplayer game:', error);
+        // Don't let errors crash the game
+        this.isMultiplayerMode = false;
       }
-      
-      this.gui.hideAllGUI();
-      window.dispatchEvent(new CustomEvent('hideMultiplayerUI'));
-      this.setupMultiplayerInput();
     });
 
     window.addEventListener('gameEnd', (e: CustomEvent) => {

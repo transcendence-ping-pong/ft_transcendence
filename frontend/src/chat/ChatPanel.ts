@@ -1,3 +1,4 @@
+import { websocketService as wss } from '@/services/websocketService.js';
 import { state } from '../state.js';
 
 export default class ChatPanel extends HTMLElement {
@@ -170,9 +171,6 @@ export default class ChatPanel extends HTMLElement {
 
     websocketService.socket.on('inviteDeclined', (data: any) => {
       this.addMessage('', data.message, 'system', 'global');
-      
-      // Remove the invite message from the chat for the receiver
-      this.removeInviteMessage();
     });
 
     // Handle game countdown
@@ -180,15 +178,8 @@ export default class ChatPanel extends HTMLElement {
       this.addMessage('', `🎮 Game starting in ${data.countdown}...`, 'system', 'global');
     });
 
-    // Handle game start - now triggers remote multiplayer flow
-    websocketService.socket.on('gameStart', (data: any) => {
-      this.addMessage('', '🎮 Game starting! Redirecting to game page...', 'system', 'global');
-      
-      // Navigate to game page after a short delay
-      setTimeout(() => {
-        window.location.href = '/game';
-      }, 1000);
-    });
+    // Handle game start - removed direct websocket listener to prevent conflicts
+    // The gameStart event should be handled by the game orchestrator, not the chat
 
     // Handle room creation for invite flow
     websocketService.socket.on('roomCreated', (data: any) => {
@@ -278,7 +269,10 @@ export default class ChatPanel extends HTMLElement {
     this.reconnectAttempts++;
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000); // Exponential backoff, max 10s
     
-    this.addMessage('', `⚠️ Reconnection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay/1000}s...`, 'system', 'global');
+    // Only show reconnection message once
+    if (this.reconnectAttempts === 1) {
+      this.addMessage('', `⚠️ WebSocket disconnected. Attempting to reconnect...`, 'system', 'global');
+    }
     
     setTimeout(() => {
       const websocketService = (window as any).websocketService;
@@ -348,20 +342,8 @@ export default class ChatPanel extends HTMLElement {
         // Restore message history from localStorage
         this.messageHistory = messages;
         
-        // Load saved messages with proper categorization
-        messages.forEach((msg: any) => {
-          try {
-            if (msg.type === 'system' && msg.message !== 'Welcome to Pong Live Chat!' && msg.message !== 'Use /help to see available commands') {
-              this.addMessage('', msg.message, 'system', msg.category || 'global');
-            } else if (msg.type === 'user' && msg.sender && msg.message) {
-              const messageType = msg.sender === this.getCurrentUsername() ? 'user' : 'other';
-              // Ensure the message gets the correct category from saved data
-              this.addMessage(msg.sender, msg.message, messageType, msg.category || 'global');
-            }
-          } catch (msgError) {
-            console.warn('Failed to load individual message:', msgError, msg);
-          }
-        });
+        // Load saved messages WITHOUT triggering save (to prevent loop)
+        this.loadSavedMessagesToUI(messages);
       }
     } catch (error) {
       console.error('Failed to load chat messages:', error);
@@ -372,6 +354,116 @@ export default class ChatPanel extends HTMLElement {
       } catch (clearError) {
         console.error('Failed to clear localStorage:', clearError);
       }
+    }
+  }
+
+  // Load saved messages to UI without triggering save
+  private loadSavedMessagesToUI(messages: any[]) {
+    const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
+    if (!messagesContainer) return;
+
+    messages.forEach((msg: any) => {
+      try {
+        if (msg.type === 'system' && msg.message !== 'Welcome to Pong Live Chat!' && msg.message !== 'Use /help to see available commands') {
+          this.renderMessageToUI('', msg.message, 'system', msg.category || 'global');
+        } else if ((msg.type === 'user' || msg.type === 'other') && msg.sender && msg.message) {
+          const messageType = msg.sender === this.getCurrentUsername() ? 'user' : 'other';
+          this.renderMessageToUI(msg.sender, msg.message, messageType, msg.category || 'global');
+        }
+      } catch (msgError) {
+        console.warn('Failed to load individual message:', msgError, msg);
+      }
+    });
+  }
+
+  // Render message to UI without saving (for loading from localStorage)
+  private renderMessageToUI(sender: string, message: string, type: 'user' | 'system' | 'other', category: 'global' | 'direct' = 'global', receiverUsername?: string, inviteData?: any) {
+    const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
+    if (messagesContainer) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${type} ${category}`;
+      
+      if (type === 'system') {
+        // System messages - clean, minimal style
+        messageDiv.style.cssText = `
+          margin: 0.5rem 0;
+          padding: 0.5rem 0.75rem;
+          background: rgba(255,255,255,0.08);
+          border-radius: 8px;
+          border-left: 3px solid rgba(255,255,255,0.3);
+          font-size: 0.85rem;
+          color: rgba(255,255,255,0.7);
+          font-style: italic;
+        `;
+        
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = message;
+        messageDiv.appendChild(messageSpan);
+      } else {
+        // User messages - ultra slim, minimal style with different colors
+        const isOwnMessage = sender === this.getCurrentUsername();
+        
+        messageDiv.style.cssText = `
+          margin: 0.2rem 0;
+          padding: 0.3rem 0.5rem;
+          background: ${isOwnMessage ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)'};
+          border-radius: 4px;
+          border: 1px solid ${isOwnMessage ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.2)'};
+        `;
+        
+        // Show sender and message with different styles for global vs direct
+        const senderDiv = document.createElement('div');
+        senderDiv.style.cssText = 'color: rgba(255,255,255,0.8); font-size: 0.7rem; margin-bottom: 0.15rem; font-weight: 500;';
+        
+        if (category === 'direct') {
+          // Direct message: show "sender -> receiver"
+          const displayReceiver = receiverUsername || this.getCurrentUsername();
+          senderDiv.textContent = `${sender} -> ${displayReceiver}`;
+          // Different color for direct messages
+          messageDiv.style.background = 'rgba(100,150,255,0.15)';
+          messageDiv.style.borderColor = 'rgba(100,150,255,0.3)';
+        } else {
+          // Global message: show "sender -> global"
+          senderDiv.textContent = `${sender} -> global`;
+        }
+        
+        const messageDiv2 = document.createElement('div');
+        messageDiv2.style.cssText = 'color: rgba(255,255,255,0.9); font-size: 0.8rem; line-height: 1.2;';
+        messageDiv2.textContent = message;
+        
+        const timestampDiv = document.createElement('div');
+        timestampDiv.style.cssText = 'color: rgba(255,255,255,0.5); font-size: 0.6rem; margin-top: 0.15rem; text-align: right;';
+        timestampDiv.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        
+        // Add invite info if this is an invite message
+        if (inviteData && inviteData.type === 'invite') {
+          // Store real invite data in the message DOM for later extraction
+          messageDiv.setAttribute('data-invite-id', inviteData.id?.toString() || '');
+          messageDiv.setAttribute('data-sender', inviteData.senderUsername || '');
+          messageDiv.setAttribute('data-receiver', inviteData.receiverUsername || '');
+          messageDiv.setAttribute('data-difficulty', inviteData.difficulty || 'MEDIUM');
+          messageDiv.setAttribute('data-invite-type', 'true');
+          
+          const inviteInfoDiv = document.createElement('div');
+          inviteInfoDiv.style.cssText = 'text-align: center; margin-top: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 4px;';
+          
+          const inviteText = document.createElement('div');
+          inviteText.style.cssText = 'color: rgba(255,255,255,0.7); font-size: 0.7rem; margin-bottom: 0.3rem;';
+          inviteText.textContent = 'Type /accept or /decline to respond';
+          
+          inviteInfoDiv.appendChild(inviteText);
+          messageDiv.appendChild(inviteInfoDiv);
+        }
+        
+        messageDiv.appendChild(senderDiv);
+        messageDiv.appendChild(messageDiv2);
+        messageDiv.appendChild(timestampDiv);
+      }
+      
+      messagesContainer.appendChild(messageDiv);
+      
+      // Scroll to bottom
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
   }
 
@@ -816,59 +908,7 @@ export default class ChatPanel extends HTMLElement {
         timestampDiv.style.cssText = 'color: rgba(255,255,255,0.5); font-size: 0.6rem; margin-top: 0.15rem; text-align: right;';
         timestampDiv.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         
-        // Add invite buttons if this is an invite message
-        if (inviteData && inviteData.type === 'invite') {
-          const inviteButtonsDiv = document.createElement('div');
-          inviteButtonsDiv.style.cssText = 'display: flex; gap: 0.5rem; margin-top: 0.5rem; justify-content: center;';
-          
-          const acceptBtn = document.createElement('button');
-          acceptBtn.textContent = '✓ Accept';
-          acceptBtn.style.cssText = `
-            background: rgba(0,255,0,0.3); 
-            color: white; 
-            border: 1px solid rgba(0,255,0,0.5); 
-            padding: 0.3rem 0.8rem; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-size: 0.7rem;
-            transition: all 0.2s;
-          `;
-          acceptBtn.onmouseover = () => {
-            acceptBtn.style.background = 'rgba(0,255,0,0.5)';
-            acceptBtn.style.borderColor = 'rgba(0,255,0,0.7)';
-          };
-          acceptBtn.onmouseout = () => {
-            acceptBtn.style.background = 'rgba(0,255,0,0.3)';
-            acceptBtn.style.borderColor = 'rgba(0,255,0,0.5)';
-          };
-          acceptBtn.onclick = () => this.handleInviteResponse(inviteData, 'accept');
-          
-          const declineBtn = document.createElement('button');
-          declineBtn.textContent = '✗ Decline';
-          declineBtn.style.cssText = `
-            background: rgba(255,0,0,0.3); 
-            color: white; 
-            border: 1px solid rgba(255,0,0,0.5); 
-            padding: 0.3rem 0.8rem; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-size: 0.7rem;
-            transition: all 0.2s;
-          `;
-          declineBtn.onmouseover = () => {
-            declineBtn.style.background = 'rgba(255,0,0,0.5)';
-            declineBtn.style.borderColor = 'rgba(255,0,0,0.7)';
-          };
-          declineBtn.onmouseout = () => {
-            declineBtn.style.borderColor = 'rgba(255,0,0,0.5)';
-            declineBtn.style.background = 'rgba(255,0,0,0.3)';
-          };
-          declineBtn.onclick = () => this.handleInviteResponse(inviteData, 'decline');
-          
-          inviteButtonsDiv.appendChild(acceptBtn);
-          inviteButtonsDiv.appendChild(declineBtn);
-          messageDiv.appendChild(inviteButtonsDiv);
-        }
+
         
         messageDiv.appendChild(senderDiv);
         messageDiv.appendChild(messageDiv2);
@@ -901,158 +941,110 @@ export default class ChatPanel extends HTMLElement {
     }
   }
 
-  // Handle invite responses
-  private handleInviteResponse(inviteData: any, response: 'accept' | 'decline') {
-    try {
-      const websocketService = (window as any).websocketService;
-      if (websocketService && websocketService.socket) {
-        websocketService.socket.emit('inviteResponse', {
-          inviteId: inviteData.id,
-          response: response,
-          senderUsername: inviteData.senderUsername,
-          receiverUsername: inviteData.receiverUsername,
-          difficulty: inviteData.difficulty
-        });
-        
-        if (response === 'accept') {
-          this.addMessage('', '🎮 Processing invite acceptance...', 'system', 'global');
-        } else {
-          this.addMessage('', '❌ Invite declined', 'system', 'global');
+
+
+  // Find invite message by ID or most recent if no ID provided
+  private findInviteMessage(inviteId?: number): HTMLElement | null {
+    const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
+    if (!messagesContainer) return null;
+    
+    const inviteMessages = messagesContainer.querySelectorAll('.message');
+    for (let i = inviteMessages.length - 1; i >= 0; i--) {
+      const msg = inviteMessages[i] as HTMLElement;
+      // Look for invite type attribute to confirm this is an invite message
+      if (msg.getAttribute('data-invite-type') === 'true') {
+        // If no specific ID requested, return the most recent invite
+        if (!inviteId) {
+          return msg;
+        }
+        // Check if this invite matches the requested ID
+        const msgInviteId = msg.getAttribute('data-invite-id');
+        if (msgInviteId && parseInt(msgInviteId) === inviteId) {
+          return msg;
         }
       }
-    } catch (error) {
-      console.error('Failed to handle invite response:', error);
-      this.addMessage('', '⚠️ Failed to process invite response', 'system', 'global');
     }
+    return null;
   }
 
-  // Remove invite message from chat when declined
-  private removeInviteMessage() {
-    const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
-    if (messagesContainer) {
-      // Find and remove the last invite message (the one that was just declined)
-      const inviteMessages = messagesContainer.querySelectorAll('.message');
-      for (let i = inviteMessages.length - 1; i >= 0; i--) {
-        const msg = inviteMessages[i] as HTMLElement;
-        if (msg.querySelector('.invite-buttons')) {
-          // This is an invite message, remove it
-          msg.remove();
-          break;
-        }
-      }
-    }
-  }
+
 
   // Handle slash commands
-  private handleSlashCommand(command: string) {
-    const cmd = command.toLowerCase();
-    
+  private handleSlashCommand(cmd: string) {
     if (cmd === '/help') {
       this.addMessage('', 'Available commands:', 'system', 'global');
       this.addMessage('', '• /help - Show this help message', 'system', 'global');
       this.addMessage('', '• /list - Show online users', 'system', 'global');
-      this.addMessage('', '• /pm username message - Send private message (cannot PM yourself)', 'system', 'global');
-      this.addMessage('', '• /invite username [difficulty] - Invite user to play Pong (EASY/MEDIUM/HARD)', 'system', 'global');
+      this.addMessage('', '• /pm username message - Send private message', 'system', 'global');
+	  this.addMessage('', '• /invite username difficulty - Invite user to play Pong (easy, medium, hard)', 'system', 'global');
+      this.addMessage('', '• /accept - Accept invite', 'system', 'global');
+      this.addMessage('', '• /decline - Decline invite', 'system', 'global');
       this.addMessage('', '• /profile username - Go to user profile page', 'system', 'global');
       this.addMessage('', '• /clear - Clear chat history', 'system', 'global');
     } else if (cmd === '/list') {
       this.requestOnlineUsers();
     } else if (cmd === '/clear') {
-      this.clearChat();
+		const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
+		if (messagesContainer) {
+		  messagesContainer.innerHTML = '';
+		  localStorage.removeItem('chatMessages');
+		  this.messageHistory = [];
+		}
     } else if (cmd.startsWith('/pm ')) {
-      // Parse direct message command - support both quoted and unquoted formats
-      const parts = command.substring(4).trim(); // Remove '/pm ' and trim
+      const [_, receiver, ...messageParts] = cmd.split(/\s+/);
+      let message = messageParts.join(' ');
       
-      let username = '';
-      let message = '';
-      
-      if (parts.includes('"')) {
-        // Parse with quotes - handle multi-line and special characters
-        const match = command.match(/\/pm\s+"([^"]+)"\s+"([^"]+)"/);
-        if (match) {
-          username = match[1];
-          message = match[2];
-        }
-      } else {
-        // Parse without quotes (space-separated) - first word is username, rest is message
-        const spaceIndex = parts.indexOf(' ');
-        if (spaceIndex > 0) {
-          username = parts.substring(0, spaceIndex);
-          message = parts.substring(spaceIndex + 1);
-        }
-      }
-      
-      if (username && message) {
-        // Check if user is trying to PM themselves
-        const currentUsername = this.getCurrentUsername();
-        if (username.toLowerCase() === currentUsername.toLowerCase()) {
+      if (receiver && message) {
+        if (receiver === this.getCurrentUsername()) {
           this.addMessage('', 'You cannot send a private message to yourself!', 'system', 'global');
           return;
         }
-        
-        // Send direct message via WebSocket - NO local addition
-        this.sendDirectMessage(username, message);
+        wss.emit('directMessage', {
+			type: 'direct',
+			senderUsername: this.getCurrentUsername(),
+			receiverUsername: receiver,
+			message: message,
+			timestamp: Date.now()
+		  });
       } else {
         this.addMessage('', 'Usage: /pm username message', 'system', 'global');
       }
     } else if (cmd.startsWith('/invite ')) {
-      // Parse invite command
-      const parts = command.substring(8).trim(); // Remove '/invite ' and trim
+      const [_, receiver, difficulty] = cmd.split(/\s+/);
       
-      let username = '';
-      let difficulty = 'MEDIUM';
-      
-      if (parts.includes('"')) {
-        // Parse with quotes
-        const match = command.match(/\/invite\s+"([^"]+)"\s*(\w+)?/);
-        if (match) {
-          username = match[1];
-          difficulty = match[2] || 'MEDIUM';
-        }
-      } else {
-        // Parse without quotes
-        const words = parts.split(/\s+/);
-        username = words[0];
-        difficulty = words[1] || 'MEDIUM';
+      if (!receiver || !difficulty) {
+        this.addMessage('', 'Usage: /invite username [difficulty]', 'system', 'global');
+        return;
       }
-      
-      if (username) {
-        // Validate difficulty
-        const validDifficulties = ['EASY', 'MEDIUM', 'HARD'];
-        if (!validDifficulties.includes(difficulty.toUpperCase())) {
-          difficulty = 'MEDIUM';
-        }
-        
-        this.sendInvite(username, difficulty.toUpperCase());
-      } else {
-        this.addMessage('', '⚠️ Usage: /invite username [difficulty]', 'system', 'global');
-      }
+      wss.emit('chatMessage', {
+		message: `/invite ${receiver} ${difficulty}`,
+		username: this.getCurrentUsername()
+	  });
+    } else if (cmd === '/accept') {
+      // Accept the most recent game invite
+      this.handleInviteCommand('accept');
+    } else if (cmd === '/decline') {
+      // Decline the most recent game invite
+      this.handleInviteCommand('decline');
     } else if (cmd.startsWith('/profile ')) {
-      // Parse profile command
-      const username = command.substring(9).trim(); // Remove '/profile ' and trim
+      const [_, username] = cmd.split(/\s+/);
       
       if (username) {
-        this.addMessage('', `🎯 Redirecting to ${username}'s profile...`, 'system', 'global');
-        
-        // Redirect to profile page after a short delay
-        setTimeout(() => {
-          window.location.href = `/profile/${username}`;
-        }, 1000);
+        window.location.href = `/profile/${username}`;
       } else {
-        this.addMessage('', '⚠️ Usage: /profile username', 'system', 'global');
+        this.addMessage('', 'Usage: /profile username', 'system', 'global');
       }
     } else {
-      this.addMessage('', `Unknown command: ${command}. Use /help for available commands.`, 'system', 'global');
+      this.addMessage('', `Use /help for available commands.`, 'system', 'global');
     }
   }
 
   // Request online users from backend
   private requestOnlineUsers() {
     try {
-      const websocketService = (window as any).websocketService;
-      if (websocketService && websocketService.isConnected()) {
+      if (wss && wss.isConnected()) {
         // Request online users list
-        websocketService.emit('getOnlineUsers');
+        wss.emit('getOnlineUsers');
         this.requestedOnlineUsers = true; // Set flag to true
       } else {
         this.addMessage('', 'Failed to get online users: WebSocket not connected', 'system', 'global');
@@ -1060,21 +1052,6 @@ export default class ChatPanel extends HTMLElement {
     } catch (error) {
       console.error('Error requesting online users:', error);
       this.addMessage('', 'Failed to get online users', 'system', 'global');
-    }
-  }
-
-  // Clear chat history
-  private clearChat() {
-    const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
-    if (messagesContainer) {
-      // Clear all messages
-      messagesContainer.innerHTML = '';
-      
-      // Clear localStorage and message history
-      localStorage.removeItem('chatMessages');
-      this.messageHistory = [];
-      
-      this.addMessage('', 'Chat history cleared!', 'system', 'global');
     }
   }
 
@@ -1112,30 +1089,84 @@ export default class ChatPanel extends HTMLElement {
     }
   }
 
-  // Send a direct message via WebSocket
-  private sendDirectMessage(receiverUsername: string, message: string) {
+  // Handle accept/decline commands for invites
+  private handleInviteCommand(action: 'accept' | 'decline') {
     try {
+      // Find the most recent invite message
+      const inviteMessage = this.findInviteMessage();
+      if (!inviteMessage) {
+        this.addMessage('', '⚠️ No game invite found to respond to', 'system', 'global');
+        return;
+      }
+      
+      // Check if this invite has already been processed
+      if (inviteMessage.getAttribute('data-invite-processed') === 'true') {
+        this.addMessage('', '⚠️ This invite has already been processed', 'system', 'global');
+        return;
+      }
+      
+      // Get invite data from the message
+      const inviteData = this.extractInviteDataFromMessage(inviteMessage);
+      if (!inviteData) {
+        this.addMessage('', '⚠️ Invalid invite data', 'system', 'global');
+        return;
+      }
+      
+      // Send response to backend with REAL data
       const websocketService = (window as any).websocketService;
-      if (websocketService && websocketService.isConnected()) {
-        const username = state.userData?.username || localStorage.getItem('loggedInUser') || 'Anonymous';
-        
-        // Send direct message via WebSocket - ONLY to backend
-        websocketService.emit('directMessage', {
-          type: 'direct',
-          senderUsername: username,
-          receiverUsername: receiverUsername,
-          message: message,
-          timestamp: Date.now()
+      if (websocketService && websocketService.socket) {
+        websocketService.socket.emit('inviteResponse', {
+          inviteId: inviteData.id,
+          response: action,
+          senderUsername: inviteData.senderUsername,
+          receiverUsername: inviteData.receiverUsername,
+          difficulty: inviteData.difficulty
         });
         
-        // ABSOLUTELY NO local message addition - UI only renders what backend sends back
-      } else {
-        console.error('WebSocket service not available or not connected');
-        this.addMessage('', 'Failed to send direct message: WebSocket not connected', 'system', 'global');
+        // Mark as processed immediately
+        inviteMessage.setAttribute('data-invite-processed', 'true');
+        
+        if (action === 'accept') {
+          this.addMessage('', '🎮 Processing invite acceptance...', 'system', 'global');
+        } else {
+          this.addMessage('', '❌ Invite declined', 'system', 'global');
+        }
       }
     } catch (error) {
-      console.error('Error sending direct message:', error);
-      this.addMessage('', 'Failed to send direct message', 'system', 'global');
+      console.error('Failed to handle invite command:', error);
+      this.addMessage('', '⚠️ Failed to process invite response', 'system', 'global');
+    }
+  }
+
+  // Extract invite data from a message element
+  private extractInviteDataFromMessage(messageElement: HTMLElement): any {
+    try {
+      // Check if this is an invite message
+      if (messageElement.getAttribute('data-invite-type') !== 'true') {
+        return null;
+      }
+      
+      // Extract real invite data from DOM attributes
+      const inviteId = messageElement.getAttribute('data-invite-id');
+      const senderUsername = messageElement.getAttribute('data-sender');
+      const receiverUsername = messageElement.getAttribute('data-receiver');
+      const difficulty = messageElement.getAttribute('data-difficulty');
+      
+      // Validate that we have all required data
+      if (!inviteId || !senderUsername || !receiverUsername || !difficulty) {
+        console.error('Missing invite data attributes:', { inviteId, senderUsername, receiverUsername, difficulty });
+        return null;
+      }
+      
+      return {
+        id: parseInt(inviteId),
+        senderUsername: senderUsername,
+        receiverUsername: receiverUsername,
+        difficulty: difficulty
+      };
+    } catch (error) {
+      console.error('Failed to extract invite data:', error);
+      return null;
     }
   }
 
@@ -1146,13 +1177,13 @@ export default class ChatPanel extends HTMLElement {
       if (websocketService && websocketService.isConnected()) {
         const currentUsername = state.userData?.username || localStorage.getItem('loggedInUser') || 'Anonymous';
         
-        // Send invite via WebSocket - use the exact format backend expects
+        // Send invite via WebSocket - let backend handle all validation
         websocketService.emit('chatMessage', {
           message: `/invite ${username} ${difficulty}`,
           username: currentUsername
         });
         
-        this.addMessage('', `🎮 Sending invite to ${username} (${difficulty})...`, 'system', 'global');
+        // No confirmation message - let backend response determine what to show
       } else {
         console.error('WebSocket service not available or not connected');
         this.addMessage('', '⚠️ WebSocket not connected. Cannot send invite.', 'system', 'global');

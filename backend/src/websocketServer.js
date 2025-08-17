@@ -38,7 +38,7 @@ class WebSocketServer {
 		this.chatMessages = []; // In-memory for now
 		this.userBlocks = new Map(); // Map of blocker -> Set of blocked users
 		this.userRateLimits = new Map(); // Map of socketId -> { count: number, lastReset: number }
-		this.lastInviteTime = new Map(); // Map of username -> last invite timestamp
+
 		this.pendingInvites = new Map(); // Map of inviteId -> invite data
 		this.mockUsers = [
 			{ userId: 1, username: 'Alice', socketId: null },
@@ -1107,22 +1107,76 @@ class WebSocketServer {
 
 			case '/invite':
 				if (args.length < 1) {
-					socket.emit('chatError', { message: 'Usage: /invite "username" [difficulty]' });
+					socket.emit('chatError', { message: 'Usage: /invite username difficulty' });
 					return;
 				}
-				const difficulty = args[1] || 'MEDIUM';
-				this.handleGameInvite(socket, user, args[0], difficulty);
+				if (args.length < 2) {
+					socket.emit('chatError', { message: 'Usage: /invite username difficulty (EASY, MEDIUM, or HARD)' });
+					return;
+				}
+
+				const difficulty = args[1];
+
+				// Validate difficulty - only accept EASY, MEDIUM, HARD
+				const validDifficulties = ['EASY', 'MEDIUM', 'HARD'];
+				if (!validDifficulties.includes(difficulty.toUpperCase())) {
+					socket.emit('chatError', { message: 'Difficulty must be EASY, MEDIUM, or HARD' });
+					return;
+				}
+
+				this.handleGameInvite(socket, user, args[0], difficulty.toUpperCase());
+				break;
+
+			case '/accept':
+				this.handleInviteCommand(socket, user, 'accept');
+				break;
+
+			case '/decline':
+				this.handleInviteCommand(socket, user, 'decline');
 				break;
 
 			default:
-				socket.emit('chatError', { message: 'Unknown command. Use /help, /list, /pm "username" "message", /clear, or /invite "username" [difficulty]' });
+				socket.emit('chatError', { message: 'Unknown command. Use /help, /list, /pm "username" "message", /clear, /invite username difficulty (difficulty: EASY, MEDIUM, or HARD only), /accept, or /decline' });
 		}
+	}
+
+	handleInviteCommand(socket, user, action) {
+		// Find the most recent pending invite for this user
+		let mostRecentInvite = null;
+		let mostRecentTime = 0;
+
+		for (const [inviteId, invite] of this.pendingInvites) {
+			if (invite.receiverUsername === user.username && invite.timestamp > mostRecentTime) {
+				mostRecentInvite = invite;
+				mostRecentTime = invite.timestamp;
+			}
+		}
+
+		if (!mostRecentInvite) {
+			socket.emit('chatError', { message: 'No pending game invite found' });
+			return;
+		}
+
+		// Process the invite response
+		this.handleInviteResponse(socket, {
+			inviteId: mostRecentInvite.id,
+			response: action,
+			senderUsername: mostRecentInvite.senderUsername,
+			receiverUsername: mostRecentInvite.receiverUsername,
+			difficulty: mostRecentInvite.difficulty
+		});
 	}
 
 	handleGameInvite(socket, user, targetUsername, difficulty = 'MEDIUM') {
 		// prevent self-invite
 		if (user.username === targetUsername) {
 			socket.emit('chatError', { message: 'You cannot invite yourself' });
+			return;
+		}
+
+		// Simple validation: username must exist
+		if (!targetUsername || targetUsername.trim() === '') {
+			socket.emit('chatError', { message: 'Invalid username' });
 			return;
 		}
 
@@ -1151,17 +1205,23 @@ class WebSocketServer {
 			return;
 		}
 
-		// check cooldown (10 seconds between invites)
-		const now = Date.now();
-		const lastInvite = this.lastInviteTime?.get(user.username) || 0;
-		if (now - lastInvite < 10000) {
-			socket.emit('chatError', { message: 'Please wait 10 seconds between invites' });
+		// Check if inviter already has a pending invite (as sender or receiver)
+		const inviterHasPendingInvite = Array.from(this.pendingInvites.values())
+			.some(invite => invite.senderUsername === user.username || invite.receiverUsername === user.username);
+
+		if (inviterHasPendingInvite) {
+			socket.emit('chatError', { message: 'You already have a pending invite. Wait for it to be accepted or declined.' });
 			return;
 		}
 
-		// update last invite time
-		if (!this.lastInviteTime) this.lastInviteTime = new Map();
-		this.lastInviteTime.set(user.username, now);
+		// Check if receiver already has a pending invite (as sender or receiver)
+		const receiverHasPendingInvite = Array.from(this.pendingInvites.values())
+			.some(invite => invite.senderUsername === targetUsername || invite.receiverUsername === targetUsername);
+
+		if (receiverHasPendingInvite) {
+			socket.emit('chatError', { message: 'User already has a pending invite. Wait for them to respond to it first.' });
+			return;
+		}
 
 		const inviteId = Date.now();
 		const inviteMessage = {
@@ -1176,8 +1236,11 @@ class WebSocketServer {
 			type: 'invite'
 		};
 
+		console.log(`[DEBUG] Created invite with ID:`, inviteId, `Message:`, inviteMessage);
+
 		// Store the pending invite
 		this.pendingInvites.set(inviteId, inviteMessage);
+		console.log(`[DEBUG] Stored invite in pendingInvites. Current count:`, this.pendingInvites.size);
 
 		if (targetUser.socketId) {
 			this.io.to(targetUser.socketId).emit('gameInvite', inviteMessage);
@@ -1193,6 +1256,9 @@ class WebSocketServer {
 		const { inviteId, response, senderUsername, receiverUsername, difficulty } = data;
 		const user = this.connectedUsers.get(socket.id);
 
+		console.log(`[DEBUG] handleInviteResponse called with:`, { inviteId, response, senderUsername, receiverUsername, difficulty });
+		console.log(`[DEBUG] Current pending invites:`, Array.from(this.pendingInvites.keys()));
+
 		if (!user) {
 			socket.emit('chatError', { message: 'Authentication required' });
 			return;
@@ -1200,6 +1266,8 @@ class WebSocketServer {
 
 		// Get the stored invite
 		const invite = this.pendingInvites.get(inviteId);
+		console.log(`[DEBUG] Looking for invite with ID:`, inviteId, `Found:`, invite);
+
 		if (!invite) {
 			socket.emit('chatError', { message: 'Invite not found or already processed' });
 			return;
@@ -1209,25 +1277,41 @@ class WebSocketServer {
 			// Remove the invite from pending
 			this.pendingInvites.delete(inviteId);
 
-			// Create game room using the existing createRoom flow
+			// Find both users to get their socket IDs and user data
+			const senderUser = Array.from(this.connectedUsers.values())
+				.find(u => u.username === senderUsername);
+			const receiverUser = Array.from(this.connectedUsers.values())
+				.find(u => u.username === receiverUsername);
+
+			if (!senderUser || !receiverUser) {
+				socket.emit('chatError', { message: 'One or both users not found' });
+				return;
+			}
+
+			// Create game room following the same pattern as normal room creation
 			const roomId = `invite_${Date.now()}`;
+
+			// Start with just the host player (like normal room creation)
+			const enhancedHostUser = {
+				...senderUser,
+				isReady: false,
+				isHost: true,
+				score: 0,
+				wins: 0,
+				losses: 0
+			};
+
 			const room = {
 				id: roomId,
-				hostUsername: senderUsername,
-				guestUsername: receiverUsername,
+				players: [enhancedHostUser], // Only host initially
+				maxPlayers: 2,
+				status: 'waiting',
+				gameState: null,
+				createdAt: Date.now(),
 				difficulty: difficulty,
 				gameType: 'invite',
-				playerMode: '2v2',
-				maxPlayers: 2,
-				currentPlayers: 2,
-				status: 'waiting',
-				createdAt: Date.now(),
-				hostReady: false,
-				guestReady: false,
-				players: [
-					{ username: senderUsername, isHost: true, ready: false },
-					{ username: receiverUsername, isHost: false, ready: false }
-				]
+				playerMode: 'TWO_PLAYER',
+				hostUsername: senderUsername
 			};
 
 			this.gameRooms.set(roomId, room);
@@ -1238,42 +1322,27 @@ class WebSocketServer {
 			const receiverSocket = Array.from(this.io.sockets.sockets.values())
 				.find(s => this.connectedUsers.get(s.id)?.username === receiverUsername);
 
-			// Notify both players
+			// Host creates the room (follows normal flow)
 			if (senderSocket) {
-				senderSocket.emit('inviteAccepted', { room, message: 'Match accepted! Starting in 5 seconds...' });
+				senderSocket.join(roomId);
+				senderSocket.emit('inviteAccepted', {
+					room,
+					message: 'Match accepted! Creating game room...'
+				});
+
+				// Send roomCreated to host (like normal room creation)
+				senderSocket.emit('roomCreated', { roomId, room });
 			}
+
+			// Don't automatically add guest - let them join manually like normal flow
+			// This ensures the waiting room is shown properly
 			if (receiverSocket) {
-				socket.emit('inviteAccepted', { room, message: 'Match accepted! Starting in 5 seconds...' });
+				// Just notify guest that invite was accepted
+				receiverSocket.emit('inviteAccepted', {
+					room,
+					message: 'Match accepted! You can now join the game room.'
+				});
 			}
-
-			// Start countdown
-			let countdown = 5;
-			const countdownInterval = setInterval(() => {
-				if (countdown > 0) {
-					if (senderSocket) {
-						senderSocket.emit('gameCountdown', { countdown });
-					}
-					if (receiverSocket) {
-						socket.emit('gameCountdown', { countdown });
-					}
-					countdown--;
-				} else {
-					clearInterval(countdownInterval);
-
-					// Emit roomCreated event to trigger the remote multiplayer flow
-					if (senderSocket) {
-						senderSocket.emit('roomCreated', { room, roomId });
-					}
-					if (receiverSocket) {
-						socket.emit('playerJoined', {
-							player: { username: receiverUsername, isHost: false },
-							players: room.players,
-							roomId: roomId,
-							room: room
-						});
-					}
-				}
-			}, 1000);
 
 		} else if (response === 'decline') {
 			// Remove the invite from pending
@@ -1284,7 +1353,7 @@ class WebSocketServer {
 				.find(s => this.connectedUsers.get(s.id)?.username === senderUsername);
 
 			if (senderSocket) {
-				senderSocket.emit('inviteDeclined', {
+				socket.emit('inviteDeclined', {
 					message: `${receiverUsername} declined your invite`
 				});
 			}
@@ -1368,7 +1437,7 @@ class WebSocketServer {
 			id: Date.now(),
 			senderId: 0,
 			senderUsername: 'System',
-			message: 'Available commands: /help - Show this help message, /list - List online users, /pm "username" "message", /clear - Clear chat, /invite "username" [difficulty]',
+			message: 'Available commands: /help - Show this help message, /list - List online users, /pm "username" "message", /clear - Clear chat, /invite username difficulty (difficulty: EASY, MEDIUM, or HARD only), /accept - Accept game invite, /decline - Decline game invite',
 			timestamp: Date.now(),
 			type: 'global'
 		};

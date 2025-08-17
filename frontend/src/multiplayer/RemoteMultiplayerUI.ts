@@ -59,6 +59,7 @@ export class RemoteMultiplayerUI {
     window.addEventListener('roomStateChanged', (e: CustomEvent) => {
       console.log('UI: Room state changed - re-rendering page', e.detail);
       if (e.detail.currentRoom) {
+        console.log('UI: Rendering game room with players:', e.detail.currentRoom.players);
         this.renderGameRoom(e.detail.currentRoom);
       }
     });
@@ -111,17 +112,23 @@ export class RemoteMultiplayerUI {
       this.renderMainMenu();
     });
 
-    // Game starting
-    window.addEventListener('gameStarting', (e: CustomEvent) => {
-      console.log('UI: Game starting', e.detail);
-      // Transition to game - dispatch event that gameOrchestrator listens to
-      window.dispatchEvent(new CustomEvent('gameStart', { 
-        detail: { 
-          room: e.detail.room,
-          gameState: e.detail.gameState,
-          players: e.detail.players
-        } 
-      }));
+    // Game start - Both players ready, transition to game
+    // REMOVED: This was causing conflicts with game orchestrator
+    // The gameStart event should only be handled by the game orchestrator
+
+    // Invite accepted - Handle transition from chat to multiplayer
+    window.addEventListener('inviteAccepted', (e: CustomEvent) => {
+      console.log('UI: Invite accepted - transitioning to multiplayer', e.detail);
+      
+      // If we're not already in a room, this is an invite acceptance
+      // We need to transition to the multiplayer interface
+      if (!remoteMultiplayerManager.isInRoom()) {
+        // Connect to websocket if not already connected
+        remoteMultiplayerManager.connect(this.currentUsername);
+        
+        // The inviteAccepted event will set up the room state in the manager
+        // Then we'll receive roomStateChanged and render the game room
+      }
     });
   }
 
@@ -233,6 +240,7 @@ export class RemoteMultiplayerUI {
   }
 
   private renderGameRoom(room: RemoteGameRoom) {
+    console.log('UI: renderGameRoom called with room:', room);
     // completely clear everything and render game room
     this.clearAllElements();
 
@@ -358,6 +366,7 @@ export class RemoteMultiplayerUI {
     window.removeEventListener('playerReadyStatus', () => {});
     window.removeEventListener('availableRoomsList', () => {});
     window.removeEventListener('connectionLost', () => {});
-    window.removeEventListener('gameStarting', () => {});
+    // gameStart listener removed - no longer needed
+    window.removeEventListener('inviteAccepted', () => {});
   }
 }

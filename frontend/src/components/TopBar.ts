@@ -300,6 +300,12 @@ export class TopBar extends HTMLElement {
     const loggedIn = !!state.userData?.accessToken;
     this.logoutButton?.classList.toggle('hidden', isGame || !loggedIn);
     this.profileButton?.classList.toggle('hidden', isGame || !loggedIn);
+    
+    // Hide chat button in game mode
+    const chatButton = this.shadowRoot?.getElementById('chatButton') as HTMLButtonElement;
+    if (chatButton) {
+      chatButton.style.display = isGame ? 'none' : 'flex';
+    }
   }
 
   private async handleLogout(e: Event) {

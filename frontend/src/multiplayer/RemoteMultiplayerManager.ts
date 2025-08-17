@@ -74,6 +74,8 @@ export class RemoteMultiplayerManager {
       this.state.isReady = false;
       this.state.isConnected = true;
       
+      console.log('RemoteMultiplayerManager: State after room creation:', this.state);
+      
       // Dispatch clean signal to UI
       window.dispatchEvent(new CustomEvent('roomStateChanged', { 
         detail: { ...this.state } 
@@ -101,6 +103,8 @@ export class RemoteMultiplayerManager {
         }));
       } else {
         // We already have a room, so we're the host seeing a guest join
+        console.log('RemoteMultiplayerManager: Host sees guest joined, updating room state');
+        
         // Update room state with guest information
         this.state.currentRoom.currentPlayers = e.detail.room?.currentPlayers || 2;
         
@@ -192,15 +196,43 @@ export class RemoteMultiplayerManager {
       
       if (this.state.currentRoom) {
         this.state.currentRoom.status = 'playing';
-        window.dispatchEvent(new CustomEvent('gameStarting', { 
-          detail: { 
-            room: this.state.currentRoom,
-            gameState: e.detail.gameState,
-            players: e.detail.players
-          } 
-        }));
+        // Don't dispatch gameStarting here - let the UI handle the transition directly
+        // The gameStart event will be handled by the game orchestrator
       }
     });
+
+    // Invite accepted - Handle transition from chat to multiplayer
+    window.addEventListener('inviteAccepted', (e: CustomEvent) => {
+      console.log('RemoteMultiplayerManager: Invite accepted', e.detail);
+      
+      // If we don't have a current room, this is an invite acceptance
+      if (!this.state.currentRoom && e.detail.room) {
+        // Set up the invite room state
+        this.setInviteRoom(e.detail.room, false); // false = not host (will be determined by roomCreated/playerJoined)
+      }
+    });
+  }
+
+  // PUBLIC - Set invite room from chat system
+  public setInviteRoom(room: any, isHost: boolean) {
+    console.log('RemoteMultiplayerManager: Setting invite room', room, isHost);
+    
+    // Map the invite room to our format
+    const mappedRoom = this.mapToRemoteRoom(room);
+    
+    // Update our state
+    this.state.currentRoom = mappedRoom;
+    this.state.currentRoomId = mappedRoom.id;
+    this.state.isHost = isHost;
+    this.state.isReady = false;
+    this.state.isConnected = true;
+    
+    console.log('RemoteMultiplayerManager: Invite room set', this.state);
+    
+    // Dispatch room state changed signal
+    window.dispatchEvent(new CustomEvent('roomStateChanged', { 
+      detail: { ...this.state } 
+    }));
   }
 
   // PRIVATE - Helper methods
@@ -245,6 +277,7 @@ export class RemoteMultiplayerManager {
     window.removeEventListener('availableRooms', () => {});
     window.removeEventListener('websocketError', () => {});
     window.removeEventListener('gameStart', () => {});
+    window.removeEventListener('inviteAccepted', () => {});
   }
 }
 

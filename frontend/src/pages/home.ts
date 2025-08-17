@@ -9,12 +9,16 @@ export function renderHome(containerId: string) {
   const container = document.getElementById(containerId);
   if (container) {
     container.innerHTML = `
-      <div class="video-bg-container w-full h-screen relative overflow-hidden">
+      <!-- Video disabled for testing -->
+      <!-- <div class="video-bg-container w-full h-screen relative overflow-hidden">
         <video class="video-bg absolute top-0 left-0 w-full h-full object-cover z-0" autoplay muted loop playsinline>
           <source src="/public/pong_video_1080.mp4" type="video/mp4" />
         </video>
         <div class="fade-bottom"></div>
-      </div>
+      </div> -->
+      
+      <!-- Static background instead -->
+      <div class="w-full h-screen bg-black"></div>
 
       <top-bar>
         <img slot="logo" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=octopus" alt="Logo" />
