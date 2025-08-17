@@ -1,6 +1,5 @@
 import { GameLevel, GameScore } from '@/utils/gameUtils/GameConstants.js';
-import { createMatch } from '@/services/matchService';
-import { updateMatch } from '@/services/matchService';
+import { createMatch, updateMatch } from '@/services/matchService';
 import { state } from '@/state';
 
 /*
@@ -29,7 +28,7 @@ export class GameManager {
     this.isStarted = true; 
     this.isGameOver = false;
 	this.tempnumber = 0;
-	const match = await createMatch(state.userData.userId, this.tempnumber, this.tempnumber, state.Players.p1, state.Players.p2);
+	const match = await createMatch(state.userData.userId, this.tempnumber, state.tournamentData.tournamentId, state.players.p1, state.players.p2);
 	this.matchId = match.id;
     this.reset();
     this._onFinish = onFinish;
@@ -70,9 +69,9 @@ export class GameManager {
         if (score == this.scoreMax) {
           this.endGame();
           if (this.getWinner() == 'LEFT')
-            this.winner = state.Players.p1;
+            this.winner = state.players.p1;
           else
-            this.winner = state.Players.p2;
+            this.winner = state.players.p2;
           // Save match result if matchId
           updateMatch(this.matchId, this.winner, this.score.LEFT, this.score.RIGHT);
         }

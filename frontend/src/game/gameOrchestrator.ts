@@ -184,8 +184,9 @@ export class gameOrchestrator {
       // TODO: detail matches should be handled via state
       if (this.gameType === GameType.TOURNAMENT) {
         this.babylonCanvas.cleanupGame();
+		const matches = state.tournamentData.players;
         window.dispatchEvent(new CustomEvent('tournament-created', {
-          detail: { matches: [{ player1: "tchau", player2: "ola" }] },
+          detail: { matches },
           bubbles: true,
           composed: true
         }));
@@ -237,10 +238,7 @@ export class gameOrchestrator {
             this.gui.showGameTypeButton((gameType) => {
               this.gameType = gameType as GameType;
               if (gameType === GameType.ONE_MATCH) {
-                state.Players = { p1: "Player1", p2: "Player2" };
-				// state.UserData = {
-				// 	userId: 5
-				// }
+                state.players = { p1: "Player1", p2: "Player2" };
                 this.gui.showPlayerSelector((mode) => {
                   if (mode === PlayerMode.ONE_PLAYER) {
                     this.gameCanvas.enableBotForPlayer(1);

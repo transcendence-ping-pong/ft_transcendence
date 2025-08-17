@@ -39,7 +39,8 @@ const initialState = savedState ? JSON.parse(savedState) : {
   soundEnabled: true,
   scaleFactor: {},
   userData: {} as UserData, // user data will be set after login
-  Players: {} as Players,
+  players: {} as Players,
+  tournamentData: {} as TournamentData,
   // TODO: add other state properties that we need to persist
 };
 

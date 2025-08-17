@@ -105,7 +105,7 @@ template.innerHTML = `
 export class ViewTournament extends HTMLElement {
   private _matches: Array<{ player1: string, player2: string }> = [];
   // TODO: THIS IS A MOCK currentMatch is hardcoded for now, should be set dynamically via state (?)
-  private _currentMatchIndex: number = 0;
+  private _currentMatchIndex: number = state.tournamentData.currentMatchIndex;
 
   constructor() {
     super();
@@ -119,6 +119,7 @@ export class ViewTournament extends HTMLElement {
     startBtn.addEventListener('click', (e) => {
       e.preventDefault();
       const match = this._matches[this._currentMatchIndex];
+	  state.tournamentData.currentMatchIndex++;
       this.dispatchEvent(new CustomEvent('start-tournament-match', {
         detail: {
           player1: match.player1,

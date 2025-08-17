@@ -14,7 +14,7 @@ function splitIntoRandomPairs(inputArray) {
 
 	const result = [];
 	for (let i = 0; i < 8; i += 2) {
-		result.push([copyArray[i], copyArray[i + 1]]);
+		result.push({player1: copyArray[i], player2: copyArray[i + 1]});
 	}
 
 	return result;
