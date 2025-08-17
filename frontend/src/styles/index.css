@@ -22,8 +22,8 @@
   --avatar-size: 40px;
   --qr-size: 200px;
   --icon-size: 20px;
-  /* 16px horizontal padding */
-  --component-h-padding: 0 1rem;
+
+  --component-padding: 0.5rem;
   --sidebar-width: 30vw;
 
   --button-circle-size: 2.5rem;
@@ -63,8 +63,8 @@
     --avatar-size: 32px;
     --qr-size: 180px;
     --icon-size: 16px;
-    /* 12px horizontal padding */
-    --component-h-padding: 0 0.75rem;
+
+    --component-padding: 0.5rem;
     --sidebar-width: 30vw;
 
     --modal-height: 50vh;
@@ -102,8 +102,8 @@
     --avatar-size: 48px;
     --qr-size: 250px;
     --icon-size: 24px;
-    /* 20px horizontal padding */
-    --component-h-padding: 0 1.25rem;
+
+    --component-padding: 0.75rem;
     --sidebar-width: 30vw;
 
     --modal-height: 50vh;
@@ -238,7 +238,7 @@
   --google: #000000;
   --google-hover: #1e1e1e;
   --shadow: 0 8px 32px #8982ac;
-  --shadow-soft: 0 4px 8px #8982ac;
+  --shadow-soft: 0 2px 10px 0 #ffffff44;
   --avatar-bg: rgba(255, 255, 255, 0.35);
   --game-gradient-start: #1f0f5c;
   --game-gradient-end: #1a2233;

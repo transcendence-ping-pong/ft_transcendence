@@ -35,7 +35,7 @@ template.innerHTML = `
     .input-error {
       border-color: var(--warning);
     }
-    .auth-form__primary-button {
+    .template__primary-button {
       padding: 1rem 0;
       border: none;
       background: var(--accent-secondary);
@@ -46,7 +46,7 @@ template.innerHTML = `
       cursor: pointer;
       transition: background 0.2s, color 0.2s;
     }
-    .auth-form__primary-button:hover, .auth-form__primary-button:focus {
+    .template__primary-button:hover, .template__primary-button:focus {
       background: var(--accent);
       color: var(--text);
     }
@@ -93,7 +93,7 @@ template.innerHTML = `
     </form>
     <div slot="error" id="error" class="auth-form__error"></div>
     <div slot="footer" class="auth-form__footer">
-      <button id="signup" class="auth-form__primary-button" type="submit" form="signupForm">${t('auth.signup')}</button>
+      <button id="signup" class="template__primary-button" type="submit" form="signupForm">${t('auth.signup')}</button>
       <div>
         ${t('auth.alreadyHaveAccount')}
         <button id="loginBtn" type="button" class="auth-form__footer-link">${t('auth.signin')}</button>

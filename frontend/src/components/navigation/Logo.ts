@@ -2,7 +2,7 @@ const template = document.createElement('template');
 template.innerHTML = `
   <style>
     :host {
-      display: bloc;
+      display: block;
       height: var(--logo-size);
     }
     .logo {

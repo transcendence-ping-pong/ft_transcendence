@@ -92,7 +92,7 @@ template.innerHTML = `
       gap: 1rem;
       align-items: stretch;
     }
-    .auth-form__footer-btn {
+    .template__primary-button {
       padding: 1rem 1rem;
       border: none;
       background: var(--accent-secondary);
@@ -104,7 +104,7 @@ template.innerHTML = `
       cursor: pointer;
       transition: background 0.2s, color 0.2s;
     }
-    .auth-form__footer-btn:hover, .auth-form__footer-btn:focus {
+    .template__primary-button:hover, .template__primary-button:focus {
       background: var(--accent);
       color: var(--text);
     }
@@ -135,7 +135,7 @@ template.innerHTML = `
     </form>
     <div slot="error" id="error" class="auth-form__error"></div>
     <div slot="footer" class="auth-form__footer">
-      <button id="verifyBtn" class="auth-form__footer-btn" type="submit" form="tokenForm">${t('profile.verify')}</button>
+      <button id="verifyBtn" class="template__primary-button" type="submit" form="tokenForm">${t('profile.verify')}</button>
     </div>
   </auth-form-layout>
 `;

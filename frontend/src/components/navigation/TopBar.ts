@@ -76,6 +76,8 @@ template.innerHTML = `
       align-items: center;
       justify-content: center;
       cursor: pointer;
+      border: 2px solid var(--border);
+      box-shadow: var(--shadow-soft);
     }
     .top-bar__avatar img {
       width: 100%;
@@ -87,16 +89,20 @@ template.innerHTML = `
 
     .top-bar__logout {
       display: flex;
-      height: var(--toogle-height);
+      padding: var(--component-padding);
+      min-height: var(--toogle-height);
+      min-width: var(--button-min-width);
+      justify-content: center;
       align-items: center;
       gap: 0.5em;
       cursor: pointer;
       background: var(--body);
-      border-color: var(--border);
+      border: none;
       color: var(--text);
       font-size: var(--main-font-size);
       font-weight: bold;
-      padding: 0 1rem;
+      border: 2px solid var(--border);
+      box-shadow: var(--shadow-soft);
     }
     .top-bar__logout:hover {
       background: var(--accent);
@@ -178,7 +184,7 @@ template.innerHTML = `
       <slot name="language"></slot>
       <button id="logout" class="top-bar__logout">
         <span class="top-bar__logout-icon">${actionIcons.logout}</span>
-        ${t('nav.logout')}
+        <span class="top-bar__logout-text">${t('nav.logout')}</span>
       </button>
 
       <slot name="player2-username"></slot>
@@ -263,14 +269,3 @@ export class TopBar extends HTMLElement {
 }
 
 customElements.define('top-bar', TopBar);
-
-// .top-bar__player1,
-//     .top-bar__player2 {
-//       display: flex;
-//       align-items: center;
-//       gap: 0.5rem;
-//       background: var(--body);
-//       padding: 0.5rem;
-//       border: 2px solid var(--border);
-//       min-width: var(--button-min-width);
-//     }

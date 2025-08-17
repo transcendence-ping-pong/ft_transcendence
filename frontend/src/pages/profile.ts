@@ -1,6 +1,7 @@
 import { t } from '@/locales/Translations';
 import '@/components/navigation/TopBar.js';
 import '@/components/navigation/Logo.js';
+import '@/components/navigation/StartGameButton.js';
 import '@/components/navigation/ThemeToggle.js';
 import '@/components/authentication/UserSignin.js';
 import '@/components/navigation/LanguagesDropdown.js';
@@ -19,6 +20,9 @@ export function renderProfile(containerId: string, params: Record<string, string
     container.innerHTML = `
     <top-bar>
         <pong-logo slot="logo"></pong-logo>
+
+        <start-game-button slot="logo-center"></start-game-button>
+
         <theme-toggle slot="toggle"></theme-toggle>
         <languages-dropdown slot="language"></languages-dropdown>
         <img slot="avatar" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=robot" alt="Avatar" />
