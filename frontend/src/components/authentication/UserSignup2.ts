@@ -1,7 +1,10 @@
 import { t, err } from '@/locales/Translations.js';
 import * as authService from '@/services/authService.js';
-import '@/components/templates/AuthFormLayout.js';
+import '@/components/_templates/AuthFormLayout.js';
 
+// because of shadow DOM, styles are encapsulated here...
+// ... even so all auth components share the same behaviour
+// TODO: light DOM? render all markup inside the layout component?
 const template = document.createElement('template');
 template.innerHTML = `
   <style>

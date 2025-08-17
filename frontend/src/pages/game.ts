@@ -1,7 +1,7 @@
 import { gameOrchestrator } from '@/game/gameOrchestrator.js';
 import { multiplayerToggle } from '@/multiplayer/MultiplayerToggle.js';
-import '@/components/TopBar.js';
-import '@/components/GenericModal.js';
+import '@/components/navigation/TopBar.js';
+import '@/components/_templates/GenericModal.js';
 import '@/components/CreateTournament.js';
 import '@/components/ViewTournament.js';
 

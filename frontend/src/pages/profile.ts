@@ -1,15 +1,15 @@
 import { t } from '@/locales/Translations';
 import * as authService from '@/services/authService.js';
-import '@/components/TopBar.js';
-import '@/components/ThemeToggle.js';
-import '@/components/UserSignin.js';
-import '@/components/LanguagesDropdown.js';
-import '@/components/UserProfileForm.js';
-import '@/components/AtariBadge.js';
-import '@/components/GenericModal.js';
+import '@/components/navigation/TopBar.js';
+import '@/components/navigation/ThemeToggle.js';
+import '@/components/authentication/UserSignin.js';
+import '@/components/navigation/LanguagesDropdown.js';
+import '@/components/profile/UserProfileForm.js';
+import '@/components/profile/AtariBadge.js';
+import '@/components/_templates/GenericModal.js';
 import '@/components/MatchesHistory.js';
-import '@/components/DeleteProfile.js';
-import '@/components/QrAuthentication.js';
+import '@/components/profile/DeleteProfile.js';
+import '@/components/profile/QrAuthentication.js';
 
 export function renderProfile(containerId: string, params: Record<string, string> = {}) {
   // document.body.classList.add('overflow-hidden'); // prevent scrolling

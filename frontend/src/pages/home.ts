@@ -1,6 +1,6 @@
-import '@/components/ThemeToggle.js';
-import '@/components/LanguagesDropdown.js';
-import '@/components/TopBar.js';
+import '@/components/navigation/ThemeToggle.js';
+import '@/components/navigation/LanguagesDropdown.js';
+import '@/components/navigation/TopBar.js';
 import '@/components/NotificationsBar.js';
 import { websocketService } from '@/services/websocketService.js';
 import { initChat } from '@/chat/chatManager.js';

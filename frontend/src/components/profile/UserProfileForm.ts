@@ -2,7 +2,7 @@ import { t } from '@/locales/Translations';
 import { actionIcons } from '@/utils/Constants';
 import * as authService from '@/services/authService.js';
 import { state } from '@/state.js';
-import '@/components/CustomTag.js';
+import '@/components/_templates/CustomTag.js';
 import { makeAuthenticatedRequest } from '@/main.js';
 
 const template = document.createElement('template');

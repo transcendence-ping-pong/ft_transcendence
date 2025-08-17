@@ -1,15 +1,16 @@
 import * as authService from '@/services/authService.js';
-import '@/components/ThemeToggle.js';
-import '@/components/LanguagesDropdown.js';
-import '@/components/TopBar.js';
-import '@/components/UserSignin.js';
-import '@/components/UserSignin2.js';
+import '@/components/navigation/ThemeToggle.js';
+import '@/components/navigation/LanguagesDropdown.js';
+import '@/components/navigation/TopBar.js';
+import '@/components/authentication/UserSignin.js';
+import '@/components/authentication/UserSignin2.js';
 
-import '@/components/UserSignup.js';
-import '@/components/UserSignup2.js';
+import '@/components/authentication/UserSignup.js';
+import '@/components/authentication/UserSignup2.js';
 
-import '@/components/GenericModal.js';
-import '@/components/UserToken.js';
+import '@/components/_templates/GenericModal.js';
+import '@/components/authentication/UserToken.js';
+import '@/components/authentication/UserToken2.js';
 
 export function renderLogin(containerId: string) {
   const container = document.getElementById(containerId);
@@ -90,7 +91,7 @@ export function renderLogin(containerId: string) {
         el.addEventListener('switch-to-login', (e: CustomEvent) => transitionTo('login', e.detail));
         break;
       case 'token':
-        el = document.createElement('user-token');
+        el = document.createElement('user-token2');
         setLoginPrefill(el as unknown as UserLoginElement, loginPrefill);
         break;
     }

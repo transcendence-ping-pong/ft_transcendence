@@ -1,7 +1,7 @@
 import { t, err } from '@/locales/Translations.js';
 import * as authService from '@/services/authService.js';
 import { setUserData } from '@/state';
-import '@/components/templates/AuthFormLayout.js';
+import '@/components/_templates/AuthFormLayout.js';
 
 const template = document.createElement('template');
 template.innerHTML = `
