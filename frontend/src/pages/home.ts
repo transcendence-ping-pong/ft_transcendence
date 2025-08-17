@@ -2,9 +2,8 @@ import '@/components/ThemeToggle.js';
 import '@/components/LanguagesDropdown.js';
 import '@/components/TopBar.js';
 import '@/components/NotificationsBar.js';
-import { websocketService } from '@/services/websocketService.js';
-import { initChat } from '@/chat/chatManager.js';
 import { logout } from '@/services/authService.js';
+import { state } from '@/state.js';
 
 export function renderHome(containerId: string) {
   const container = document.getElementById(containerId);
@@ -34,25 +33,7 @@ export function renderHome(containerId: string) {
       <section class="screen-1 relative flex items-center justify-center h-screen w-screen">
         <div class="intro-text text-4xl text-white text-center z-10">[PLACEHOLDER]</div>
       </section>
-
-      <chat-panel></chat-panel>
     `;
-
-    // Initialize chat after DOM is ready
-    initChat();
-
-    const select = document.getElementById('mock-user-select') as HTMLSelectElement | null;
-    if (select) {
-      select.addEventListener('change', (e) => {
-        const username = (e.target as HTMLSelectElement).value;
-        if (!username) return;
-        websocketService.authenticate(username);
-        const panel = document.querySelector('chat-panel') as any;
-        if (panel && typeof panel.setCurrentUser === 'function') {
-          panel.setCurrentUser(username);
-        }
-      });
-    }
 
     const logoutBtn = container.querySelector('#logoutBtn');
     if (logoutBtn) {

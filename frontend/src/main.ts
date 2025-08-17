@@ -9,9 +9,12 @@ import { initRouter } from '@/utils/Router.js';
 import { notificationService } from "@/services/notificationService";
 import { startMockNotifications } from "@/services/mockNotifications.js";
 import { websocketService } from "@/services/websocketService.js";
+import { remoteMultiplayerManager } from "@/multiplayer/RemoteMultiplayerManager.js";
 import '@/styles/index.css';
 import '@babylonjs/loaders';
 import { renderBracket } from '@/pages/tournament.js';
+// chat system
+import { ChatPanel } from '@/chat/index.js';
 
 /*
   Main responsabilities:
@@ -44,6 +47,17 @@ notificationService.listen((notif) => {
 
 // TODO SOCKET: REMOVE MOCK
 // startMockNotifications();
+
+// initialize chat system
+function initializeChatSystem() {
+  // create only the chat panel (button is now in TopBar)
+  const chatPanel = new ChatPanel();
+  
+  // add to body so it's always available
+  document.body.appendChild(chatPanel);
+  
+  console.log('Chat system initialized');
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(window.location.search);
@@ -82,7 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Clean URL (remove tokens from address bar)
     window.history.replaceState({}, document.title, "/");
     
-    window.dispatchEvent(new CustomEvent('login-success', { 
+    window.dispatchEvent(new CustomEvent('loginSuccess', { 
       bubbles: true, 
       composed: true,
       detail: { 
@@ -105,13 +119,48 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   navigate = initRouter(routes, 'app');
 
-  window.addEventListener('login-success', () => {
-    renderLoading('app'); 
-    setTimeout(() => {
-      navigate('/');
-    }, 1200);
+  // connects to websocket server
+  websocketService.connect(`ws://${window.location.hostname}:4001`);
+  
+  // Make websocketService available globally for chat system
+  (window as any).websocketService = websocketService;
+
+  // Initialize RemoteMultiplayerManager for invite flow
+  (window as any).remoteMultiplayerManager = remoteMultiplayerManager;
+
+  // Connect RemoteMultiplayerManager when user is authenticated
+  window.addEventListener('websocketAuthenticated', (event: CustomEvent) => {
+    const { success, username } = event.detail;
+    if (success && username) {
+      remoteMultiplayerManager.connect(username);
+    }
   });
 
+  
+  window.addEventListener('loginSuccess', () => {
+	  renderLoading('app'); 
+	  setTimeout(() => {
+		  navigate('/');
+		}, 1200);
+	});
+
+  // Connect RemoteMultiplayerManager when user logs in
+  window.addEventListener('loginSuccess', () => {
+    const username = state.userData?.username;
+    if (username) {
+      remoteMultiplayerManager.connect(username);
+    }
+  });
+
+  // Connect RemoteMultiplayerManager if user is already logged in
+  const loggedInUser = localStorage.getItem('loggedInUser');
+  if (loggedInUser) {
+    remoteMultiplayerManager.connect(loggedInUser);
+  }
+	
+	// initialize chat system
+	initializeChatSystem();
+	
   window.addEventListener('logout', () => {
     console.log('Logout event triggered, clearing user data...');
     
@@ -146,7 +195,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.key === 'ArrowLeft') window.history.back();
     if (e.key === 'ArrowRight') window.history.forward();
   });
-
-  // connects to websocket server
-  websocketService.connect(`ws://${window.location.hostname}:4001`);
 });

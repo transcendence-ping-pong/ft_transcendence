@@ -37,6 +37,9 @@ class WebSocketServer {
 		// Chat system
 		this.chatMessages = []; // In-memory for now
 		this.userBlocks = new Map(); // Map of blocker -> Set of blocked users
+		this.userRateLimits = new Map(); // Map of socketId -> { count: number, lastReset: number }
+		this.lastInviteTime = new Map(); // Map of username -> last invite timestamp
+		this.pendingInvites = new Map(); // Map of inviteId -> invite data
 		this.mockUsers = [
 			{ userId: 1, username: 'Alice', socketId: null },
 			{ userId: 2, username: 'Bob', socketId: null },
@@ -101,17 +104,22 @@ class WebSocketServer {
 				this.handleDirectMessage(socket, data);
 			});
 
+			// handles invite responses
+			socket.on('inviteResponse', (data) => {
+				this.handleInviteResponse(socket, data);
+			});
+
+			// handles online users request
+			socket.on('getOnlineUsers', () => {
+				this.handleGetOnlineUsers(socket);
+			});
+
 			// handles user blocking
 			socket.on('blockUser', (data) => {
 				this.handleBlockUser(socket, data);
 			});
 
-			// handles online users request
-			socket.on('getOnlineUsers', (data) => {
-				this.handleGetOnlineUsers(socket);
-			});
-
-			// handles disconnection
+			// handles user disconnection
 			socket.on('disconnect', () => {
 				this.handleDisconnect(socket);
 			});
@@ -127,10 +135,23 @@ class WebSocketServer {
 		});
 	}
 
-	// for now just using username for login
+	// Handle authentication with proper session management
 	handleAuthentication(socket, data) {
 		try {
 			const username = data.username || data.token || 'Anonymous';
+
+			// Remove any existing connection for this username (prevents multiple tabs issue)
+			const existingUser = Array.from(this.connectedUsers.values()).find(u => u.username === username);
+			if (existingUser) {
+				// Disconnect previous socket if it exists
+				if (existingUser.socketId && existingUser.socketId !== socket.id) {
+					const previousSocket = this.io.sockets.sockets.get(existingUser.socketId);
+					if (previousSocket) {
+						previousSocket.disconnect();
+					}
+					this.connectedUsers.delete(existingUser.socketId);
+				}
+			}
 
 			// checks if it's a mock user
 			const mockUser = this.mockUsers.find(u => u.username === username);
@@ -139,14 +160,9 @@ class WebSocketServer {
 				mockUser.socketId = socket.id;
 			}
 
-			const existingUser = Array.from(this.connectedUsers.values()).find(u => u.username === username);
-			if (existingUser && existingUser.socketId !== socket.id) {
-				socket.emit('authenticated', { success: false, error: 'Username already taken' });
-				return;
-			}
-
 			const userId = mockUser ? mockUser.userId : `user_${Date.now()}`;
 
+			// Add new user connection
 			this.connectedUsers.set(socket.id, {
 				userId: userId,
 				username: username,
@@ -157,6 +173,14 @@ class WebSocketServer {
 
 			// broadcasts user online status to all other connected users
 			this.broadcastUserStatus(socket, username, 'online');
+
+			// Only send online users to the newly connected user, not broadcast to all
+			const onlineUsers = Array.from(this.connectedUsers.values()).map(user => ({
+				userId: user.userId,
+				username: user.username,
+				status: 'online'
+			}));
+			socket.emit('onlineUsers', onlineUsers);
 		} catch (error) {
 			socket.emit('authenticated', { success: false, error: 'Authentication failed' });
 		}
@@ -176,6 +200,8 @@ class WebSocketServer {
 			allUsers
 		});
 	}
+
+	// This function is no longer used - online users are only sent when requested
 
 	handleCreateRoom(socket, data) {
 		// creates new game room with host player and metadata
@@ -847,6 +873,8 @@ class WebSocketServer {
 		const user = this.connectedUsers.get(socket.id);
 		if (user) {
 			this.connectedUsers.delete(socket.id);
+			// Clean up rate limiting data
+			this.userRateLimits.delete(socket.id);
 
 			// remove user from any rooms they were in
 			this.gameRooms.forEach((room, roomId) => {
@@ -896,6 +924,8 @@ class WebSocketServer {
 				status: 'offline',
 				allUsers
 			});
+
+			// Don't broadcast online users to all clients - only send to those who request it
 		}
 	}
 
@@ -912,8 +942,20 @@ class WebSocketServer {
 		const user = this.connectedUsers.get(socket.id);
 		if (!user) return;
 
-		const message = data.message.trim();
+		// Check rate limiting
+		if (!this.checkRateLimit(socket.id)) {
+			socket.emit('chatError', { message: 'You are sending messages too fast. Please wait a moment.' });
+			return;
+		}
+
+		const message = data.message?.trim();
 		if (!message) return;
+
+		// Validate message length (max 500 characters)
+		if (message.length > 500) {
+			socket.emit('chatError', { message: 'Message too long. Maximum 500 characters allowed.' });
+			return;
+		}
 
 		if (message.startsWith('/')) {
 			this.handleSlashCommand(socket, user, message);
@@ -929,8 +971,11 @@ class WebSocketServer {
 			type: 'global'
 		};
 
+		// Add message and maintain limit of 50 messages
 		this.chatMessages.push(chatMessage);
-
+		if (this.chatMessages.length > 50) {
+			this.chatMessages.shift(); // Remove oldest message
+		}
 		this.io.emit('chatMessage', chatMessage);
 	}
 
@@ -938,8 +983,26 @@ class WebSocketServer {
 		const user = this.connectedUsers.get(socket.id);
 		if (!user) return;
 
-		const { receiverUsername, message } = data;
+		// Check rate limiting
+		if (!this.checkRateLimit(socket.id)) {
+			socket.emit('chatError', { message: 'You are sending messages too fast. Please wait a moment.' });
+			return;
+		}
+
+		const { receiverUsername, message, type, senderUsername } = data;
 		if (!receiverUsername || !message) return;
+
+		// Prevent users from sending PMs to themselves
+		if (receiverUsername.toLowerCase() === user.username.toLowerCase()) {
+			socket.emit('chatError', { message: 'You cannot send a private message to yourself!' });
+			return;
+		}
+
+		// Validate message length (max 500 characters)
+		if (message.length > 500) {
+			socket.emit('chatError', { message: 'Message too long. Maximum 500 characters allowed.' });
+			return;
+		}
 
 		const receiver = Array.from(this.connectedUsers.values())
 			.find(u => u.username === receiverUsername);
@@ -962,15 +1025,19 @@ class WebSocketServer {
 		const directMessage = {
 			id: Date.now(),
 			senderId: user.userId,
-			senderUsername: user.username,
+			senderUsername: senderUsername || user.username,
 			receiverId: receiver.userId,
-			receiverUsername: receiver.username,
+			receiverUsername: receiverUsername,
 			message: message,
 			timestamp: Date.now(),
-			type: 'direct'
+			type: type || 'direct'
 		};
 
+		// Send to receiver
 		this.io.to(receiver.socketId).emit('directMessage', directMessage);
+
+		// Send back to sender so they can see their own message
+		socket.emit('directMessage', directMessage);
 
 		socket.emit('messageDelivered', {
 			messageId: directMessage.id,
@@ -1011,10 +1078,18 @@ class WebSocketServer {
 		const args = parts.slice(1);
 
 		switch (command) {
+			case '/help':
+				this.handleHelp(socket);
+				break;
+
+			case '/list':
+				this.handleListUsers(socket);
+				break;
+
 			case '/pm':
 			case '/msg':
 				if (args.length < 2) {
-					socket.emit('chatError', { message: 'Usage: /pm <username> <message>' });
+					socket.emit('chatError', { message: 'Usage: /pm "username" "message"' });
 					return;
 				}
 				const targetUsername = args[0];
@@ -1024,7 +1099,7 @@ class WebSocketServer {
 
 			case '/block':
 				if (args.length < 1) {
-					socket.emit('chatError', { message: 'Usage: /block <username>' });
+					socket.emit('chatError', { message: 'Usage: /block "username"' });
 					return;
 				}
 				this.handleBlockUser(socket, { targetUsername: args[0] });
@@ -1032,36 +1107,77 @@ class WebSocketServer {
 
 			case '/invite':
 				if (args.length < 1) {
-					socket.emit('chatError', { message: 'Usage: /invite <username>' });
+					socket.emit('chatError', { message: 'Usage: /invite "username" [difficulty]' });
 					return;
 				}
-				this.handleGameInvite(socket, user, args[0]);
+				const difficulty = args[1] || 'MEDIUM';
+				this.handleGameInvite(socket, user, args[0], difficulty);
 				break;
 
 			default:
-				socket.emit('chatError', { message: 'Unknown command. Use /pm, /block, or /invite' });
+				socket.emit('chatError', { message: 'Unknown command. Use /help, /list, /pm "username" "message", /clear, or /invite "username" [difficulty]' });
 		}
 	}
 
-	handleGameInvite(socket, user, targetUsername) {
+	handleGameInvite(socket, user, targetUsername, difficulty = 'MEDIUM') {
+		// prevent self-invite
+		if (user.username === targetUsername) {
+			socket.emit('chatError', { message: 'You cannot invite yourself' });
+			return;
+		}
+
+		// check if inviter is already in a game
+		const inviterInGame = Array.from(this.gameRooms.values())
+			.some(room => room.players.some(p => p.username === user.username));
+		if (inviterInGame) {
+			socket.emit('chatError', { message: 'You are already in a game' });
+			return;
+		}
+
+		// check if receiver is already in a game
+		const receiverInGame = Array.from(this.gameRooms.values())
+			.some(room => room.players.some(p => p.username === targetUsername));
+		if (receiverInGame) {
+			socket.emit('chatError', { message: 'User is already in a game' });
+			return;
+		}
+
+		// check if receiver is online
 		const targetUser = Array.from(this.connectedUsers.values())
 			.find(u => u.username === targetUsername);
 
 		if (!targetUser) {
-			socket.emit('chatError', { message: 'User not found' });
+			socket.emit('chatError', { message: 'User not found or offline' });
 			return;
 		}
 
+		// check cooldown (10 seconds between invites)
+		const now = Date.now();
+		const lastInvite = this.lastInviteTime?.get(user.username) || 0;
+		if (now - lastInvite < 10000) {
+			socket.emit('chatError', { message: 'Please wait 10 seconds between invites' });
+			return;
+		}
+
+		// update last invite time
+		if (!this.lastInviteTime) this.lastInviteTime = new Map();
+		this.lastInviteTime.set(user.username, now);
+
+		const inviteId = Date.now();
 		const inviteMessage = {
-			id: Date.now(),
+			id: inviteId,
 			senderId: user.userId,
 			senderUsername: user.username,
 			receiverId: targetUser.userId,
 			receiverUsername: targetUser.username,
-			message: `${user.username} invited you to play Pong!`,
+			difficulty: difficulty,
+			message: `${user.username} invited you to play Pong (Difficulty: ${difficulty})!`,
 			timestamp: Date.now(),
 			type: 'invite'
 		};
+
+		// Store the pending invite
+		this.pendingInvites.set(inviteId, inviteMessage);
 
 		if (targetUser.socketId) {
 			this.io.to(targetUser.socketId).emit('gameInvite', inviteMessage);
@@ -1073,9 +1189,147 @@ class WebSocketServer {
 		});
 	}
 
+	handleInviteResponse(socket, data) {
+		const { inviteId, response, senderUsername, receiverUsername, difficulty } = data;
+		const user = this.connectedUsers.get(socket.id);
+
+		if (!user) {
+			socket.emit('chatError', { message: 'Authentication required' });
+			return;
+		}
+
+		// Get the stored invite
+		const invite = this.pendingInvites.get(inviteId);
+		if (!invite) {
+			socket.emit('chatError', { message: 'Invite not found or already processed' });
+			return;
+		}
+
+		if (response === 'accept') {
+			// Remove the invite from pending
+			this.pendingInvites.delete(inviteId);
+
+			// Create game room using the existing createRoom flow
+			const roomId = `invite_${Date.now()}`;
+			const room = {
+				id: roomId,
+				hostUsername: senderUsername,
+				guestUsername: receiverUsername,
+				difficulty: difficulty,
+				gameType: 'invite',
+				playerMode: '2v2',
+				maxPlayers: 2,
+				currentPlayers: 2,
+				status: 'waiting',
+				createdAt: Date.now(),
+				hostReady: false,
+				guestReady: false,
+				players: [
+					{ username: senderUsername, isHost: true, ready: false },
+					{ username: receiverUsername, isHost: false, ready: false }
+				]
+			};
+
+			this.gameRooms.set(roomId, room);
+
+			// Find both sockets
+			const senderSocket = Array.from(this.io.sockets.sockets.values())
+				.find(s => this.connectedUsers.get(s.id)?.username === senderUsername);
+			const receiverSocket = Array.from(this.io.sockets.sockets.values())
+				.find(s => this.connectedUsers.get(s.id)?.username === receiverUsername);
+
+			// Notify both players
+			if (senderSocket) {
+				senderSocket.emit('inviteAccepted', { room, message: 'Match accepted! Starting in 5 seconds...' });
+			}
+			if (receiverSocket) {
+				socket.emit('inviteAccepted', { room, message: 'Match accepted! Starting in 5 seconds...' });
+			}
+
+			// Start countdown
+			let countdown = 5;
+			const countdownInterval = setInterval(() => {
+				if (countdown > 0) {
+					if (senderSocket) {
+						senderSocket.emit('gameCountdown', { countdown });
+					}
+					if (receiverSocket) {
+						socket.emit('gameCountdown', { countdown });
+					}
+					countdown--;
+				} else {
+					clearInterval(countdownInterval);
+
+					// Emit roomCreated event to trigger the remote multiplayer flow
+					if (senderSocket) {
+						senderSocket.emit('roomCreated', { room, roomId });
+					}
+					if (receiverSocket) {
+						socket.emit('playerJoined', {
+							player: { username: receiverUsername, isHost: false },
+							players: room.players,
+							roomId: roomId,
+							room: room
+						});
+					}
+				}
+			}, 1000);
+
+		} else if (response === 'decline') {
+			// Remove the invite from pending
+			this.pendingInvites.delete(inviteId);
+
+			// Notify sender that invite was declined
+			const senderSocket = Array.from(this.io.sockets.sockets.values())
+				.find(s => this.connectedUsers.get(s.id)?.username === senderUsername);
+
+			if (senderSocket) {
+				senderSocket.emit('inviteDeclined', {
+					message: `${receiverUsername} declined your invite`
+				});
+			}
+		}
+	}
+
 	isUserBlocked(blockerId, blockedId) {
 		return this.userBlocks.has(blockerId) &&
 			this.userBlocks.get(blockerId).has(blockedId);
+	}
+
+	// Check rate limiting for user
+	checkRateLimit(socketId) {
+		const now = Date.now();
+		const userLimit = this.userRateLimits.get(socketId);
+
+		// Reset counter every minute
+		if (!userLimit || (now - userLimit.lastReset) > 60000) {
+			this.userRateLimits.set(socketId, { count: 1, lastReset: now });
+			return true;
+		}
+
+		// Allow max 10 messages per minute
+		if (userLimit.count >= 10) {
+			// Timeout the user for 2 minutes if they exceed limit
+			const socket = this.io.sockets.sockets.get(socketId);
+			if (socket) {
+				socket.emit('chatError', { message: 'You have been timed out for 2 minutes due to spam. Chat is frozen.' });
+				// Disconnect and reconnect after timeout
+				setTimeout(() => {
+					if (socket.connected) {
+						socket.disconnect();
+					}
+				}, 2000);
+			}
+			return false;
+		}
+
+		userLimit.count++;
+		return true;
+	}
+
+	// Reset rate limit for user (when they get timeout)
+	resetRateLimit(socketId) {
+		this.userRateLimits.delete(socketId);
 	}
 
 	updateUserSocketId(userId, socketId) {
@@ -1092,6 +1346,33 @@ class WebSocketServer {
 			status: 'online'
 		}));
 		socket.emit('onlineUsers', onlineUsers);
+	}
+
+	handleListUsers(socket) {
+		const onlineUsers = Array.from(this.connectedUsers.values())
+			.filter(user => user.username !== 'Anonymous')
+			.map(user => user.username);
+
+		socket.emit('chatMessage', {
+			id: Date.now(),
+			senderId: 0,
+			senderUsername: 'System',
+			message: `Online Users: ${onlineUsers.join(', ')}`,
+			timestamp: Date.now(),
+			type: 'global'
+		});
+	}
+
+	handleHelp(socket) {
+		const helpMessage = {
+			id: Date.now(),
+			senderId: 0,
+			senderUsername: 'System',
+			message: 'Available commands: /help - Show this help message, /list - List online users, /pm "username" "message", /clear - Clear chat, /invite "username" [difficulty]',
+			timestamp: Date.now(),
+			type: 'global'
+		};
+		socket.emit('chatMessage', helpMessage);
 	}
 }
 

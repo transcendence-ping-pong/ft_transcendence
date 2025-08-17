@@ -61,6 +61,50 @@ template.innerHTML = `
       white-space: nowrap;
       margin-left: 0.1rem;
     }
+
+    .top-bar__chat-button {
+      background: var(--video-transition-bg, rgba(0, 0, 0, 0.8));
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50px;
+      color: white;
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      user-select: none;
+      margin-left: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .top-bar__chat-button:hover {
+      background: var(--video-transition-bg, rgba(0, 0, 0, 0.9));
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .top-bar__chat-button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .top-bar__chat-button:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.6);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+    }
+
+    .top-bar__chat-icon {
+      width: 16px;
+      height: 16px;
+      filter: brightness(0) invert(1);
+    }
     .top-bar__center {
       position: absolute;
       left: 50%;
@@ -74,6 +118,11 @@ template.innerHTML = `
       width: auto;
       height: auto;
       pointer-events: none;
+    }
+
+    .top-bar__center .top-bar__chat-button {
+      pointer-events: all;
+      margin-left: 1rem;
     }
 
     .top-bar__avatar {
@@ -166,6 +215,15 @@ template.innerHTML = `
       display: inline-block;
     }
 
+    /* Position chat button for game mode */
+    :host([mode="game"]) .top-bar__chat-button {
+      position: absolute;
+      left: calc(50% + 120px); /* Position to the right of centered title */
+      top: 50%;
+      transform: translateY(-50%);
+      margin-left: 0;
+    }
+
     :host([mode="game"]) {
       backdrop-filter: blur(2px);
       -webkit-backdrop-filter: blur(2px);
@@ -176,6 +234,13 @@ template.innerHTML = `
     <div class="top-bar__left">
       <slot name="logo"></slot>
       <span class="top-bar__title"><slot name="title"></slot></span>
+      
+      <button class="top-bar__chat-button" id="chatButton" type="button">
+        <svg class="top-bar__chat-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+        </svg>
+        Chat
+      </button>
 
       <slot name="player1-avatar"></slot>
       <slot name="player1-username"></slot>
@@ -183,7 +248,7 @@ template.innerHTML = `
 
     <div class="top-bar__center">
       <slot name="logo-center"></slot>
-      <span class="top-bar__title"><slot name="title-center"></slot></span>
+      <span class="title-center"><slot name="title-center"></slot></span>
     </div>
 
     <div class="top-bar__right">
@@ -220,9 +285,11 @@ export class TopBar extends HTMLElement {
     const shadow = this.shadowRoot;
     this.logoutButton = shadow?.getElementById('logout') as HTMLButtonElement;
     this.profileButton = shadow?.getElementById('avatar') as HTMLButtonElement;
+    const chatButton = shadow?.getElementById('chatButton') as HTMLButtonElement;
 
     this.logoutButton.addEventListener('click', (e) => this.handleLogout(e));
     this.profileButton.addEventListener('click', (e) => this.handleProfile(e));
+    chatButton.addEventListener('click', (e) => this.handleChat(e));
 
     // check logout visibility on mount
     this.updateButtons();
@@ -246,13 +313,45 @@ export class TopBar extends HTMLElement {
     state.userData = null;
     renderLoading('app');
     this.updateButtons();
-    setTimeout(() => navigate('login'), 1200);
+    setTimeout(() => {
+      navigate('/login');
+    }, 1200);
   }
 
   private handleProfile(e: Event) {
     e.preventDefault();
     const username = state.userData?.username;
     if (username) navigate(`/profile/${username}`);
+  }
+
+  private handleChat(e: Event) {
+    e.preventDefault();
+    console.log('Chat button clicked!');
+    
+    // only open chat panel, don't toggle
+    const chatPanel = document.querySelector('chat-panel');
+    console.log('Found chat panel:', chatPanel);
+    
+    if (chatPanel) {
+      chatPanel.setAttribute('visible', '');
+      this.updateChatButtonState(true);
+      console.log('Chat panel shown');
+    } else {
+      console.error('Chat panel not found in DOM');
+    }
+  }
+
+  private updateChatButtonState(isOpen: boolean) {
+    const chatButton = this.shadowRoot?.getElementById('chatButton');
+    if (chatButton) {
+      if (isOpen) {
+        chatButton.style.background = 'rgba(255, 255, 255, 0.3)';
+        chatButton.style.borderColor = 'rgba(255, 255, 255, 0.6)';
+      } else {
+        chatButton.style.background = 'var(--video-transition-bg, rgba(0, 0, 0, 0.8))';
+        chatButton.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+      }
+    }
   }
 }
 

@@ -24,6 +24,12 @@ const initialState = savedState ? JSON.parse(savedState) : {
   scaleFactor: {},
   userData: {} as UserData, // user data will be set after login
   tournamentData: {} as TournamentData,
+  // chat state
+  chatOpen: false,
+  chatMessages: [] as ChatMessage[],
+  directMessages: [] as DirectMessage[],
+  blockedUsers: [] as string[],
+  onlineUsers: [] as OnlineUser[],
   // TODO: add other state properties that we need to persist
 };
 
@@ -52,6 +58,33 @@ export interface Match {
   winnerDisplayName: string | null;
   scorePlayer1: number | null;
   scorePlayer2: number | null;
+}
+
+// chat types
+export interface ChatMessage {
+  id: number;
+  senderId: number;
+  senderUsername: string;
+  message: string;
+  timestamp: number;
+  type: 'global' | 'system';
+}
+
+export interface DirectMessage {
+  id: number;
+  senderId: number;
+  senderUsername: string;
+  receiverId: number;
+  receiverUsername: string;
+  message: string;
+  timestamp: number;
+  type: 'direct';
+}
+
+export interface OnlineUser {
+  userId: number;
+  username: string;
+  status: 'online' | 'offline';
 }
 
 export let currentMatches: Match[] = [];

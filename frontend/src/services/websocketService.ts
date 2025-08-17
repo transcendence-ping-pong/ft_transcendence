@@ -47,14 +47,14 @@ class WebSocketService {
     }
 
     this.socket.on('connect', () => {
-      console.log('WebSocket connected');
+      // dispatch connection event for chat system
+      window.dispatchEvent(new CustomEvent('websocketConnected'));
       
       // Process pending event listeners
       this.processPendingEventListeners();
     });
 
     this.socket.on('disconnect', () => {
-      console.log('WebSocket disconnected');
       this.handleDisconnect();
     });
 
@@ -143,22 +143,18 @@ class WebSocketService {
     });
 
     this.socket.on('availableRooms', (data: any) => {
-      console.log('WebSocket: Available rooms event received:', data);
       window.dispatchEvent(new CustomEvent('availableRooms', { detail: data }));
     });
 
     this.socket.on('roomMessage', (data: any) => {
-      console.log('WebSocket: Room message received:', data);
       window.dispatchEvent(new CustomEvent('roomMessage', { detail: data }));
     });
 
     this.socket.on('roomUpdated', (data: any) => {
-      console.log('WebSocket: Room updated received:', data);
       window.dispatchEvent(new CustomEvent('roomUpdated', { detail: data }));
     });
 
     this.socket.on('error', (data: any) => {
-      console.error('WebSocket: Error received:', data);
       window.dispatchEvent(new CustomEvent('websocketError', { detail: data }));
     });
 
@@ -189,6 +185,14 @@ class WebSocketService {
       window.dispatchEvent(new CustomEvent('gameInvite', { detail: data }));
     });
 
+    this.socket.on('inviteAccepted', (data: any) => {
+      window.dispatchEvent(new CustomEvent('inviteAccepted', { detail: data }));
+    });
+
+    this.socket.on('inviteDeclined', (data: any) => {
+      window.dispatchEvent(new CustomEvent('inviteDeclined', { detail: data }));
+    });
+
     this.socket.on('chatError', (data: any) => {
       window.dispatchEvent(new CustomEvent('chatError', { detail: data }));
     });
@@ -201,12 +205,9 @@ class WebSocketService {
       window.dispatchEvent(new CustomEvent('inviteSent', { detail: data }));
     });
 
-
-
     // Listen for message delivery confirmation
     this.socket.on('messageDelivered', (data: { messageId: number; receiverUsername: string; status: string }) => {
-      // Message was delivered successfully
-      console.log(`Message delivered to ${data.receiverUsername}`);
+      window.dispatchEvent(new CustomEvent('messageDelivered', { detail: data }));
     });
 
     // Listen for user status updates
@@ -306,6 +307,11 @@ class WebSocketService {
     }
   }
 
+  send(event: string, data?: any) {
+    // alias for emit method for consistency with chat service
+    this.emit(event, data);
+  }
+
   getAvailableRooms() {
     // requests list of available rooms from backend
     this.emit('getAvailableRooms');
@@ -359,8 +365,6 @@ class WebSocketService {
       this.isReconnecting = true;
       this.reconnectAttempts++;
       
-      console.log(`WebSocket: Attempting reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${this.reconnectDelay}ms`);
-      
       this.reconnectTimer = setTimeout(() => {
         this.attemptReconnect();
       }, this.reconnectDelay);
@@ -368,7 +372,6 @@ class WebSocketService {
       // exponential backoff: double the delay for next attempt
       this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30000); // max 30 seconds
     } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('WebSocket: Max reconnection attempts reached, giving up');
       window.dispatchEvent(new CustomEvent('websocketError', { 
         detail: { message: 'Connection lost. Max reconnection attempts reached.' } 
       }));
