@@ -58,9 +58,9 @@ export function renderGame(containerId: string) {
 	multiplayerToggle.render(toggleContainer);
   }
 
-  // listen for tournament-created globally, so it works for every round
+  // listen for tournament-stage globally, so it works for every round
   // this is important because in the case of a TOURNAMENT, the view modal will be triggered many times
-  window.addEventListener('tournament-created', (e: CustomEvent) => {
+  window.addEventListener('tournament-stage', (e: CustomEvent) => {
     // remove any existing modal
     const oldModal = container.querySelector('generic-modal');
     if (oldModal) oldModal.remove();

@@ -3,7 +3,8 @@ import { BabylonGUI } from '@/game/babylon/BabylonGUI.js';
 import { GameCanvas } from '@/game/GameCanvas.js';
 import { MultiplayerGameCanvas } from '@/multiplayer/MultiplayerGameCanvas.js';
 import { GameLevel, PlayerMode, GameMode, GameType, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, VIRTUAL_BORDER_X, VIRTUAL_BORDER_TOP, VIRTUAL_BORDER_BOTTOM } from '@/utils/gameUtils/GameConstants.js';
-import { state } from '@/state';
+import { state, TournamentData } from '@/state';
+import { getTournamentSemi, getTournamentFinal } from '@/services/matchService';
 
 
 /*
@@ -175,21 +176,66 @@ export class gameOrchestrator {
       this.gui.showScoreBoard(e.detail, () => { });
     });
   }
+  private clearStateTournament() {
+      state.tournamentData = {
+            players: {},
+            matches: {},
+            currentMatchIndex: 0,
+            stage: 1,
+            tournamentId: 0
+    } as TournamentData;
+  };
 
-  private setupGameOverTracking() {
-    this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
-      // TODO FIX: arguments are obsolete (player and score), review
-      this.gui.showGameOver('Player 1', { LEFT: 5, RIGHT: 3 });
+  private async updateTournamentMatches(matchIndex: number) {
+    if (matchIndex == 4 && state.tournamentData.stage == 1) {
 
-      // TODO: detail matches should be handled via state
-      if (this.gameType === GameType.TOURNAMENT) {
+        state.tournamentData.stage++;
+        state.tournamentData.currentMatchIndex = 0;
+
+        const result = await getTournamentSemi(state.tournamentData.tournamentId);
+        state.tournamentData.players = result.players;
+        
+    } else if (matchIndex == 2 && state.tournamentData.stage == 2) {
+
+        state.tournamentData.stage++;
+        state.tournamentData.currentMatchIndex = 0;
+
+        const result = await getTournamentFinal(state.tournamentData.tournamentId);
+        state.tournamentData.players = result.players;
+
+    } else if (state.tournamentData.stage == 3) {
+        state.tournamentData.stage++;
+    }
+    return ;
+}
+
+  private async handleTournamentEvents() {
+    await this.updateTournamentMatches(state.tournamentData.currentMatchIndex);
+    const matches = state.tournamentData.players;
+    if (state.tournamentData.stage < 4) {
         this.babylonCanvas.cleanupGame();
-		const matches = state.tournamentData.players;
-        window.dispatchEvent(new CustomEvent('tournament-created', {
+        window.dispatchEvent(new CustomEvent('tournament-stage', {
           detail: { matches },
           bubbles: true,
           composed: true
         }));
+    } else {
+		this.clearStateTournament();
+        this.babylonCanvas.endingGame();
+        setTimeout(() => {
+            this.gui.clearGUI();
+        }, 2000);
+    }    
+  }
+
+  private setupGameOverTracking() {
+    this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
+      // TODO FIX: arguments are obsolete (player and score), review
+      console.log("Final left score:", e.detail.winner)
+      console.log("Final left score:", e.detail.score)
+      this.gui.showGameOver('Player 1', { LEFT: 5, RIGHT: 3 });
+      if (this.gameType === GameType.TOURNAMENT) {
+        this.handleTournamentEvents();
       } else {
         this.babylonCanvas.endingGame();
         setTimeout(() => {
@@ -204,7 +250,7 @@ export class gameOrchestrator {
     this.babylonCanvas.createGameCanvas(this.gameLevel, this.gamePlayerMode);
     this.gameCanvas = this.babylonCanvas.getGameCanvas();
 
-    this.gui.showCountdown(3, () => {
+    this.gui.showCountdown(1, () => {
       this.gameCanvas.startGame();
       this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => { });
     });

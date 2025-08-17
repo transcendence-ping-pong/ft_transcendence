@@ -62,6 +62,7 @@ export interface TournamentData {
   players: string[];
   matches: Match[];
   currentMatchIndex: number;
+  stage: number;
   tournamentId: number | null;
 }
 

@@ -2,6 +2,8 @@ import { t } from "@/locales/Translations";
 import { actionIcons } from '@/utils/Constants';
 import { currentMatches, state } from '@/state.js';
 
+const banana = "banana";
+
 const template = document.createElement('template');
 template.innerHTML = `
   <style>
@@ -95,16 +97,16 @@ template.innerHTML = `
   </style>
 
   <h1 class="tournament__title">${t('game.tournamentCreated')}</h1>
-  <p class="tournament__description">${t('game.nextMatch', { players: "Banana" })}</p>
+  <p id="players" class="tournament__description"></p>
   <div class="tournament__view"></div>
   <div class="tournament__footer">
     <button id="startBtn" class="tournament__footer-btn" type="button">${t('game.start')}</button>
   </div>
 `;
 
+
 export class ViewTournament extends HTMLElement {
   private _matches: Array<{ player1: string, player2: string }> = [];
-  // TODO: THIS IS A MOCK currentMatch is hardcoded for now, should be set dynamically via state (?)
   private _currentMatchIndex: number = state.tournamentData.currentMatchIndex;
 
   constructor() {
@@ -114,12 +116,13 @@ export class ViewTournament extends HTMLElement {
 
   connectedCallback() {
     this.renderMatches();
+	this.setPlayersDescription();
     const startBtn = this.shadowRoot.querySelector('#startBtn') as HTMLButtonElement;
 
     startBtn.addEventListener('click', (e) => {
       e.preventDefault();
       const match = this._matches[this._currentMatchIndex];
-	  state.tournamentData.currentMatchIndex++;
+      state.tournamentData.currentMatchIndex++;
       this.dispatchEvent(new CustomEvent('start-tournament-match', {
         detail: {
           player1: match.player1,
@@ -154,6 +157,10 @@ export class ViewTournament extends HTMLElement {
         </div>`
       );
     });
+  }
+
+  private setPlayersDescription() {
+	this.shadowRoot.getElementById("players").textContent = t('game.nextMatch', { players: `${this._matches[this._currentMatchIndex].player1} and ${this._matches[this._currentMatchIndex].player2}` })
   }
 }
 

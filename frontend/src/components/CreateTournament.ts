@@ -225,16 +225,17 @@ export class CreateTournament extends HTMLElement {
     this.createBtn.addEventListener('click', async (e) => {
       e.preventDefault();
 
-	  this.creatorId = state.userData.userId;
-	  
-	  const result = await createTournament(this.creatorId, this.players);
-	  
-	  state.tournamentData = {
-		players: result.players,
-		matches: {},
-		currentMatchIndex: 0,
-		tournamentId: result.id
-	  } as TournamentData;
+      this.creatorId = state.userData.userId;
+      
+      const result = await createTournament(this.creatorId, this.players);
+      
+      state.tournamentData = {
+        players: result.players,
+        matches: {},
+        currentMatchIndex: 0,
+        stage: 1,
+        tournamentId: result.id
+      } as TournamentData;
 
       // START MOCK
       // shuffle and pair players
@@ -252,8 +253,9 @@ export class CreateTournament extends HTMLElement {
       // END MOCK
 
       // emit custom event with matches data
-	  const matches = state.tournamentData.players;
-      this.dispatchEvent(new CustomEvent('tournament-created', {
+      const matches = state.tournamentData.players;
+
+      this.dispatchEvent(new CustomEvent('tournament-stage', {
         detail: { matches },
         bubbles: true,
         composed: true

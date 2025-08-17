@@ -25,6 +25,24 @@ export async function createTournament(userId: number, players: string[]) {
   return res.json();
 }
 
+export async function getTournamentSemi(tournId: number) {
+  const res = await fetch(`${BASE_URL}/tournament/${tournId}/semi`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Erro do backend: ${res.status} - ${text}`);
+  }
+  return res.json();
+}
+
+export async function getTournamentFinal(tournId: number) {
+  const res = await fetch(`${BASE_URL}/tournament/${tournId}/final`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Erro do backend: ${res.status} - ${text}`);
+  }
+  return res.json();
+}
+
 export async function createMatch(creatorId: number, remoteId: number, tournId: number, player1: string, player2: string) {
   const res = await fetch(`${BASE_URL}/matches`, {
     method: 'POST',
