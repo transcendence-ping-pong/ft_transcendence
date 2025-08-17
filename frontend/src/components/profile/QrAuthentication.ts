@@ -2,42 +2,36 @@ import { t, err } from '@/locales/Translations';
 import { actionIcons } from '@/utils/Constants';
 import * as authService from '@/services/authService.js';
 import { state } from '@/state.js';
+import '@/components/_templates/AuthFormLayout.js';
 
 const template = document.createElement('template');
 template.innerHTML = `
   <style>
     :host {
-      display: flex;
+      display: block;
       width: 100%;
-      height: 100%;
-      border: 1px solid red;
-    }
-
-    .qr-auth {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .qr-auth__title {
-      color: var(--text);
-      font-size: var(--title-modal-font-size);
+      max-width: var(--auth-form-max-width, 400px);
+      margin: 0 auto;
     }
     .qr-auth__auth {
       display: flex;
       width: 100%;
       justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
     }
     .qr-auth__description {
       width: 100%;
       color: var(--border);
       font-size: var(--main-font-size);
+      padding: 0;
+      margin: 0;
     }
     .qr-auth__code-input {
       width: 100%;
       max-width: 180px;
+      max-height: var(--button-height);
       font-size: 1.4rem;
       letter-spacing: 0.4em;
       text-align: center;
@@ -47,74 +41,35 @@ template.innerHTML = `
       background: var(--body);
       color: var(--text);
     }
-    hr {
-      border: none;
-      border-top: 1px solid var(--border);
-    }
-
-    .qr-auth__content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
     .qr-auth__qr {
       display: flex;
       justify-content: center;
-      margin-bottom: 2rem;
-    }
-    .qr-auth__qr img {
-      width: var(--qr-size);
-      border: 10px solid var(--accent-secondary);
-    }
-
-    .qr-auth__footer {
-      display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-top: 2rem;
+      min-height: calc(var(--qr-size, 180px) + 2rem);
+      width: 100%;
+      box-sizing: border-box;
+      transition: min-height 0.2s;
     }
-    .qr-auth__footer-btn {
-      padding: 1rem 1rem;
-      border: none;
-      background: var(--accent-secondary);
-      color: var(--body);
-      font-size: var(--main-font-size);
-      font-weight: bold;
-      min-height: var(--button-height);
-      min-width: var(--button-min-width);
-      cursor: pointer;
-      transition: background 0.2s, color 0.2s;
+    .qr-auth__qr-inner {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: calc(var(--qr-size, 180px) + 2rem);
     }
-    .qr-auth__footer-btn:hover, .qr-auth__footer-btn:focus {
-      background: var(--accent);
-      color: var(--text);
-    }
-    .qr-auth__footer-btn:disabled {
-      background: var(--accent-secondary);
-      color: var(--body);
-      cursor: not-allowed;
-      opacity: 0.35;
-    }
-
-    .input-error {
-      border-color:var(--warning);
-    }  
-    .input-success {
-      border-color:var(--success);
-    }
-    .error {
-      font-size: 0.75rem;
-      color: var(--warning);
-      text-align: start;
-      margin-top: -0.5rem;
-      min-height: 1.25rem;
+    .qr-auth__qr img#qrImage {
+      width: var(--qr-size, 180px);
+      border: 10px solid var(--accent-secondary);
       display: block;
     }
+    .spinner,
     .verify-output {
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
-      color: var(--text);
+      width: 100%;
+      min-height: calc(var(--qr-size, 180px) + 2rem);
+      height: auto;
     }
     .verify-output__icon {
       display: inline-flex;
@@ -126,21 +81,7 @@ template.innerHTML = `
       box-shadow: 0 1px 2px #0002;
     }
     .verify-output__icon img {
-      width: 4rem;
-      height: 4rem;
-      display: block;
       filter: invert(1);
-    }
-    .verify-output__description {
-      font-size: var(--main-font-size);
-      color: var(--text);
-    }
-
-    .spinner {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 12rem;
     }
     .qr-auth__spinner {
       display: inline-block;
@@ -165,30 +106,58 @@ template.innerHTML = `
       0% { transform: rotate(0deg);}
       100% { transform: rotate(360deg);}
     }
+    .qr-auth__footer-btn {
+      padding: 1rem 1rem;
+      border: none;
+      background: var(--accent-secondary);
+      color: var(--body);
+      font-size: var(--main-font-size);
+      font-weight: bold;
+      min-height: var(--button-height);
+      min-width: var(--button-min-width);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .qr-auth__footer-btn:hover, .qr-auth__footer-btn:focus {
+      background: var(--accent);
+      color: var(--text);
+    }
+    .qr-auth__footer-btn:disabled {
+      background: var(--accent-secondary);
+      color: var(--body);
+      cursor: not-allowed;
+      opacity: 0.35;
+    }
+    .input-error {
+      border-color:var(--warning);
+    }  
+    .input-success {
+      border-color:var(--success);
+    }
   </style>
 
-  <section class="qr-auth">
-    <div class="qr-auth__header">
-      <h1 class="qr-auth__title">${t('profile.2FA')}</h1>
-      <hr/>
+  <auth-form-layout>
+    <span slot="header">${t('profile.2FA')}</span>
+
+    <div slot="content">
       <div class="qr-auth__auth">
         <p class="qr-auth__description">${t('profile.description2FA')}</p>
         <input id="codeInput" class="qr-auth__code-input" name="2fa" type="text" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code" placeholder="------" required />
       </div>
-      <p id="error" class="error"></p>
-    </div>
-
-    <div class="qr-auth__content">
-      <div class="qr-auth__qr">
-        <img id="qrImage" alt="QR Code for 2FA" />
+      <div class="qr-auth__qr" id="qrContainer">
+        <div class="qr-auth__qr-inner" id="qrInner">
+          <img id="qrImage" alt="QR Code for 2FA" />
+        </div>
       </div>
     </div>
 
-    <div class="qr-auth__footer">
+    <div slot="error" id="error"></div>
+
+    <div slot="footer" style="display:flex;justify-content:space-between;align-items:center;">
       <button id="cancelBtn" class="qr-auth__footer-btn" type="button">${t('profile.cancel')}</button>
       <button id="verifyBtn" class="qr-auth__footer-btn" type="button">${t('profile.verify')}</button>
     </div>
-  </section>
+  </auth-form-layout>
 `;
 
 class QrAuthentication extends HTMLElement {
@@ -225,27 +194,35 @@ class QrAuthentication extends HTMLElement {
         this._setError(t("profile.invalidCode"));
         return;
       }
-      this.showSpinner()
+      this._showSpinner();
       const secret = this.authData['secret'] || '';
       const email = this.authData['email'] || '';
-      if (!email || !secret) return; // TODO: add error handling
+      if (!email || !secret) return;
 
       setTimeout(() => { this.verifyToken(email, code, secret); }, 600);
     });
   }
 
-  private showSpinner() {
-    this.qrImage.style.display = 'none';
-    const content = this.shadowRoot.querySelector('.qr-auth__content') as HTMLDivElement;
-    content.innerHTML = ''; // clear existing content
-    const spinner = document.createElement('div');
-    spinner.className = 'spinner';
-    spinner.innerHTML = `
-      <div class="qr-auth__spinner">
-        <div></div>
+  _showSpinner() {
+    const qrInner = this.shadowRoot.querySelector('#qrInner') as HTMLDivElement;
+    qrInner.innerHTML = `
+      <div class="spinner">
+        <div class="qr-auth__spinner">
+          <div></div>
+        </div>
       </div>
     `;
-    content.appendChild(spinner);
+  }
+
+  _renderVerifyOutput(icon: string, color: string) {
+    const qrInner = this.shadowRoot.querySelector('#qrInner') as HTMLDivElement;
+    qrInner.innerHTML = `
+      <div class="verify-output">
+        <span class="verify-output__icon" style="background-color: ${color};">
+          ${actionIcons[icon]}
+        </span>
+      </div>
+    `;
   }
 
   private async getQrCode() {
@@ -265,7 +242,6 @@ class QrAuthentication extends HTMLElement {
   }
 
   private async verifyToken(email: string, code: string, secret: string) {
-    console.log('Verifying token:', { email, code, secret });
     const res = await authService.verifyToken(email, code, secret);
 
     if (res.error) {
@@ -283,21 +259,9 @@ class QrAuthentication extends HTMLElement {
     }, 400);
   }
 
-  _renderVerifyOutput(icon: string, color: string) {
-    const content = this.shadowRoot.querySelector('.qr-auth__content') as HTMLDivElement;
-    content.innerHTML = ''; // clear spinner
-    const output = document.createElement('div');
-    output.className = 'verify-output';
-    output.innerHTML = `
-      <span class="verify-output__icon" style="background-color: ${color};">
-        ${actionIcons[icon]}
-      </span>
-    `;
-    content.appendChild(output);
-  }
-
   _setError(msg: string) {
-    this.shadowRoot.getElementById('error').textContent = msg;
+    const errorSlot = this.shadowRoot.querySelector('auth-form-layout')?.shadowRoot?.getElementById('error');
+    if (errorSlot) errorSlot.textContent = msg;
     this.codeInput.classList.add('input-error');
   }
 

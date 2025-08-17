@@ -1,4 +1,3 @@
-import { t } from '@/locales/Translations';
 import '@/components/navigation/TopBar.js';
 import '@/components/navigation/Logo.js';
 import '@/components/navigation/StartGameButton.js';
@@ -50,7 +49,7 @@ export function renderProfile(containerId: string, params: Record<string, string
     window.addEventListener('delete-profile', (e: CustomEvent) => {
       if (!container) return;
       container.insertAdjacentHTML('beforeend', `
-      <generic-modal dismissible="true" small appear-delay="500">
+      <generic-modal dismissible="true" appear-delay="500">
         <delete-profile slot="body"></delete-profile>
       </generic-modal>
     `);
@@ -59,7 +58,7 @@ export function renderProfile(containerId: string, params: Record<string, string
     function handleEnable2fa() {
       if (!container) return;
       container.insertAdjacentHTML('beforeend', `
-      <generic-modal dismissible="true" large appear-delay="500">
+      <generic-modal dismissible="true" appear-delay="500">
         <qr-authentication slot="body"></qr-authentication>
       </generic-modal>
     `);

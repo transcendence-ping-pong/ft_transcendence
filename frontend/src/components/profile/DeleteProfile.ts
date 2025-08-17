@@ -50,6 +50,7 @@ template.innerHTML = `
       color: #fff;
     }
   </style>
+
   <auth-form-layout style="--auth-form-max-width: 600px;">
     <div slot="header">
       <h1 class="delete-profile__title">${t('profile.deleteAccount')}</h1>
