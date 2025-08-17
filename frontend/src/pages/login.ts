@@ -1,16 +1,12 @@
 import * as authService from '@/services/authService.js';
+import '@/components/navigation/Logo.js';
 import '@/components/navigation/ThemeToggle.js';
 import '@/components/navigation/LanguagesDropdown.js';
 import '@/components/navigation/TopBar.js';
 import '@/components/authentication/UserSignin.js';
-import '@/components/authentication/UserSignin.js';
-
 import '@/components/authentication/UserSignup.js';
-import '@/components/authentication/UserSignup.js';
-
+import '@/components/authentication/UserToken.js';
 import '@/components/_templates/GenericModal.js';
-import '@/components/authentication/UserToken.js';
-import '@/components/authentication/UserToken.js';
 
 export function renderLogin(containerId: string) {
   const container = document.getElementById(containerId);
@@ -25,8 +21,7 @@ export function renderLogin(containerId: string) {
       />
 
       <top-bar>
-        <img slot="logo" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=octopus" alt="Logo" />
-        <span slot="title">FOUR PING TWO PONG</span>
+        <pong-logo slot="logo" login></pong-logo>
         <theme-toggle slot="toggle"></theme-toggle>
         <languages-dropdown slot="language"></languages-dropdown>
       </top-bar>

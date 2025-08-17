@@ -18,8 +18,7 @@ export function renderHome(containerId: string) {
       </div>
 
       <top-bar>
-        <img slot="logo" src="/public/logo.png" alt="Logo" />
-        <span slot="title">FOUR PING TWO PONG</span>
+        <pong-logo slot="logo"></pong-logo>
         <theme-toggle slot="toggle"></theme-toggle>
         <languages-dropdown slot="language"></languages-dropdown>
         <img slot="avatar" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=robot" alt="Avatar" />

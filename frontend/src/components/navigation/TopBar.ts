@@ -24,7 +24,6 @@ template.innerHTML = `
       z-index: 9999;
       box-shadow: 0 2px 12px #0002;
       box-sizing: border-box;
-      user-select: none;
     }
     .top-bar__inner {
       width: 100%;
@@ -50,17 +49,6 @@ template.innerHTML = `
     .top-bar__left {
       padding-left: 2rem;
     }
-    .top-bar__title {
-      font-size: var(--header-font-size);
-      font-weight: 600;
-      color: #fff;
-      letter-spacing: 1px;
-      text-shadow: 0 2px 8px #0008;
-      user-select: none;
-      pointer-events: none;
-      white-space: nowrap;
-      margin-left: 0.1rem;
-    }
     .top-bar__center {
       position: absolute;
       left: 50%;
@@ -73,7 +61,6 @@ template.innerHTML = `
       gap: 1rem;
       width: auto;
       height: auto;
-      pointer-events: none;
     }
 
     .top-bar__avatar {
@@ -129,10 +116,9 @@ template.innerHTML = `
 
     ::slotted([slot="logo"]),
     ::slotted([slot="logo-center"]) {
-      width: var(--logo-size);
       height: var(--logo-size);
-      object-fit: contain;
-      display: block;
+      display: flex;
+      align-items: center;
     }
 
     ::slotted([slot="player1-avatar"]),
@@ -175,7 +161,6 @@ template.innerHTML = `
   <div class="top-bar__inner">
     <div class="top-bar__left">
       <slot name="logo"></slot>
-      <span class="top-bar__title"><slot name="title"></slot></span>
 
       <slot name="player1-avatar"></slot>
       <slot name="player1-username"></slot>
@@ -183,7 +168,6 @@ template.innerHTML = `
 
     <div class="top-bar__center">
       <slot name="logo-center"></slot>
-      <span class="top-bar__title"><slot name="title-center"></slot></span>
     </div>
 
     <div class="top-bar__right">
@@ -226,7 +210,7 @@ export class TopBar extends HTMLElement {
 
     // SIMPLIFIED: Just one listener
     window.addEventListener('username-updated', () => this.updateAvatar());
-    
+
     this.updateAvatar();
     this.updateButtons();
   }
@@ -237,18 +221,18 @@ export class TopBar extends HTMLElement {
 
     const username = state.userData?.username;
     const customAvatar = state.userData?.avatar;
-    
+
     if (customAvatar) {
-        // Use custom uploaded avatar
-        avatarImg.src = `${customAvatar}?t=${Date.now()}`;
+      // Use custom uploaded avatar
+      avatarImg.src = `${customAvatar}?t=${Date.now()}`;
     } else if (username) {
-        // Use generated avatar based on username
-        avatarImg.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`;
+      // Use generated avatar based on username
+      avatarImg.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`;
     } else {
-        // Fallback to default
-        avatarImg.src = "https://api.dicebear.com/7.x/pixel-art/svg?seed=robot";
+      // Fallback to default
+      avatarImg.src = "https://api.dicebear.com/7.x/pixel-art/svg?seed=robot";
     }
-}
+  }
 
   private updateButtons() {
     const isGame = this.getAttribute('mode') === 'game';
