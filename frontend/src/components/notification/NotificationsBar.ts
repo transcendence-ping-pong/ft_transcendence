@@ -60,8 +60,8 @@ template.innerHTML = `
       pointer-events: auto;
     }
     .details-header {
-      padding: 1rem 1.2rem 0.5rem 1.2rem;
-      font-size: 1.1rem;
+      padding: 0.5rem 2rem;
+      font-size: var(--main-font-size);
       font-weight: bold;
       background: transparent;
       display: flex;
@@ -72,24 +72,34 @@ template.innerHTML = `
       margin-left: auto;
       background: none;
       border: none;
-      font-size: 1.5rem;
-      color: #888;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
       cursor: pointer;
-      transition: color 0.2s;
     }
-    .details-close--icon span {
+    .details-close--icon {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 1.2rem;
-      height: 1.2rem;
       text-align: center;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.20);
+    }
+    .details-close--icon img {
+      width: 1.5rem;
+      height: 1.5rem;
+      display: block;
       filter: invert(var(--invert));
-      font-size: 1.5em;
     }
     .details-close--icon:hover {
-      background: rgba(0, 0, 0, 0.20);
+      background: rgba(0, 0, 0, 0.5);
       cursor: pointer;
+      box-shadow: var(--shadow-soft);
+    }
+    .details-close--icon img:hover {
+      filter: invert(1);
     }
 
     .details-list {
@@ -100,6 +110,10 @@ template.innerHTML = `
       flex-direction: column;
       gap: 1rem;
     }
+    ::slotted([slot="friends-list"]) {
+      padding: 0 1.2rem 1rem 1.2rem;
+    }
+
     .notif-tags {
       display: flex;
       gap: 0.3em;
@@ -157,8 +171,8 @@ template.innerHTML = `
   <div class="notifications-stack"></div>
   <div class="details-panel">
     <div class="details-header">
-      <span class="details-title"></span>
-      <button class="details-close" title="Dismiss" style="display:none;">
+      <h3 class="details-title"></h3>
+      <button class="details-close" title="Close side panel">
         <span class="details-close--icon">${actionIcons.close}</span>
       </button>
     </div>
