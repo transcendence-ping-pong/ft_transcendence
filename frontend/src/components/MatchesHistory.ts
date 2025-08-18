@@ -1,6 +1,10 @@
 import { t } from '@/locales/Translations';
 import { actionIcons } from '@/utils/Constants';
 import '@/components/_templates/CustomTag.js';
+import { state, Match } from '@/state';
+import { getMatchHistory, getMatch, getTournament } from '@/services/matchService';
+import { UserData } from '@/utils/playerUtils/types';
+
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -178,16 +182,35 @@ template.innerHTML = `
 `;
 
 export class MatchesHistory extends HTMLElement {
+  public matchObject: Match[] = [];
+  private userData: UserData = { email: '', username: '', userId: 2000, avatar: '' };
+ 
+  static get observedAttributes() {
+    return ['userdata'];
+  }
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
   }
 
-  connectedCallback() {
-    this.renderTimeline(mockMatches);
+  attributeChangedCallback(name: string, oldValue: string, newValue: string) {
+    if (name === 'userdata') {
+      try {
+        this.userData = JSON.parse(newValue);
+      } catch {
+        this.userData = { email: '', username: '', userId: 0, avatar: '' };
+      }
+    }
   }
 
-  renderTimeline(matches: Array<{ day: string, time: string, score: string, matchId: string, opponent: string, winLoss: string, mode: string }>) {
+  async connectedCallback() {
+	console.log('UserData:', this.userData);
+	await this.getMatches();
+    this.renderTimeline(this.matchObject);
+  }
+
+  renderTimeline(matches: Match[]) {
     const timeline = this.shadowRoot?.getElementById('timeline');
     if (!timeline) return;
     timeline.innerHTML = matches.map(m => `
@@ -196,16 +219,63 @@ export class MatchesHistory extends HTMLElement {
         <div class="timeline-content">
           <div class="timeline-side">
             <span class="date">${m.day} ${m.time}</span>
-            <span class="status">${m.winLoss.toUpperCase()}</span>
+            <span class="status">Winner: ${m.winLoss.toUpperCase()}</span>
           </div>
           <div class="timeline-info">
-            <span class="score">${m.score}</span>
-            <span class="opponent"><custom-tag text="${m.opponent}" size="m" button></custom-tag></span>
-            <span class="meta">${m.mode} &middot; #${m.matchId}</span>
+            <span class="score">${m.scorePlayer1} vs ${m.scorePlayer2}</span>
+            <span class="opponent"><custom-tag text="${m.player1} vs ${m.player2}" size="m" button></custom-tag></span>
+            <span class="meta">${m.mode} ${m.tournId ? `&middot; #T${m.tournId}` : ''} &middot; #M${m.matchId}</span>
           </div>
         </div>
       </div>
     `).join('');
+  }
+
+  private async getMatches() {
+	const rows = await getMatchHistory(this.userData.userId);
+	console.log('UserId:', this.userData.userId);
+	console.log('Rows:', rows);
+	for (const row of rows) {
+
+		const match = await getMatch(row.matchId);
+
+		let mode;
+		if (match.tournId) {
+			const tourn =  await getTournament(match.tournId);
+			switch (row.matchId) {
+				case tourn.semiId1:
+					mode = 'TOURNAMENT SEMIFINAL';
+					break;
+				case tourn.semiId2:
+					mode = 'TOURNAMENT SEMIFINAL';
+					break;
+				case tourn.finalId:
+					mode = 'TOURNAMENT FINAL';
+					break;
+				default:
+					mode = 'TOURNAMENT QUARTERFINAL';
+			}
+		}
+		else if (match.remoteId) {
+			mode = 'REMOTE';
+		}
+		else
+			mode = 'LOCAL';
+
+		this.matchObject.push({
+			day: match.date,
+			time: match.time,
+			scorePlayer1: match.scorep1,
+			scorePlayer2: match.scorep2,
+			matchId: row.matchId?.toString().padStart(3, "0"),
+			tournId: match.tournId?.toString().padStart(2, "0"),
+			player1: match.p1,
+			player2: match.p2,
+			winLoss: match.winner,
+			mode: mode
+		});
+
+	};
   }
 };
 

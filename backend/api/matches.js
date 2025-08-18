@@ -74,9 +74,19 @@ async function matchRoutes(fastify, options) {
 			if (err || !row) {
 				return reply.status(500).send({ error: 'Error fetching match' });
 			}
-			const object = [];
-			object.push({ creatorId: row.creatorUserId, remoteId: row.remoteUserId, tournId: row.tournamentId, winner: row.winnerDisplayName, p1: row.player1DisplayName, p2: row.player2DisplayName, scorep1: row.scorePlayer1, scorep2: row.scorePlayer2, date: row.date, time: row.time});
-			reply.send({ result: object });
+			const object = {
+        		creatorId: row.creatorUserId,
+        		remoteId: row.remoteUserId,
+        		tournId: row.tournamentId,
+        		winner: row.winnerDisplayName,
+        		p1: row.player1DisplayName,
+        		p2: row.player2DisplayName,
+        		scorep1: row.scorePlayer1,
+        		scorep2: row.scorePlayer2,
+        		date: row.date,
+        		time: row.time
+      		};
+			reply.send(object);
 		});
 	});
 
