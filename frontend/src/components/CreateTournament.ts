@@ -219,9 +219,7 @@ export class CreateTournament extends HTMLElement {
       }
     });
 
-    // TODO: Implement backend communication to create tournament sending this.players
     // If create is successful, reset players list, show loading, and then show next matches
-    // THIS IS A MOCK, REPLACE IT WITH ACTUAL BACKEND LOGIC
     this.createBtn.addEventListener('click', async (e) => {
       e.preventDefault();
 
@@ -236,21 +234,6 @@ export class CreateTournament extends HTMLElement {
         stage: 1,
         tournamentId: result.id
       } as TournamentData;
-
-      // START MOCK
-      // shuffle and pair players
-    //   const players = [...this.players];
-    //   for (let i = players.length - 1; i > 0; i--) {
-    //     const j = Math.floor(Math.random() * (i + 1));
-    //     [players[i], players[j]] = [players[j], players[i]];
-    //   }
-    //   const matches = [
-    //     { player1: players[0], player2: players[1] },
-    //     { player1: players[2], player2: players[3] },
-    //     { player1: players[4], player2: players[5] },
-    //     { player1: players[6], player2: players[7] },
-    //   ];
-      // END MOCK
 
       // emit custom event with matches data
       const matches = state.tournamentData.players;

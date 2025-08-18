@@ -127,7 +127,7 @@ export class ViewTournament extends HTMLElement {
         detail: {
           player1: match.player1,
           player2: match.player2
-        }, // TODO: decide what should be passed here
+        },
         bubbles: true,
         composed: true
       }));

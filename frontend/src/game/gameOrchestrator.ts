@@ -4,7 +4,7 @@ import { GameCanvas } from '@/game/GameCanvas.js';
 import { MultiplayerGameCanvas } from '@/multiplayer/MultiplayerGameCanvas.js';
 import { GameLevel, PlayerMode, GameMode, GameType, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, VIRTUAL_BORDER_X, VIRTUAL_BORDER_TOP, VIRTUAL_BORDER_BOTTOM } from '@/utils/gameUtils/GameConstants.js';
 import { state, TournamentData } from '@/state';
-import { getTournamentSemi, getTournamentFinal } from '@/services/matchService';
+import { createMatch, updateMatch, getTournamentSemi, getTournamentFinal } from '@/services/matchService';
 
 
 /*
@@ -31,6 +31,7 @@ export class gameOrchestrator {
   private gameMode: GameMode = GameMode.LOCAL;
   private gameType: GameType = GameType.ONE_MATCH;
   private gamePlayerMode: PlayerMode = PlayerMode.TWO_PLAYER;
+  private matchId: number | null = null;
 
   // private isTournament: boolean;
   // private gameManager: GameManager;
@@ -42,7 +43,7 @@ export class gameOrchestrator {
     this.babylonCanvas = new BabylonCanvas(containerId);
     this.gui = new BabylonGUI(this.babylonCanvas.getScene());
 
-	this.setupMultiplayerEvents();
+    this.setupMultiplayerEvents();
     this.setupMenuFlow();
     this.babylonCanvas.startRenderLoop();
 
@@ -127,7 +128,7 @@ export class gameOrchestrator {
       }, 3000);
     });
 
-	// TODO: think its somewhat buggy
+    // TODO: think its somewhat buggy
     window.addEventListener('playerDisconnected', (e: CustomEvent) => {
       if (this.isMultiplayerMode) {
         this.isMultiplayerMode = false;
@@ -181,6 +182,7 @@ export class gameOrchestrator {
       this.gui.showScoreBoard(e.detail, () => { });
     });
   }
+
   private clearStateTournament() {
       state.tournamentData = {
             players: {},
@@ -225,7 +227,7 @@ export class gameOrchestrator {
           composed: true
         }));
     } else {
-		this.clearStateTournament();
+        this.clearStateTournament();
         this.babylonCanvas.endingGame();
         setTimeout(() => {
             this.gui.clearGUI();
@@ -234,10 +236,17 @@ export class gameOrchestrator {
   }
 
   private setupGameOverTracking() {
-    this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
+    this.gameCanvas.addEventListener('gameOver', async (e: CustomEvent) => {
+      let winner;
+      if (e.detail.winner == 'LEFT')
+            winner = state.players.p1;
+          else
+            winner = state.players.p2;
+      console.log("Final winner:", winner);
+      console.log("Final score Left: ", e.detail.score.LEFT, "Final score Right: ", e.detail.score.RIGHT);
+      await updateMatch(this.matchId, winner, e.detail.score.LEFT, e.detail.score.RIGHT);
+
       // TODO FIX: arguments are obsolete (player and score), review
-      console.log("Final left score:", e.detail.winner)
-      console.log("Final left score:", e.detail.score)
       this.gui.showGameOver('Player 1', { LEFT: 5, RIGHT: 3 });
       if (this.gameType === GameType.TOURNAMENT) {
         this.handleTournamentEvents();
@@ -250,8 +259,11 @@ export class gameOrchestrator {
     });
   }
 
-  public startGame() {
+  public async startGame() {
     // start game!!!!! countdown and then ball starts moving
+	// TODO: Change placeholder 0 for remoteUserId for the actual Id
+    const match = await createMatch(state.userData.userId, 0, state.tournamentData.tournamentId, state.players.p1, state.players.p2);
+	this.matchId = match.id;
     this.babylonCanvas.createGameCanvas(this.gameLevel, this.gamePlayerMode);
     this.gameCanvas = this.babylonCanvas.getGameCanvas();
 
@@ -289,6 +301,7 @@ export class gameOrchestrator {
             this.gui.showGameTypeButton((gameType) => {
               this.gameType = gameType as GameType;
               if (gameType === GameType.ONE_MATCH) {
+                this.clearStateTournament();
                 state.players = { p1: "Player1", p2: "Player2" };
                 this.gui.showPlayerSelector((mode) => {
                   if (mode === PlayerMode.ONE_PLAYER) {
