@@ -3,7 +3,7 @@ import '@/components/navigation/LanguagesDropdown.js';
 import '@/components/navigation/TopBar.js';
 import '@/components/navigation/StartGameButton.js';
 import '@/components/navigation/Logo.js';
-import '@/components/NotificationsBar.js';
+import '@/components/notification/NotificationsBar.js';
 import { logout } from '@/services/authService.js';
 import { state } from '@/state.js';
 
@@ -11,16 +11,12 @@ export function renderHome(containerId: string) {
   const container = document.getElementById(containerId);
   if (container) {
     container.innerHTML = `
-      <!-- Video disabled for testing -->
-      <!-- <div class="video-bg-container w-full h-screen relative overflow-hidden">
+      <div class="video-bg-container w-full h-screen relative overflow-hidden">
         <video class="video-bg absolute top-0 left-0 w-full h-full object-cover z-0" autoplay muted loop playsinline>
           <source src="/public/pong_video_1080.mp4" type="video/mp4" />
         </video>
         <div class="fade-bottom"></div>
-      </div> -->
-      
-      <!-- Static background instead -->
-      <div class="w-full h-screen bg-black"></div>
+      </div>
 
       <top-bar>
         <pong-logo slot="logo"></pong-logo>

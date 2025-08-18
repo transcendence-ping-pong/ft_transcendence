@@ -144,6 +144,7 @@ template.innerHTML = `
 
     .profile-form__footer {
       display: flex;
+      gap: 2rem;
       justify-content: space-between;
       align-items: center;
       margin-top: 2rem;

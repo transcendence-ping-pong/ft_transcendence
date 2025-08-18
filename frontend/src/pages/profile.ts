@@ -7,7 +7,7 @@ import '@/components/navigation/LanguagesDropdown.js';
 import '@/components/profile/UserProfileForm.js';
 import '@/components/profile/AtariBadge.js';
 import '@/components/_templates/GenericModal.js';
-import '@/components/MatchesHistory.js';
+import '@/components/profile/MatchesHistory.js';
 import '@/components/profile/DeleteProfile.js';
 import '@/components/profile/QrAuthentication.js';
 import * as friendsService from '@/services/friendsService.js';

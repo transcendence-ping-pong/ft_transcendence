@@ -119,9 +119,7 @@ template.innerHTML = `
     }
   </style>
   <auth-form-layout>
-    <div slot="header">
-      <h2>${t('profile.2FA')}</h2>
-    </div>
+    <h3 slot="header">${t('profile.2FA')}</h3>
     <form slot="content" id="tokenForm" autocomplete="off">
       <input id="email" class="auth-form__input" name="email" type="email" disabled />
       <div class="auth-form__input-wrapper">
