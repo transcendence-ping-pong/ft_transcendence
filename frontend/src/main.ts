@@ -46,7 +46,7 @@ notificationService.listen((notif) => {
 });
 
 // TODO SOCKET: REMOVE MOCK
-startMockNotifications();
+// startMockNotifications();
 
 // initialize chat system
 function initializeChatSystem() {
@@ -145,7 +145,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // connects to websocket server
   websocketService.connect(`ws://${window.location.hostname}:4001`);
-  
   // Make websocketService available globally for chat system
   (window as any).websocketService = websocketService;
 

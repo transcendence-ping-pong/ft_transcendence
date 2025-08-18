@@ -430,7 +430,8 @@ async function userRoutes(fastify, options) {
                     }
                     return reply.status(500).send({ error: MSG.DATABASE_ERROR });
                 }
-                reply.send({ message: MSG.USERNAME_UPDATED_SUCCESSFULLY });
+                // Return the updated username
+                reply.send({ message: MSG.USERNAME_UPDATED_SUCCESSFULLY, username: newUsername });
             }
         );
     });

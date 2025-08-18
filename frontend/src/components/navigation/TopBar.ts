@@ -295,6 +295,7 @@ export class TopBar extends HTMLElement {
 
     // SIMPLIFIED: Just one listener
     window.addEventListener('username-updated', () => this.updateAvatar());
+    window.addEventListener('avatar-updated', () => this.updateAvatar());
 
     this.updateAvatar();
     this.updateButtons();

@@ -1,3 +1,5 @@
+import { state } from '@/state';
+
 export interface AuthResponse {
   error?: string;
   message?: string;
@@ -116,7 +118,7 @@ export async function generateSecret(email: string, accessToken: string): Promis
   return await res.json();
 }
 
-export async function changeUsername(newUsername: string, accessToken: string): Promise<AuthResponse> {
+export async function updateUsername(newUsername: string, accessToken: string): Promise<AuthResponse> {
   const res = await fetch(`${BASE_URL}/change-username`, {
     method: 'POST',
     headers: {
@@ -128,7 +130,7 @@ export async function changeUsername(newUsername: string, accessToken: string): 
   return await res.json();
 }
 
-export async function changePassword(newPassword: string, accessToken: string): Promise<AuthResponse> {
+export async function updatePassword(newPassword: string, accessToken: string): Promise<AuthResponse> {
   const res = await fetch(`${BASE_URL}/change-password`, {
     method: 'POST',
     headers: {
@@ -155,4 +157,47 @@ export async function checkServerLoginStatus(): Promise<AuthResponse> {
   } catch (error: any) {
     return { error: error.message || 'Network error' };
   }
+}
+
+export async function uploadAvatar(file: File, accessToken: string): Promise<AuthResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${BASE_URL}/upload-avatar`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`
+    },
+    body: formData
+  });
+  return await res.json();
+}
+
+export async function uploadAvatarAndUpdateState(file: File, accessToken: string): Promise<string | null> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${BASE_URL}/upload-avatar`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`
+    },
+    body: formData
+  });
+
+  const result = await res.json();
+  if (result.avatar) {
+    // Update state.userData.avatar directly here
+    if (state && state.userData) {
+      state.userData.avatar = result.avatar;
+    }
+    // Dispatch avatar-updated event
+    window.dispatchEvent(new CustomEvent('avatar-updated', {
+      bubbles: true,
+      composed: true,
+      detail: { avatar: result.avatar }
+    }));
+    return result.avatar;
+  }
+  return null;
 }
