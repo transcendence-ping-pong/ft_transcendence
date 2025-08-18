@@ -3,6 +3,8 @@ import { actionIcons } from '@/utils/Constants';
 import '@/components/_templates/CustomTag.js';
 import { state, Match } from '@/state';
 import { getMatchHistory, getMatch, getTournament } from '@/services/matchService';
+import { UserData } from '@/utils/playerUtils/types';
+
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -181,13 +183,29 @@ template.innerHTML = `
 
 export class MatchesHistory extends HTMLElement {
   public matchObject: Match[] = [];
+  private userData: UserData = { email: '', username: '', userId: 2000, avatar: '' };
+ 
+  static get observedAttributes() {
+    return ['userdata'];
+  }
 
   constructor() {
     super();
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
   }
 
+  attributeChangedCallback(name: string, oldValue: string, newValue: string) {
+    if (name === 'userdata') {
+      try {
+        this.userData = JSON.parse(newValue);
+      } catch {
+        this.userData = { email: '', username: '', userId: 0, avatar: '' };
+      }
+    }
+  }
+
   async connectedCallback() {
+	console.log('UserData:', this.userData);
 	await this.getMatches();
     this.renderTimeline(this.matchObject);
   }
@@ -214,7 +232,9 @@ export class MatchesHistory extends HTMLElement {
   }
 
   private async getMatches() {
-	const rows = await getMatchHistory(state.userData.userId);
+	const rows = await getMatchHistory(this.userData.userId);
+	console.log('UserId:', this.userData.userId);
+	console.log('Rows:', rows);
 	for (const row of rows) {
 
 		const match = await getMatch(row.matchId);
