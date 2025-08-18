@@ -430,7 +430,6 @@ async function userRoutes(fastify, options) {
                     }
                     return reply.status(500).send({ error: MSG.DATABASE_ERROR });
                 }
-                // Return the updated username
                 reply.send({ message: MSG.USERNAME_UPDATED_SUCCESSFULLY, username: newUsername });
             }
         );
@@ -545,17 +544,17 @@ async function userRoutes(fastify, options) {
             // Save file
             await pump(data.file, fs.createWriteStream(filepath));
 
-            const avatarUrl = `/uploads/avatars/${filename}`;
+            const avatar = `/uploads/avatars/${filename}`;
             
             // Update user's avatar in database
             await dbRun(db, 
                 `UPDATE users SET avatar = ? WHERE userId = ?`,
-                [avatarUrl, req.user.userId]
+                [avatar, req.user.userId]
             );
 
             reply.send({
                 message: 'Avatar uploaded successfully',
-                avatarUrl
+                avatar
             });
         } catch (error) {
             console.error('Avatar upload error:', error);

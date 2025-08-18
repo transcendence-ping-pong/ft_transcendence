@@ -477,22 +477,24 @@ export class UserProfileForm extends HTMLElement {
         hasChanges = true;
       }
 
+      const newUsername = this.usernameInput.value.trim();
+      const newPassword = this.passwordInput.value;
+      const confirmPassword = this.confirmPasswordInput.value;
+
+      // Allow username change for all accounts
+      if (newUsername && newUsername !== this.userData.username) {
+        await authService.updateUsername(newUsername, accessToken);
+        this.userData.username = newUsername;
+        state.userData.username = newUsername;
+        localStorage.setItem('loggedInUser', newUsername);
+        hasChanges = true;
+
+        // Redirect to new profile URL
+        window.location.href = `/profile/${newUsername}`;
+      }
+
+      // Only allow password change for non-Google accounts
       if (!this.isGoogleAccount()) {
-        const newUsername = this.usernameInput.value.trim();
-        const newPassword = this.passwordInput.value;
-        const confirmPassword = this.confirmPasswordInput.value;
-
-        if (newUsername && newUsername !== this.userData.username) {
-          await authService.updateUsername(newUsername, accessToken);
-          this.userData.username = newUsername;
-          state.userData.username = newUsername;
-          localStorage.setItem('loggedInUser', newUsername);
-          hasChanges = true;
-
-          // Redirect to new profile URL
-          window.location.href = `/profile/${newUsername}`;
-        }
-
         if (newPassword && newPassword.length > 6) {
           if (newPassword !== confirmPassword) {
             throw new Error('Passwords do not match');

@@ -187,11 +187,7 @@ export async function uploadAvatarAndUpdateState(file: File, accessToken: string
 
   const result = await res.json();
   if (result.avatar) {
-    // Update state.userData.avatar directly here
-    if (state && state.userData) {
-      state.userData.avatar = result.avatar;
-    }
-    // Dispatch avatar-updated event
+    state.userData.avatar = result.avatar;
     window.dispatchEvent(new CustomEvent('avatar-updated', {
       bubbles: true,
       composed: true,

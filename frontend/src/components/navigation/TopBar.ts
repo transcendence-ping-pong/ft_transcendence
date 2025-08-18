@@ -307,15 +307,14 @@ export class TopBar extends HTMLElement {
 
     const username = state.userData?.username;
     const customAvatar = state.userData?.avatar;
+    console.log('TopBar.updateAvatar customAvatar:', customAvatar);
 
     if (customAvatar) {
-      // Use custom uploaded avatar
-      avatarImg.src = `${customAvatar}?t=${Date.now()}`;
+      // Use absolute path for avatar
+      avatarImg.src = `${window.location.origin}${customAvatar}?t=${Date.now()}`;
     } else if (username) {
-      // Use generated avatar based on username
       avatarImg.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`;
     } else {
-      // Fallback to default
       avatarImg.src = "https://api.dicebear.com/7.x/pixel-art/svg?seed=robot";
     }
   }
