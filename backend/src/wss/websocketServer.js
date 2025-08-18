@@ -1,12 +1,12 @@
 const { Server } = require('socket.io');
 const { v4: uuidv4 } = require('uuid');
-const GameManager = require('./wss/GameManager.js');
-const RoomManager = require('./wss/RoomManager.js');
-const UserManager = require('./wss/UserManager.js');
-const ChatManager = require('./wss/ChatManager.js');
-const InviteManager = require('./wss/InviteManager.js');
-const Validator = require('./wss/Validator.js');
-const Logger = require('./wss/Logger.js');
+const GameManager = require('./GameManager.js');
+const RoomManager = require('./RoomManager.js');
+const UserManager = require('./UserManager.js');
+const ChatManager = require('./ChatManager.js');
+const InviteManager = require('./InviteManager.js');
+const Validator = require('./Validator.js');
+const Logger = require('./Logger.js');
 
 class WebSocketServer {
 	constructor(port) {
@@ -30,7 +30,7 @@ class WebSocketServer {
 		});
 
 		this.setupEventHandlers();
-		console.log(`WebSocket server running at ws://localhost:${this.port}`);
+		Logger.info(`WebSocket server running at ws://localhost:${this.port}`);
 	}
 
 	setupEventHandlers() {
@@ -671,8 +671,6 @@ class WebSocketServer {
 			case '/decline':
 				this.handleInviteCommand(socket, user, 'decline');
 				break;
-
-
 
 			default:
 				socket.emit('chatError', { message: 'Unknown command. Use /help, /list, /pm "username" "message", /clear, /invite username difficulty (difficulty: EASY, MEDIUM, or HARD only), /accept, or /decline' });
