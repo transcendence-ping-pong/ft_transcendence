@@ -4,6 +4,7 @@ import '@/components/navigation/Logo.js';
 import '@/components/_templates/GenericModal.js';
 import '@/components/CreateTournament.js';
 import '@/components/ViewTournament.js';
+import { state } from '@/state';
 
 // TODO: THIS IS A MOCK, pass player names and avatars dynamically
 const PLAYER_1 = { name: '', avatar: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=alice' };
@@ -50,7 +51,7 @@ export function renderGame(containerId: string) {
 
   // listen for tournament-created globally, so it works for every round
   // this is important because in the case of a TOURNAMENT, the view modal will be triggered many times
-  window.addEventListener('tournament-created', (e: CustomEvent) => {
+  window.addEventListener('tournament-stage', (e: CustomEvent) => {
     // remove any existing modal
     const oldModal = container.querySelector('generic-modal');
     if (oldModal) oldModal.remove();
@@ -86,6 +87,7 @@ export function renderGame(containerId: string) {
         container.querySelector('top-bar').outerHTML = renderTopBar();
         // ...finally, start the game
         // this is an exception, as the game start is usually triggered by the gameOrchestrator
+		state.players = { p1: e.detail.player1, p2: e.detail.player2 }
         orchestrator.startGame();
       });
     }
