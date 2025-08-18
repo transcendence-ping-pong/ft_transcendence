@@ -3,6 +3,7 @@ import { mapNotification, getWelcomeNotification } from "@/utils/Notifications.j
 import { t } from "@/locales/Translations.js";
 import { state } from "@/state";
 import "./NotificationCard.js";
+import { actionIcons } from "@/utils/Constants.js";
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -76,9 +77,21 @@ template.innerHTML = `
       cursor: pointer;
       transition: color 0.2s;
     }
-    .details-close:hover {
-      color: #222;
+    .details-close--icon span {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.2rem;
+      height: 1.2rem;
+      text-align: center;
+      filter: invert(var(--invert));
+      font-size: 1.5em;
     }
+    .details-close--icon:hover {
+      background: rgba(0, 0, 0, 0.20);
+      cursor: pointer;
+    }
+
     .details-list {
       flex: 1;
       overflow-y: auto;
@@ -140,11 +153,14 @@ template.innerHTML = `
       transition: transform 0.35s;
     }
   </style>
+
   <div class="notifications-stack"></div>
   <div class="details-panel">
     <div class="details-header">
       <span class="details-title"></span>
-      <button class="details-close" title="Close">&times;</button>
+      <button class="details-close" title="Dismiss" style="display:none;">
+        <span class="details-close--icon">${actionIcons.close}</span>
+      </button>
     </div>
     <div class="details-list"></div>
     <slot name="friends-list"></slot>
@@ -184,14 +200,14 @@ export class NotificationsBar extends HTMLElement {
     }
     this.detailsClose.addEventListener('click', () => this.hideDetails());
 
-    // show side bar details on notification click
+    // show side bar details on notification or compact friends-list click
     this.stack.addEventListener('click', (e) => {
       const target = e.target as Element;
       const notif = target.closest('notification-card');
-      if (notif) this.showDetails();
+      const compactFriends = target.closest('friends-list[mode="compact"]');
+      if (notif || compactFriends) this.showDetails();
     });
 
-    // TODO: get username dynamically, here is a mock:
     const welcomeNotif = getWelcomeNotification(this.username);
     this.#all = [welcomeNotif];
     this.#visible = [welcomeNotif];
@@ -262,6 +278,8 @@ export class NotificationsBar extends HTMLElement {
   renderNotifications() {
     this.stack.innerHTML = '';
     if (this.#detailsOpen) return;
+
+    // render all notificaions in the stack
     for (let i = 0; i < this.#visible.length; ++i) {
       const notif = this.#visible[i];
       const card = document.createElement('notification-card');
@@ -286,6 +304,20 @@ export class NotificationsBar extends HTMLElement {
       this.stack.appendChild(card);
       if (!notif.welcome) setTimeout(() => card.classList.add('show'), 10 + i * 80);
       else card.classList.add('show');
+    }
+
+    // find the welcome card in the stack
+    const welcomeCard = Array.from(this.stack.children).find(
+      el => el.hasAttribute && el.hasAttribute('welcome')
+    );
+
+    // create and insert the compact friends-list before the welcome card
+    const compact = document.createElement('friends-list');
+    compact.setAttribute('mode', 'compact');
+    if (welcomeCard) {
+      this.stack.insertBefore(compact, welcomeCard);
+    } else {
+      this.stack.appendChild(compact);
     }
   }
 
