@@ -14,24 +14,9 @@ import { Players } from '@/utils/playerUtils/types';
   - handle user authentication or session management directly
 */
 
-// Generate unique client ID for socket connections
-const generateClientId = (): string => {
-  return 'client-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-};
-
-// Get or create client ID - ensures we always have one
-const getOrCreateClientId = (): string => {
-  let clientId = localStorage.getItem('clientId');
-  if (!clientId) {
-    clientId = generateClientId();
-    localStorage.setItem('clientId', clientId);
-  }
-  return clientId;
-};
-
 const savedState = localStorage.getItem('appState');
 const initialState = savedState ? JSON.parse(savedState) : {
-  language: '   ',
+  language: null,
   translations: {} as any,
   errorTranslations: {} as any,
   availableLanguages: [] as string[],
@@ -41,13 +26,16 @@ const initialState = savedState ? JSON.parse(savedState) : {
   userData: {} as UserData, // user data will be set after login
   players: {} as Players,
   tournamentData: {} as TournamentData,
+  // chat state
+  chatOpen: false,
+  chatMessages: [] as ChatMessage[],
+  directMessages: [] as DirectMessage[],
+  blockedUsers: [] as string[],
+  onlineUsers: [] as OnlineUser[],
   // TODO: add other state properties that we need to persist
 };
 
-// Ensure clientId is always available
-initialState.clientId = getOrCreateClientId();
-
-console.log('State initialized with Client ID:', initialState.clientId);
+console.log('State initialized with Username:', initialState.userData?.username);
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
 export const state = new Proxy(initialState, {
@@ -57,6 +45,24 @@ export const state = new Proxy(initialState, {
     return true;
   }
 });
+
+// res comes from backend GET response
+export function setUserData(res: any, email: string) {
+  state.userData = {
+    username: res.username || '',
+    email,
+    accessToken: res.accessToken || '',
+    refreshToken: res.refreshToken || '',
+    userId: res.userId || 0,
+    avatar: res.avatar || undefined,
+  } as UserData;
+
+  localStorage.setItem('accessToken', res.accessToken || '');
+  localStorage.setItem('refreshToken', res.refreshToken || '');
+  localStorage.setItem('loggedInUser', res.username || '');
+  localStorage.setItem('userEmail', email);
+  localStorage.setItem('userId', String(res.userId || 0));
+}
 
 export interface TournamentData {
   players: string[];
@@ -75,6 +81,32 @@ export interface Match {
   scorePlayer2: number | null;
 }
 
+// chat types
+export interface ChatMessage {
+  id: number;
+  senderId: number;
+  senderUsername: string;
+  message: string;
+  timestamp: number;
+  type: 'global' | 'system';
+}
+
+export interface DirectMessage {
+  id: number;
+  senderId: number;
+  senderUsername: string;
+  receiverId: number;
+  receiverUsername: string;
+  message: string;
+  timestamp: number;
+  type: 'direct';
+}
+
+export interface OnlineUser {
+  userId: number;
+  username: string;
+  status: 'online' | 'offline';
+}
+
 export let currentMatches: Match[] = [];
 export let tournamentId: number | null = null;
-

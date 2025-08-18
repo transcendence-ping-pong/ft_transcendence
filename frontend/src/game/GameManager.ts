@@ -35,11 +35,10 @@ export class GameManager {
   }
   private _onFinish?: () => void;
 
-  endGame()
-  { 
-    this.isStarted = false; 
+  endGame() {
+    this.isStarted = false;
     this.isGameOver = true;
-     if (this._onFinish) this._onFinish();
+    if (this._onFinish) this._onFinish();
   }
 
   setLevel(level: GameLevel) {
@@ -88,19 +87,7 @@ export class GameManager {
     this.matchId = id;
   }
 
-  saveMatchResult(player: GameScore) {
-  if (this.matchId) {
-    fetch(`/api/matches/${this.matchId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ winner: player }),
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-}
-
   reset() {
     this.score = { [GameScore.LEFT]: 0, [GameScore.RIGHT]: 0 };
   }
-
-  //reset() { }
 }

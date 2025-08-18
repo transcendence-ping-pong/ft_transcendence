@@ -22,7 +22,7 @@ export interface NotificationPayload {
   title?: string;
   message?: string;
   name?: string;
-  user?: string;
+  userId?: string;
   level?: number;
   action?: NotificationAction;
 }

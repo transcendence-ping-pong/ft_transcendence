@@ -154,39 +154,27 @@ export class UserSignin extends HTMLElement {
       email,
       accessToken: res.accessToken || '',
       refreshToken: res.refreshToken || '',
-      userId: res.userId || 0, // Add userId from response
-      avatar: res.avatar || undefined, // Add avatar from response
     } as UserData;
-    
-    // Also store in localStorage as backup
-    localStorage.setItem('accessToken', res.accessToken || '');
-    localStorage.setItem('refreshToken', res.refreshToken || '');
-    localStorage.setItem('loggedInUser', res.username || '');
-    localStorage.setItem('userEmail', email);
-    localStorage.setItem('userId',String(res.userId || 0));
   }
 
-  private async _onLogin(e: Event) {
+  async _onLogin(e: Event) {
     e.preventDefault();
     const email = this.emailInput.value.trim();
     const password = this.passwordInput.value;
 
     const res = await authService.login(email, password);
     if (res.error) {
-        this.emailInput.classList.add('input-error');
-        this.passwordInput.classList.add('input-error');
-        this._setError(err(res.error));
-        return;
+      this.emailInput.classList.add('input-error');
+      this.passwordInput.classList.add('input-error');
+      this._setError(err(res.error));
+      return;
     }
 
     // remove error styles if login is successful and trigger event
     this._clearError();
     this._setError('');
     this.#setUserData(res, email);
-    
-
-    
-    this.dispatchEvent(new CustomEvent('login-success', { bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent('loginSuccess', { bubbles: true, composed: true }));
   }
 
   async _onGoogleLogin(e: Event) {

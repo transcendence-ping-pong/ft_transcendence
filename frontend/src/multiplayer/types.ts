@@ -106,3 +106,68 @@ export interface TournamentMatch {
   status: 'pending' | 'active' | 'finished';
   roomId?: string;
 } 
+
+export interface RemoteGameRoom {
+  id: string;
+  hostUsername: string;
+  guestUsername?: string;
+  difficulty: string;
+  gameType: string;
+  playerMode: string;
+  maxPlayers: number;
+  currentPlayers: number;
+  status: 'waiting' | 'playing' | 'finished';
+  createdAt?: number;
+  hostReady: boolean;
+  guestReady: boolean;
+}
+
+export interface RemoteGameSettings {
+  difficulty: string;
+  gameType: string;
+  playerMode: string;
+} 
+
+export interface PlayerReadyData {
+  player: {
+    username: string;
+    socketId: string;
+    isReady: boolean;
+  };
+  players: any[];
+  roomId: string;
+  room: any;
+}
+
+export interface PlayerLeftData {
+  player: {
+    username: string;
+    socketId: string;
+  };
+  players: any[];
+  roomId: string;
+  room: any;
+}
+
+export interface WebSocketErrorData {
+  message: string;
+  code?: string;
+}
+
+export interface RoomUpdateData {
+  roomId: string;
+  room: any;
+}
+
+export interface GameStartData {
+  players: any[];
+  roomId: string;
+  room: any;
+}
+
+export interface RoomMessageData {
+  username: string;
+  message: string;
+  roomId: string;
+  timestamp: number;
+} 

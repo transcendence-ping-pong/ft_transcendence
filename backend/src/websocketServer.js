@@ -37,6 +37,9 @@ class WebSocketServer {
 		// Chat system
 		this.chatMessages = []; // In-memory for now
 		this.userBlocks = new Map(); // Map of blocker -> Set of blocked users
+		this.userRateLimits = new Map(); // Map of socketId -> { count: number, lastReset: number }
+
+		this.pendingInvites = new Map(); // Map of inviteId -> invite data
 		this.mockUsers = [
 			{ userId: 1, username: 'Alice', socketId: null },
 			{ userId: 2, username: 'Bob', socketId: null },
@@ -66,36 +69,57 @@ class WebSocketServer {
 				this.handleCreateRoom(socket, data);
 			});
 
+			socket.on('getAvailableRooms', () => {
+				this.handleGetAvailableRooms(socket);
+			});
+
+			socket.on('leaveRoom', (data) => {
+				this.handleLeaveRoom(socket, data);
+			});
+
+			socket.on('playerReady', (data) => {
+				this.handlePlayerReady(socket, data);
+			});
+
+			socket.on('sendRoomMessage', (data) => {
+				this.handleRoomMessage(socket, data);
+			});
+
 			socket.on('joinRoom', (data) => {
 				this.handleJoinRoom(socket, data);
 			});
 
-			// Handle game input
+			// handles game input
 			socket.on('gameInput', (data) => {
 				this.handleGameInput(socket, data);
 			});
 
-			// Handle chat messages
+			// handles chat messages
 			socket.on('chatMessage', (data) => {
 				this.handleChatMessage(socket, data);
 			});
 
-			// Handle direct messages
+			// handles direct messages
 			socket.on('directMessage', (data) => {
 				this.handleDirectMessage(socket, data);
 			});
 
-			// Handle user blocking
+			// handles invite responses
+			socket.on('inviteResponse', (data) => {
+				this.handleInviteResponse(socket, data);
+			});
+
+			// handles online users request
+			socket.on('getOnlineUsers', () => {
+				this.handleGetOnlineUsers(socket);
+			});
+
+			// handles user blocking
 			socket.on('blockUser', (data) => {
 				this.handleBlockUser(socket, data);
 			});
 
-			// Handle online users request
-			socket.on('getOnlineUsers', (data) => {
-				this.handleGetOnlineUsers(socket);
-			});
-
-			// Handle disconnection
+			// handles user disconnection
 			socket.on('disconnect', () => {
 				this.handleDisconnect(socket);
 			});
@@ -111,26 +135,34 @@ class WebSocketServer {
 		});
 	}
 
-	// for now just using username for login
+	// Handle authentication with proper session management
 	handleAuthentication(socket, data) {
 		try {
 			const username = data.username || data.token || 'Anonymous';
 
-			// Check if it's a mock user
-			const mockUser = this.mockUsers.find(u => u.username === username);
-			if (mockUser) {
-				// Update mock user's socket ID
-				mockUser.socketId = socket.id;
+			// Remove any existing connection for this username (prevents multiple tabs issue)
+			const existingUser = Array.from(this.connectedUsers.values()).find(u => u.username === username);
+			if (existingUser) {
+				// Disconnect previous socket if it exists
+				if (existingUser.socketId && existingUser.socketId !== socket.id) {
+					const previousSocket = this.io.sockets.sockets.get(existingUser.socketId);
+					if (previousSocket) {
+						previousSocket.disconnect();
+					}
+					this.connectedUsers.delete(existingUser.socketId);
+				}
 			}
 
-			const existingUser = Array.from(this.connectedUsers.values()).find(u => u.username === username);
-			if (existingUser && existingUser.socketId !== socket.id) {
-				socket.emit('authenticated', { success: false, error: 'Username already taken' });
-				return;
+			// checks if it's a mock user
+			const mockUser = this.mockUsers.find(u => u.username === username);
+			if (mockUser) {
+				// updates mock user's socket id
+				mockUser.socketId = socket.id;
 			}
 
 			const userId = mockUser ? mockUser.userId : `user_${Date.now()}`;
 
+			// Add new user connection
 			this.connectedUsers.set(socket.id, {
 				userId: userId,
 				username: username,
@@ -139,8 +171,16 @@ class WebSocketServer {
 
 			socket.emit('authenticated', { success: true, username: username });
 
-			// Broadcast user online status to all OTHER connected users
+			// broadcasts user online status to all other connected users
 			this.broadcastUserStatus(socket, username, 'online');
+
+			// Only send online users to the newly connected user, not broadcast to all
+			const onlineUsers = Array.from(this.connectedUsers.values()).map(user => ({
+				userId: user.userId,
+				username: user.username,
+				status: 'online'
+			}));
+			socket.emit('onlineUsers', onlineUsers);
 		} catch (error) {
 			socket.emit('authenticated', { success: false, error: 'Authentication failed' });
 		}
@@ -161,7 +201,10 @@ class WebSocketServer {
 		});
 	}
 
+	// This function is no longer used - online users are only sent when requested
+
 	handleCreateRoom(socket, data) {
+		// creates new game room with host player and metadata
 		const user = this.connectedUsers.get(socket.id);
 		if (!user) {
 			socket.emit('error', { message: 'Not authenticated' });
@@ -191,15 +234,76 @@ class WebSocketServer {
 			maxPlayers: 2,
 			status: 'waiting',
 			gameState: null,
-			createdAt: Date.now()
+			createdAt: Date.now(),
+			// Add room metadata for listing
+			difficulty: data.difficulty || 'MEDIUM',
+			gameType: data.gameType || 'ONE_MATCH',
+			playerMode: data.playerMode || 'TWO_PLAYER',
+			hostUsername: user.username
 		};
 
 		this.gameRooms.set(roomId, room);
 		socket.join(roomId);
+
+		console.log(`[DEBUG] Emitting roomCreated to socket ${socket.id} with roomId: ${roomId}`);
 		socket.emit('roomCreated', { roomId, room });
+
+		// Don't broadcast available rooms automatically - only when requested
+		// This prevents the spamming loop
+
+		// Also emit roomUpdated for the specific room
+		this.io.to(roomId).emit('roomUpdated', { roomId, room });
+	}
+
+	handleGetAvailableRooms(socket) {
+		// sends list of available rooms to requesting client
+		const availableRooms = [];
+
+		for (const [roomId, room] of this.gameRooms) {
+			if (room.status === 'waiting' && room.players.length < room.maxPlayers) {
+				availableRooms.push({
+					id: room.id,
+					hostUsername: room.hostUsername,
+					difficulty: room.difficulty,
+					gameType: room.gameType,
+					playerMode: room.playerMode,
+					maxPlayers: room.maxPlayers,
+					currentPlayers: room.players.length,
+					status: room.status,
+					createdAt: room.createdAt
+				});
+			}
+		}
+
+		socket.emit('availableRooms', availableRooms);
+	}
+
+	broadcastAvailableRooms() {
+		// broadcasts available rooms list to all connected clients
+		const availableRooms = [];
+
+		for (const [roomId, room] of this.gameRooms) {
+			if (room.status === 'waiting' && room.players.length < room.maxPlayers) {
+				availableRooms.push({
+					id: room.id,
+					hostUsername: room.hostUsername,
+					difficulty: room.difficulty,
+					gameType: room.gameType,
+					playerMode: room.playerMode,
+					maxPlayers: room.maxPlayers,
+					currentPlayers: room.players.length,
+					status: room.status,
+					createdAt: room.createdAt
+				});
+			}
+		}
+
+		console.log(`[DEBUG] Broadcasting ${availableRooms.length} available rooms:`, availableRooms);
+		this.io.emit('availableRooms', availableRooms);
 	}
 
 	handleJoinRoom(socket, data) {
+		// adds player to existing room and notifies all players
 		const user = this.connectedUsers.get(socket.id);
 		if (!user) {
 			socket.emit('error', { message: 'Not authenticated' });
@@ -241,6 +345,7 @@ class WebSocketServer {
 		room.players.push(enhancedUser);
 		socket.join(data.roomId);
 
+		// Send playerJoined event to the room
 		this.io.to(data.roomId).emit('playerJoined', {
 			player: enhancedUser,
 			players: room.players,
@@ -248,9 +353,136 @@ class WebSocketServer {
 			room: room
 		});
 
+		// Send current ready status to the new player so they can see who's already ready
+		const readyPlayers = room.players.filter(p => p.isReady);
+		console.log(`[DEBUG] Room ${data.roomId}: ${readyPlayers.length} players already ready, sending status to new player ${user.username}`);
+		readyPlayers.forEach(readyPlayer => {
+			if (readyPlayer.socketId !== socket.id) { // Don't send to the player who just joined
+				console.log(`[DEBUG] Sending ready status for ${readyPlayer.username} to new player ${user.username}`);
+				socket.emit('playerReady', {
+					player: readyPlayer,
+					players: room.players,
+					roomId: data.roomId,
+					room: room
+				});
+			}
+		});
+
 		if (room.players.length === room.maxPlayers) {
 			this.checkGameStart(data.roomId);
 		}
+
+		// Don't broadcast available rooms automatically - only when requested
+		// This prevents the spamming loop
+
+		// Also emit roomUpdated for the specific room
+		this.io.to(data.roomId).emit('roomUpdated', { roomId: data.roomId, room });
+	}
+
+	handleLeaveRoom(socket, data) {
+		const user = this.connectedUsers.get(socket.id);
+		if (!user) {
+			socket.emit('error', { message: 'Not authenticated' });
+			return;
+		}
+
+		const roomId = data.roomId;
+		const room = this.gameRooms.get(roomId);
+		if (!room) {
+			socket.emit('error', { message: 'Room not found' });
+			return;
+		}
+
+		// Remove player from room
+		room.players = room.players.filter(p => p.socketId !== socket.id);
+		socket.leave(roomId);
+
+		// If room is empty, delete it
+		if (room.players.length === 0) {
+			this.gameRooms.delete(roomId);
+		} else {
+			// If host left, make first remaining player the host
+			if (room.players[0] && !room.players[0].isHost) {
+				room.players[0].isHost = true;
+			}
+		}
+
+		// Don't broadcast available rooms automatically - only when requested
+		// This prevents the spamming loop
+
+		// Emit playerLeft to room
+		this.io.to(roomId).emit('playerLeft', {
+			player: user,
+			players: room.players,
+			roomId: roomId,
+			room: room
+		});
+	}
+
+	handlePlayerReady(socket, data) {
+		const user = this.connectedUsers.get(socket.id);
+		if (!user) {
+			socket.emit('error', { message: 'Not authenticated' });
+			return;
+		}
+
+		const roomId = data.roomId;
+		const room = this.gameRooms.get(roomId);
+		if (!room) {
+			socket.emit('error', { message: 'Room not found' });
+			return;
+		}
+
+		// Find and update the player's ready status
+		const player = room.players.find(p => p.socketId === socket.id);
+		if (player) {
+			player.isReady = true;
+			console.log(`[DEBUG] Player ${player.username} marked as ready in room ${roomId}`);
+
+			// Emit playerReady to the room
+			console.log(`[DEBUG] Broadcasting playerReady to room ${roomId} for player ${player.username}`);
+			this.io.to(roomId).emit('playerReady', {
+				player: player,
+				players: room.players,
+				roomId: roomId,
+				room: room
+			});
+
+			// Check if game can start
+			this.checkGameStart(roomId);
+		}
+	}
+
+	handleRoomMessage(socket, data) {
+		const user = this.connectedUsers.get(socket.id);
+		if (!user) {
+			socket.emit('error', { message: 'Not authenticated' });
+			return;
+		}
+
+		const roomId = data.roomId;
+		const room = this.gameRooms.get(roomId);
+		if (!room) {
+			socket.emit('error', { message: 'Room not found' });
+			return;
+		}
+
+		// Check if user is in the room
+		if (!room.players.some(p => p.socketId === socket.id)) {
+			socket.emit('error', { message: 'You are not in this room' });
+			return;
+		}
+
+		const message = {
+			id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+			roomId: roomId,
+			username: user.username,
+			message: data.message,
+			timestamp: Date.now()
+		};
+
+		// Emit message to all players in the room
+		this.io.to(roomId).emit('roomMessage', message);
 	}
 
 	checkGameStart(roomId) {
@@ -641,6 +873,8 @@ class WebSocketServer {
 		const user = this.connectedUsers.get(socket.id);
 		if (user) {
 			this.connectedUsers.delete(socket.id);
+			// Clean up rate limiting data
+			this.userRateLimits.delete(socket.id);
 
 			// remove user from any rooms they were in
 			this.gameRooms.forEach((room, roomId) => {
@@ -690,6 +924,8 @@ class WebSocketServer {
 				status: 'offline',
 				allUsers
 			});
+
+			// Don't broadcast online users to all clients - only send to those who request it
 		}
 	}
 
@@ -706,8 +942,20 @@ class WebSocketServer {
 		const user = this.connectedUsers.get(socket.id);
 		if (!user) return;
 
-		const message = data.message.trim();
+		// Check rate limiting
+		if (!this.checkRateLimit(socket.id)) {
+			socket.emit('chatError', { message: 'You are sending messages too fast. Please wait a moment.' });
+			return;
+		}
+
+		const message = data.message?.trim();
 		if (!message) return;
+
+		// Validate message length (max 500 characters)
+		if (message.length > 500) {
+			socket.emit('chatError', { message: 'Message too long. Maximum 500 characters allowed.' });
+			return;
+		}
 
 		if (message.startsWith('/')) {
 			this.handleSlashCommand(socket, user, message);
@@ -723,8 +971,11 @@ class WebSocketServer {
 			type: 'global'
 		};
 
+		// Add message and maintain limit of 50 messages
 		this.chatMessages.push(chatMessage);
-
+		if (this.chatMessages.length > 50) {
+			this.chatMessages.shift(); // Remove oldest message
+		}
 		this.io.emit('chatMessage', chatMessage);
 	}
 
@@ -732,8 +983,26 @@ class WebSocketServer {
 		const user = this.connectedUsers.get(socket.id);
 		if (!user) return;
 
-		const { receiverUsername, message } = data;
+		// Check rate limiting
+		if (!this.checkRateLimit(socket.id)) {
+			socket.emit('chatError', { message: 'You are sending messages too fast. Please wait a moment.' });
+			return;
+		}
+
+		const { receiverUsername, message, type, senderUsername } = data;
 		if (!receiverUsername || !message) return;
+
+		// Prevent users from sending PMs to themselves
+		if (receiverUsername.toLowerCase() === user.username.toLowerCase()) {
+			socket.emit('chatError', { message: 'You cannot send a private message to yourself!' });
+			return;
+		}
+
+		// Validate message length (max 500 characters)
+		if (message.length > 500) {
+			socket.emit('chatError', { message: 'Message too long. Maximum 500 characters allowed.' });
+			return;
+		}
 
 		const receiver = Array.from(this.connectedUsers.values())
 			.find(u => u.username === receiverUsername);
@@ -756,15 +1025,19 @@ class WebSocketServer {
 		const directMessage = {
 			id: Date.now(),
 			senderId: user.userId,
-			senderUsername: user.username,
+			senderUsername: senderUsername || user.username,
 			receiverId: receiver.userId,
-			receiverUsername: receiver.username,
+			receiverUsername: receiverUsername,
 			message: message,
 			timestamp: Date.now(),
-			type: 'direct'
+			type: type || 'direct'
 		};
 
+		// Send to receiver
 		this.io.to(receiver.socketId).emit('directMessage', directMessage);
+
+		// Send back to sender so they can see their own message
+		socket.emit('directMessage', directMessage);
 
 		socket.emit('messageDelivered', {
 			messageId: directMessage.id,
@@ -805,10 +1078,18 @@ class WebSocketServer {
 		const args = parts.slice(1);
 
 		switch (command) {
+			case '/help':
+				this.handleHelp(socket);
+				break;
+
+			case '/list':
+				this.handleListUsers(socket);
+				break;
+
 			case '/pm':
 			case '/msg':
 				if (args.length < 2) {
-					socket.emit('chatError', { message: 'Usage: /pm <username> <message>' });
+					socket.emit('chatError', { message: 'Usage: /pm "username" "message"' });
 					return;
 				}
 				const targetUsername = args[0];
@@ -818,7 +1099,7 @@ class WebSocketServer {
 
 			case '/block':
 				if (args.length < 1) {
-					socket.emit('chatError', { message: 'Usage: /block <username>' });
+					socket.emit('chatError', { message: 'Usage: /block "username"' });
 					return;
 				}
 				this.handleBlockUser(socket, { targetUsername: args[0] });
@@ -826,36 +1107,140 @@ class WebSocketServer {
 
 			case '/invite':
 				if (args.length < 1) {
-					socket.emit('chatError', { message: 'Usage: /invite <username>' });
+					socket.emit('chatError', { message: 'Usage: /invite username difficulty' });
 					return;
 				}
-				this.handleGameInvite(socket, user, args[0]);
+				if (args.length < 2) {
+					socket.emit('chatError', { message: 'Usage: /invite username difficulty (EASY, MEDIUM, or HARD)' });
+					return;
+				}
+
+				const difficulty = args[1];
+
+				// Validate difficulty - only accept EASY, MEDIUM, HARD
+				const validDifficulties = ['EASY', 'MEDIUM', 'HARD'];
+				if (!validDifficulties.includes(difficulty.toUpperCase())) {
+					socket.emit('chatError', { message: 'Difficulty must be EASY, MEDIUM, or HARD' });
+					return;
+				}
+
+				this.handleGameInvite(socket, user, args[0], difficulty.toUpperCase());
+				break;
+
+			case '/accept':
+				this.handleInviteCommand(socket, user, 'accept');
+				break;
+
+			case '/decline':
+				this.handleInviteCommand(socket, user, 'decline');
 				break;
 
 			default:
-				socket.emit('chatError', { message: 'Unknown command. Use /pm, /block, or /invite' });
+				socket.emit('chatError', { message: 'Unknown command. Use /help, /list, /pm "username" "message", /clear, /invite username difficulty (difficulty: EASY, MEDIUM, or HARD only), /accept, or /decline' });
 		}
 	}
 
-	handleGameInvite(socket, user, targetUsername) {
+	handleInviteCommand(socket, user, action) {
+		// Find the most recent pending invite for this user
+		let mostRecentInvite = null;
+		let mostRecentTime = 0;
+
+		for (const [inviteId, invite] of this.pendingInvites) {
+			if (invite.receiverUsername === user.username && invite.timestamp > mostRecentTime) {
+				mostRecentInvite = invite;
+				mostRecentTime = invite.timestamp;
+			}
+		}
+
+		if (!mostRecentInvite) {
+			socket.emit('chatError', { message: 'No pending game invite found' });
+			return;
+		}
+
+		// Process the invite response
+		this.handleInviteResponse(socket, {
+			inviteId: mostRecentInvite.id,
+			response: action,
+			senderUsername: mostRecentInvite.senderUsername,
+			receiverUsername: mostRecentInvite.receiverUsername,
+			difficulty: mostRecentInvite.difficulty
+		});
+	}
+
+	handleGameInvite(socket, user, targetUsername, difficulty = 'MEDIUM') {
+		// prevent self-invite
+		if (user.username === targetUsername) {
+			socket.emit('chatError', { message: 'You cannot invite yourself' });
+			return;
+		}
+
+		// Simple validation: username must exist
+		if (!targetUsername || targetUsername.trim() === '') {
+			socket.emit('chatError', { message: 'Invalid username' });
+			return;
+		}
+
+		// check if inviter is already in a game
+		const inviterInGame = Array.from(this.gameRooms.values())
+			.some(room => room.players.some(p => p.username === user.username));
+		if (inviterInGame) {
+			socket.emit('chatError', { message: 'You are already in a game' });
+			return;
+		}
+
+		// check if receiver is already in a game
+		const receiverInGame = Array.from(this.gameRooms.values())
+			.some(room => room.players.some(p => p.username === targetUsername));
+		if (receiverInGame) {
+			socket.emit('chatError', { message: 'User is already in a game' });
+			return;
+		}
+
+		// check if receiver is online
 		const targetUser = Array.from(this.connectedUsers.values())
 			.find(u => u.username === targetUsername);
 
 		if (!targetUser) {
-			socket.emit('chatError', { message: 'User not found' });
+			socket.emit('chatError', { message: 'User not found or offline' });
 			return;
 		}
 
+		// Check if inviter already has a pending invite (as sender or receiver)
+		const inviterHasPendingInvite = Array.from(this.pendingInvites.values())
+			.some(invite => invite.senderUsername === user.username || invite.receiverUsername === user.username);
+
+		if (inviterHasPendingInvite) {
+			socket.emit('chatError', { message: 'You already have a pending invite. Wait for it to be accepted or declined.' });
+			return;
+		}
+
+		// Check if receiver already has a pending invite (as sender or receiver)
+		const receiverHasPendingInvite = Array.from(this.pendingInvites.values())
+			.some(invite => invite.senderUsername === targetUsername || invite.receiverUsername === targetUsername);
+
+		if (receiverHasPendingInvite) {
+			socket.emit('chatError', { message: 'User already has a pending invite. Wait for them to respond to it first.' });
+			return;
+		}
+
+		const inviteId = Date.now();
 		const inviteMessage = {
-			id: Date.now(),
+			id: inviteId,
 			senderId: user.userId,
 			senderUsername: user.username,
 			receiverId: targetUser.userId,
 			receiverUsername: targetUser.username,
-			message: `${user.username} invited you to play Pong!`,
+			difficulty: difficulty,
+			message: `${user.username} invited you to play Pong (Difficulty: ${difficulty})!`,
 			timestamp: Date.now(),
 			type: 'invite'
 		};
+
+		console.log(`[DEBUG] Created invite with ID:`, inviteId, `Message:`, inviteMessage);
+
+		// Store the pending invite
+		this.pendingInvites.set(inviteId, inviteMessage);
+		console.log(`[DEBUG] Stored invite in pendingInvites. Current count:`, this.pendingInvites.size);
 
 		if (targetUser.socketId) {
 			this.io.to(targetUser.socketId).emit('gameInvite', inviteMessage);
@@ -867,9 +1252,153 @@ class WebSocketServer {
 		});
 	}
 
+	handleInviteResponse(socket, data) {
+		const { inviteId, response, senderUsername, receiverUsername, difficulty } = data;
+		const user = this.connectedUsers.get(socket.id);
+
+		console.log(`[DEBUG] handleInviteResponse called with:`, { inviteId, response, senderUsername, receiverUsername, difficulty });
+		console.log(`[DEBUG] Current pending invites:`, Array.from(this.pendingInvites.keys()));
+
+		if (!user) {
+			socket.emit('chatError', { message: 'Authentication required' });
+			return;
+		}
+
+		// Get the stored invite
+		const invite = this.pendingInvites.get(inviteId);
+		console.log(`[DEBUG] Looking for invite with ID:`, inviteId, `Found:`, invite);
+
+		if (!invite) {
+			socket.emit('chatError', { message: 'Invite not found or already processed' });
+			return;
+		}
+
+		if (response === 'accept') {
+			// Remove the invite from pending
+			this.pendingInvites.delete(inviteId);
+
+			// Find both users to get their socket IDs and user data
+			const senderUser = Array.from(this.connectedUsers.values())
+				.find(u => u.username === senderUsername);
+			const receiverUser = Array.from(this.connectedUsers.values())
+				.find(u => u.username === receiverUsername);
+
+			if (!senderUser || !receiverUser) {
+				socket.emit('chatError', { message: 'One or both users not found' });
+				return;
+			}
+
+			// Create game room following the same pattern as normal room creation
+			const roomId = `invite_${Date.now()}`;
+
+			// Start with just the host player (like normal room creation)
+			const enhancedHostUser = {
+				...senderUser,
+				isReady: false,
+				isHost: true,
+				score: 0,
+				wins: 0,
+				losses: 0
+			};
+
+			const room = {
+				id: roomId,
+				players: [enhancedHostUser], // Only host initially
+				maxPlayers: 2,
+				status: 'waiting',
+				gameState: null,
+				createdAt: Date.now(),
+				difficulty: difficulty,
+				gameType: 'invite',
+				playerMode: 'TWO_PLAYER',
+				hostUsername: senderUsername
+			};
+
+			this.gameRooms.set(roomId, room);
+
+			// Find both sockets
+			const senderSocket = Array.from(this.io.sockets.sockets.values())
+				.find(s => this.connectedUsers.get(s.id)?.username === senderUsername);
+			const receiverSocket = Array.from(this.io.sockets.sockets.values())
+				.find(s => this.connectedUsers.get(s.id)?.username === receiverUsername);
+
+			// Host creates the room (follows normal flow)
+			if (senderSocket) {
+				senderSocket.join(roomId);
+				senderSocket.emit('inviteAccepted', {
+					room,
+					message: 'Match accepted! Creating game room...'
+				});
+
+				// Send roomCreated to host (like normal room creation)
+				senderSocket.emit('roomCreated', { roomId, room });
+			}
+
+			// Don't automatically add guest - let them join manually like normal flow
+			// This ensures the waiting room is shown properly
+			if (receiverSocket) {
+				// Just notify guest that invite was accepted
+				receiverSocket.emit('inviteAccepted', {
+					room,
+					message: 'Match accepted! You can now join the game room.'
+				});
+			}
+
+		} else if (response === 'decline') {
+			// Remove the invite from pending
+			this.pendingInvites.delete(inviteId);
+
+			// Notify sender that invite was declined
+			const senderSocket = Array.from(this.io.sockets.sockets.values())
+				.find(s => this.connectedUsers.get(s.id)?.username === senderUsername);
+
+			if (senderSocket) {
+				socket.emit('inviteDeclined', {
+					message: `${receiverUsername} declined your invite`
+				});
+			}
+		}
+	}
+
 	isUserBlocked(blockerId, blockedId) {
 		return this.userBlocks.has(blockerId) &&
 			this.userBlocks.get(blockerId).has(blockedId);
+	}
+
+	// Check rate limiting for user
+	checkRateLimit(socketId) {
+		const now = Date.now();
+		const userLimit = this.userRateLimits.get(socketId);
+
+		// Reset counter every minute
+		if (!userLimit || (now - userLimit.lastReset) > 60000) {
+			this.userRateLimits.set(socketId, { count: 1, lastReset: now });
+			return true;
+		}
+
+		// Allow max 10 messages per minute
+		if (userLimit.count >= 10) {
+			// Timeout the user for 2 minutes if they exceed limit
+			const socket = this.io.sockets.sockets.get(socketId);
+			if (socket) {
+				socket.emit('chatError', { message: 'You have been timed out for 2 minutes due to spam. Chat is frozen.' });
+				// Disconnect and reconnect after timeout
+				setTimeout(() => {
+					if (socket.connected) {
+						socket.disconnect();
+					}
+				}, 2000);
+			}
+			return false;
+		}
+
+		userLimit.count++;
+		return true;
+	}
+
+	// Reset rate limit for user (when they get timeout)
+	resetRateLimit(socketId) {
+		this.userRateLimits.delete(socketId);
 	}
 
 	updateUserSocketId(userId, socketId) {
@@ -886,6 +1415,33 @@ class WebSocketServer {
 			status: 'online'
 		}));
 		socket.emit('onlineUsers', onlineUsers);
+	}
+
+	handleListUsers(socket) {
+		const onlineUsers = Array.from(this.connectedUsers.values())
+			.filter(user => user.username !== 'Anonymous')
+			.map(user => user.username);
+
+		socket.emit('chatMessage', {
+			id: Date.now(),
+			senderId: 0,
+			senderUsername: 'System',
+			message: `Online Users: ${onlineUsers.join(', ')}`,
+			timestamp: Date.now(),
+			type: 'global'
+		});
+	}
+
+	handleHelp(socket) {
+		const helpMessage = {
+			id: Date.now(),
+			senderId: 0,
+			senderUsername: 'System',
+			message: 'Available commands: /help - Show this help message, /list - List online users, /pm "username" "message", /clear - Clear chat, /invite username difficulty (difficulty: EASY, MEDIUM, or HARD only), /accept - Accept game invite, /decline - Decline game invite',
+			timestamp: Date.now(),
+			type: 'global'
+		};
+		socket.emit('chatMessage', helpMessage);
 	}
 }
 

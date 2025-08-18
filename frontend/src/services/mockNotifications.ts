@@ -14,7 +14,8 @@ export function startMockNotifications() {
       },
       {
         type: "friendRequest",
-        name: "Pesto",
+        name: "shinckel3",
+        userId: "3",
         time: new Date().toLocaleTimeString()
       },
       {

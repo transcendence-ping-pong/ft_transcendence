@@ -1,9 +1,11 @@
 import { t } from '@/locales/Translations';
 import { actionIcons } from '@/utils/Constants';
 import * as authService from '@/services/authService.js';
+import * as friendsService from '@/services/friendsService.js';
 import { state } from '@/state.js';
-import '@/components/CustomTag.js';
 import { makeAuthenticatedRequest } from '@/main.js';
+import { UserData } from '@/utils/playerUtils/types';
+import '@/components/_templates/CustomTag.js';
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -35,18 +37,18 @@ template.innerHTML = `
     .profile-form__edit-btn {
       display: inline-flex;
       align-items: center;
-      padding: 0.1em 0.3em;
+      padding: 0.75rem; /* increased */
       justify-content: center;
       background: var(--accent);
       border-radius: 50%;
       border: var(--border);
-      width: var(--button-circle-size);
-      height: var(--button-circle-size);
+      width: 3.5rem;   /* increased */
+      height: 3.5rem;  /* increased */
       box-shadow: 0 1px 2px #0002;
     }
     .profile-form__edit-btn span img {
-      width: 1.5rem;
-      height: 1.5rem;
+      width: 2.5rem;   /* increased */
+      height: 2.5rem;  /* increased */
       display: block;
       filter: invert(var(--invert));
     }
@@ -229,6 +231,7 @@ export class UserProfileForm extends HTMLElement {
   private passwordInput: HTMLInputElement;
   private confirmPasswordInput: HTMLInputElement;
   private enable2fa: HTMLButtonElement;
+  private authSection: HTMLElement;
   private errorText: HTMLParagraphElement;
   private viewBtn: HTMLSpanElement;
   private saveBtn: HTMLButtonElement;
@@ -236,12 +239,40 @@ export class UserProfileForm extends HTMLElement {
   private isEditMode = false;
   private pendingAvatarFile: File | null = null;
 
+  private userData: UserData = { email: '', username: '', userId: 0, avatar: '' };
+
+  private boundHandleModalDismiss = this.handleModalDismiss.bind(this);
+  private boundHandleAvatarChanged = this.handleAvatarChanged.bind(this);
+  private boundHandleProfileLoaded = this.handleProfileLoaded.bind(this);
+  private boundHandleAvatarUpdated = this.handleAvatarUpdated.bind(this);
+
+  static get observedAttributes() {
+    return ['userdata'];
+  }
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
   }
 
+  attributeChangedCallback(name: string, oldValue: string, newValue: string) {
+    if (name === 'userdata') {
+      try {
+        this.userData = JSON.parse(newValue);
+      } catch {
+        this.userData = { email: '', username: '', userId: 0, avatar: '' };
+      }
+    }
+  }
+
   connectedCallback() {
+    this.assignElements();
+    this.addEventListeners();
+    this.renderForm();
+    this.toggleEditMode();
+  }
+
+  private assignElements() {
     const shadowRoot = this.shadowRoot;
     if (!shadowRoot) return;
 
@@ -251,80 +282,109 @@ export class UserProfileForm extends HTMLElement {
     this.passwordInput = shadowRoot.getElementById('password') as HTMLInputElement;
     this.confirmPasswordInput = shadowRoot.getElementById('confirm-password') as HTMLInputElement;
     this.enable2fa = shadowRoot.getElementById('enable2fa') as HTMLButtonElement;
+    this.authSection = shadowRoot.querySelector('.profile-form__auth') as HTMLElement;
     this.errorText = shadowRoot.getElementById('error') as HTMLParagraphElement;
     this.viewBtn = shadowRoot.getElementById('viewBtn') as HTMLSpanElement;
-    this.saveBtn = shadowRoot.getElementById('saveBtn') as HTMLButtonElement; // Fix: properly initialize saveBtn
+    this.saveBtn = shadowRoot.getElementById('saveBtn') as HTMLButtonElement;
     this.deleteBtn = shadowRoot.getElementById('deleteBtn') as HTMLButtonElement;
-
-    this.viewBtn.addEventListener('click', () => {
-      const isPasswordVisible = this.passwordInput.type === 'text';
-      this.passwordInput.type = isPasswordVisible ? 'password' : 'text';
-      this.viewBtn.innerHTML = isPasswordVisible ? actionIcons.eyeClosed : actionIcons.eye;
-    });
-
-    this.editButton.addEventListener('click', () => {
-      this.isEditMode = !this.isEditMode;
-      if (this.isEditMode) this.editButton.style.backgroundColor = 'var(--accent-secondary)';
-      else this.editButton.style.backgroundColor = 'var(--accent)';
-      this.toggleEditMode();
-    });
-
-    this.enable2fa.addEventListener('click', (e: Event) => {
-      e.preventDefault();
-      if (!this.enable2fa.disabled) {
-        window.dispatchEvent(new CustomEvent('enable2fa', { bubbles: true, composed: true }));
-      }
-    });
-
-    // Save button event listener
-    this.saveBtn.addEventListener('click', async (e: Event) => {
-      e.preventDefault();
-      await this.saveChanges();
-    });
-
-    this.deleteBtn.addEventListener('click', (e: Event) => {
-      e.preventDefault();
-      window.dispatchEvent(new CustomEvent('delete-profile', { bubbles: true, composed: true }));
-    });
-
-    // Listen for avatar changes from AvatarBadge
-    window.addEventListener('avatar-changed', (e: CustomEvent) => {
-      this.pendingAvatarFile = e.detail.file;
-
-      // Enable edit mode when avatar is changed
-      if (e.detail.enableEditMode && !this.isEditMode) {
-        this.isEditMode = true;
-        this.editButton.style.backgroundColor = 'var(--accent-secondary)';
-        this.toggleEditMode();
-      }
-
-      console.log('Avatar changed, edit mode enabled');
-    });
-
-    // Listen for profile data updates and avatar updates
-    window.addEventListener('profile-loaded', () => {
-      console.log('Profile loaded event received, re-rendering form');
-      this.renderForm();
-    });
-
-    // Add listener for avatar updates to refresh display
-    window.addEventListener('avatar-updated', () => {
-      console.log('Avatar updated, refreshing profile display');
-      this.renderForm();
-    });
-
-    window.addEventListener('modal-dismiss', () => {
-     alert("HEY");
-    });
-
-    this.toggleEditMode();
-    this.renderForm();
-
   }
 
-  private renderForm() {
-    this.usernameInput.value = state.userData?.username || '';
-    this.emailInput.value = state.userData?.email || '';
+  private addEventListeners() {
+    this.viewBtn?.addEventListener('click', this.handleViewBtnClick.bind(this));
+    this.editButton?.addEventListener('click', this.handleEditBtnClick.bind(this));
+    this.enable2fa?.addEventListener('click', this.handleEnable2faClick.bind(this));
+    this.saveBtn?.addEventListener('click', this.handleSaveBtnClick.bind(this));
+    this.deleteBtn?.addEventListener('click', this.handleDeleteBtnClick.bind(this));
+
+    window.addEventListener('avatar-changed', this.boundHandleAvatarChanged);
+    window.addEventListener('profile-loaded', this.boundHandleProfileLoaded);
+    window.addEventListener('avatar-updated', this.boundHandleAvatarUpdated);
+    window.addEventListener('modal-dismiss', this.boundHandleModalDismiss);
+  }
+
+  // you do not call disconnectedCallback yourself...
+  // it is called automatically when the element is removed from the DOM
+  // it is used to clean up event listeners and prevent memory leaks
+  disconnectedCallback() {
+    window.removeEventListener('avatar-changed', this.boundHandleAvatarChanged);
+    window.removeEventListener('profile-loaded', this.boundHandleProfileLoaded);
+    window.removeEventListener('avatar-updated', this.boundHandleAvatarUpdated);
+    window.removeEventListener('modal-dismiss', this.boundHandleModalDismiss);
+  }
+
+  // event handlers - track user interactions
+  // removed from connectedCallback to keep it clean
+  private handleViewBtnClick() {
+    const isPasswordVisible = this.passwordInput.type === 'text';
+    this.passwordInput.type = isPasswordVisible ? 'password' : 'text';
+    this.viewBtn.innerHTML = isPasswordVisible ? actionIcons.eyeClosed : actionIcons.eye;
+  }
+
+  private handleEditBtnClick() {
+    this.isEditMode = !this.isEditMode;
+    this.editButton.style.backgroundColor = this.isEditMode ? 'var(--accent-secondary)' : 'var(--accent)';
+    this.toggleEditMode();
+  }
+
+  private handleEnable2faClick(e: Event) {
+    e.preventDefault();
+    if (!this.enable2fa.disabled) {
+      window.dispatchEvent(new CustomEvent('config-enable2fa', { bubbles: true, composed: true }));
+    }
+  }
+
+  private async handleSaveBtnClick(e: Event) {
+    e.preventDefault();
+    await this.saveChanges();
+  }
+
+  private handleDeleteBtnClick(e: Event) {
+    e.preventDefault();
+    window.dispatchEvent(new CustomEvent('delete-profile', { bubbles: true, composed: true }));
+  }
+
+  private handleAvatarChanged(e: CustomEvent) {
+    this.pendingAvatarFile = e.detail.file;
+    if (e.detail.enableEditMode && !this.isEditMode) {
+      this.isEditMode = true;
+      this.editButton.style.backgroundColor = 'var(--accent-secondary)';
+      this.toggleEditMode();
+    }
+    console.log('Avatar changed, edit mode enabled');
+  }
+
+  private handleProfileLoaded() {
+    console.log('Profile loaded event received, re-rendering form');
+    this.renderForm();
+  }
+
+  private handleAvatarUpdated() {
+    console.log('Avatar updated, refreshing profile display');
+    this.renderForm();
+  }
+
+  // after closing a modal, update form data (maybe the user authenticated...
+  // ...flag must be set and button/modal removed)
+  private handleModalDismiss() {
+    this.renderForm();
+  }
+
+  // rendering methods - display the form based on user data
+  // reminder: check for main user and visitor is made in page...
+  // so both avatar and userProfileForm components render accordingly...
+  // ... and it is only needed to call BE once
+  private async renderForm() {
+    const mainUsername = state.userData?.username;
+    if (this.userData && this.userData.username === mainUsername) {
+      this.renderFormMain();
+    } else {
+      this.renderFormVisitor();
+    }
+  }
+
+  private renderFormMain() {
+    this.usernameInput.value = this.userData?.username || '';
+    this.emailInput.value = this.userData?.email || '';
     this.emailInput.disabled = true;
     this.passwordInput.value = '';
     if (this.isGoogleAccount()) {
@@ -332,12 +392,12 @@ export class UserProfileForm extends HTMLElement {
       this.confirmPasswordInput.disabled = true;
     }
 
-    authService.check2FAStatus(state.userData?.email || '').then((status) => {
+    authService.check2FAStatus(this.userData?.email || '').then((status) => {
       const enabled = !!status.has2FA;
       if (enabled) {
-          this.enable2fa.textContent = t('profile.success2FA');
-          this.enable2fa.classList.add('profile-form__auth-btn--success');
-          this.enable2fa.disabled = true;
+        this.enable2fa.textContent = t('profile.success2FA');
+        this.enable2fa.classList.add('profile-form__auth-btn--success');
+        this.enable2fa.disabled = true;
       } else {
         this.enable2fa.disabled = this.isGoogleAccount();
         this.enable2fa.textContent = t('profile.enable2FA');
@@ -350,8 +410,25 @@ export class UserProfileForm extends HTMLElement {
       this.enable2fa.classList.remove('profile-form__auth-btn--success');
     });
   }
-  
-  private isGoogleAccount(): boolean {  
+
+  private renderFormVisitor() {
+    if (!this.usernameInput || !this.emailInput) return;
+    this.usernameInput.value = this.userData?.username || '';
+    this.usernameInput.disabled = true;
+    this.emailInput.value = this.userData?.email || '';
+    this.emailInput.disabled = true;
+
+    // hide, show simplified profile form for visitors, i.e. no password fields, no delete profile
+    // if more elements are needed to be hidden, add their id to the hiddenElements array
+    const hiddenElements = ["passwordInput", "confirmPasswordInput", "viewBtn", "authSection", "editButton"];
+    for (const element of hiddenElements) {
+      if (this[element]) {
+        this[element].style.display = 'none';
+      }
+    }
+  }
+
+  private isGoogleAccount(): boolean {
     const loginMethod = localStorage.getItem('loginMethod');
     return loginMethod === 'google';
   }
@@ -364,6 +441,9 @@ export class UserProfileForm extends HTMLElement {
     this.confirmPasswordInput.disabled = !editable || this.isGoogleAccount();
     if (this.saveBtn) this.saveBtn.disabled = !editable;
   }
+
+  /**************************CHECK FROM HERE********************************/
+  // TODO: services should be in another folder
 
   private async updateUsername(newUsername: string): Promise<void> {
     const response = await makeAuthenticatedRequest('/api/change-username', {
@@ -380,8 +460,8 @@ export class UserProfileForm extends HTMLElement {
     }
 
     // Update state with new username
-    if (state.userData) {
-      state.userData.username = newUsername;
+    if (this.userData) {
+      this.userData.username = newUsername;
     }
     localStorage.setItem('loggedInUser', newUsername);
   }
@@ -405,8 +485,8 @@ export class UserProfileForm extends HTMLElement {
 
   private updateAvatarDisplay(avatarUrl: string): void {
     // Update the state with new avatar
-    if (state.userData) {
-      state.userData.avatar = avatarUrl;
+    if (this.userData) {
+      this.userData.avatar = avatarUrl;
     }
 
     // Dispatch an event to update other components that might display the avatar
@@ -431,7 +511,7 @@ export class UserProfileForm extends HTMLElement {
         this.pendingAvatarFile = null;
         hasChanges = true;
       }
-      
+
 
       // For regular accounts, check and update other profile data
       if (!isGoogleAccount) {
@@ -440,7 +520,7 @@ export class UserProfileForm extends HTMLElement {
         const confirmPassword = this.confirmPasswordInput.value;
 
         // Update username if changed
-        if (newUsername && newUsername !== state.userData.username) {
+        if (newUsername && newUsername !== this.userData.username) {
           await this.updateUsername(newUsername);
           hasChanges = true;
         }
