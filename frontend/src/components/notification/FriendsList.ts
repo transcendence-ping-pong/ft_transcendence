@@ -153,6 +153,7 @@ export class FriendsList extends HTMLElement {
   private searchInput: HTMLInputElement;
   private tab: "friends" | "pending" | "add" = "friends";
   private search: string = "";
+  public userListData: any[] = [];
 
   static get observedAttributes() {
     return ["mode"];
