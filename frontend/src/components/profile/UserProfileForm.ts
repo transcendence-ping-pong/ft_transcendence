@@ -443,26 +443,6 @@ export class UserProfileForm extends HTMLElement {
   }
 
   // TODO: services should be in another folder
-
-  private updateAvatarDisplay(avatarUrl: string): void {
-    if (this.userData) {
-      this.userData.avatar = avatarUrl;
-    }
-    if (state.userData) {
-      state.userData.avatar = avatarUrl;
-    }
-
-    // Dispatch an event to update other components that might display the avatar
-    window.dispatchEvent(new CustomEvent('avatar-updated', {
-      bubbles: true,
-      composed: true,
-      detail: { avatarUrl }
-    }));
-
-    console.log('Avatar display updated with URL:', avatarUrl);
-  }
-
-  // Also modify your saveChanges method to handle avatar upload:
   private async saveChanges() {
     try {
       const accessToken = state.userData?.accessToken;
@@ -480,20 +460,16 @@ export class UserProfileForm extends HTMLElement {
       const newUsername = this.usernameInput.value.trim();
       const newPassword = this.passwordInput.value;
       const confirmPassword = this.confirmPasswordInput.value;
-
-      // Allow username change for all accounts
       if (newUsername && newUsername !== this.userData.username) {
         await authService.updateUsername(newUsername, accessToken);
         this.userData.username = newUsername;
         state.userData.username = newUsername;
         localStorage.setItem('loggedInUser', newUsername);
         hasChanges = true;
-
-        // Redirect to new profile URL
         window.location.href = `/profile/${newUsername}`;
       }
 
-      // Only allow password change for non-Google accounts
+      //Only regular accounts can change password
       if (!this.isGoogleAccount()) {
         if (newPassword && newPassword.length > 6) {
           if (newPassword !== confirmPassword) {
