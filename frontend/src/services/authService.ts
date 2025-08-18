@@ -9,6 +9,8 @@ export interface AuthResponse {
   secret?: string;
   accessToken?: string;
   refreshToken?: string;
+  userId?: number;
+  avatar?: string;
 }
 
 // VITE_API_BASE_URL variable is set in Makefile...
@@ -18,18 +20,21 @@ export interface AuthResponse {
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 export async function signup(username: string, email: string, password: string) {
-  const res = await fetch(`${BASE_URL}/signup`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, email, password })
-  });
+  try {
+    const res = await fetch(`${BASE_URL}/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password })
+    });
 
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || 'Signup failed');
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Signup failed');
+    }
+    return data;
+  } catch (error: any) {
+    return { error: error.message || 'Network error' };
   }
-
-  return data;
 }
 
 export async function login(email: string, password: string, token?: string): Promise<AuthResponse> {
@@ -61,17 +66,17 @@ export async function logout(refreshToken: string): Promise<AuthResponse> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: refreshToken }),
     });
-    
+
     const result = await res.json();
-    
+
     window.dispatchEvent(new CustomEvent('logout', { bubbles: true, composed: true }));
-    
+
     return result;
   } catch (error) {
     console.error('Error during logout:', error);
-    
+
     window.dispatchEvent(new CustomEvent('logout', { bubbles: true, composed: true }));
-    
+
     return { error: 'Logout completed locally' };
   }
 }
@@ -90,11 +95,11 @@ export async function fetchUsers(accessToken: string): Promise<any[]> {
   return await res.json();
 }
 
-export async function verifyToken(email: string, token: string): Promise<AuthResponse> {
+export async function verifyToken(email: string, token: string, secret?: string): Promise<AuthResponse> {
   const res = await fetch(`${BASE_URL}/verify-token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, token }),
+    body: JSON.stringify({ email, token, secret }),
   });
   return await res.json();
 }

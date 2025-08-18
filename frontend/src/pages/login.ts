@@ -1,9 +1,11 @@
-import '@/components/ThemeToggle.js';
-import '@/components/LanguagesDropdown.js';
-import '@/components/TopBar.js';
-import '@/components/UserSignin.js';
-import '@/components/UserSignup.js';
-import '@/components/GenericModal.js';
+import '@/components/navigation/Logo.js';
+import '@/components/navigation/ThemeToggle.js';
+import '@/components/navigation/LanguagesDropdown.js';
+import '@/components/navigation/TopBar.js';
+import '@/components/authentication/UserSignin.js';
+import '@/components/authentication/UserSignup.js';
+import '@/components/authentication/UserToken.js';
+import '@/components/_templates/GenericModal.js';
 
 export function renderLogin(containerId: string) {
   const container = document.getElementById(containerId);
@@ -18,8 +20,7 @@ export function renderLogin(containerId: string) {
       />
 
       <top-bar>
-        <img slot="logo" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=octopus" alt="Logo" />
-        <span slot="title">FOUR PING TWO PONG</span>
+        <pong-logo slot="logo" login></pong-logo>
         <theme-toggle slot="toggle"></theme-toggle>
         <languages-dropdown slot="language"></languages-dropdown>
       </top-bar>
@@ -55,26 +56,37 @@ export function renderLogin(containerId: string) {
     passwordInput: HTMLInputElement;
   }
 
+  function setLoginPrefill(el: UserLoginElement, prefillData: { email?: string; password?: string }) {
+    // after signup, prefill fields if details (aka email and password) are present...
+    // or after login credentials are provided and token is required
+    // ATTENTION: manipulate the DOM after the <user-signin> component is rendered
+    setTimeout(() => {
+      const loginEl = el;
+      if (prefillData.email) loginEl.emailInput.value = prefillData.email;
+      if (prefillData.password) loginEl.passwordInput.value = prefillData.password;
+      prefillData = {}; // clear prefill data after use
+    }, 0);
+  }
+
   function renderAuthComponent() {
     content.innerHTML = '';
     let el: HTMLElement;
 
     switch (mode) {
       case 'login':
-        el = document.createElement('user-signin');
+        el = document.createElement('user-signin2');
         el.addEventListener('switch-to-signup', () => transitionTo('signup'));
+        el.addEventListener('switch-to-token', (e: CustomEvent) => transitionTo('token', e.detail));
 
-        // prefill fields if details (aka email and password) are present
-        setTimeout(() => {
-          const loginEl = el as unknown as UserLoginElement;
-          if (loginPrefill.email) loginEl.emailInput.value = loginPrefill.email;
-          if (loginPrefill.password) loginEl.passwordInput.value = loginPrefill.password;
-          loginPrefill = {};
-        }, 0);
+        setLoginPrefill(el as unknown as UserLoginElement, loginPrefill);
         break;
       case 'signup':
-        el = document.createElement('user-signup');
+        el = document.createElement('user-signup2');
         el.addEventListener('switch-to-login', (e: CustomEvent) => transitionTo('login', e.detail));
+        break;
+      case 'token':
+        el = document.createElement('user-token2');
+        setLoginPrefill(el as unknown as UserLoginElement, loginPrefill);
         break;
     }
 

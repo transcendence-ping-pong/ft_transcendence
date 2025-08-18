@@ -1,7 +1,7 @@
 import { gameOrchestrator } from '@/game/gameOrchestrator.js';
-import { multiplayerToggle } from '@/multiplayer/MultiplayerToggle.js';
-import '@/components/TopBar.js';
-import '@/components/GenericModal.js';
+import '@/components/navigation/TopBar.js';
+import '@/components/navigation/Logo.js';
+import '@/components/_templates/GenericModal.js';
 import '@/components/CreateTournament.js';
 import '@/components/ViewTournament.js';
 
@@ -12,7 +12,7 @@ const PLAYER_2 = { name: '', avatar: 'https://api.dicebear.com/7.x/pixel-art/svg
 // // TODO FIX: use scale-100 if want to scale down border image
 // // remove 20px margin bottom from the border image?
 export function renderGame(containerId: string) {
-  document.body.classList.add('overflow-hidden');
+  document.body.classList.add('overflow-hidden'); // prevent scrolling during the game
   const container = document.getElementById(containerId);
   if (!container) return;
 
@@ -22,16 +22,14 @@ export function renderGame(containerId: string) {
         <top-bar mode="game">
           <img slot="player1-avatar" src="${PLAYER_1.avatar}" alt="${PLAYER_1.name}" />
           <p slot="player1-username">${PLAYER_1.name}</p>
-          <img slot="logo-center" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=octopus" alt="Logo" />
-          <span slot="title-center">FOUR PING TWO PONG</span>
+          <pong-logo slot="logo"></logo>
           <p slot="player2-username">${PLAYER_2.name}</p>
           <img slot="player2-avatar" src="${PLAYER_2.avatar}" alt="${PLAYER_2.name}" />
         </top-bar>
       `
       : `
         <top-bar mode="game">
-          <img slot="logo-center" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=octopus" alt="Logo" />
-          <span slot="title-center">FOUR PING TWO PONG</span>
+          <pong-logo slot="logo-center"></logo>
         </top-bar>
       `;
   }
@@ -45,17 +43,10 @@ export function renderGame(containerId: string) {
         alt="TV Frame"
         class="absolute top-0 left-0 w-full h-full z-20 pointer-events-none"
       />
-	  <div id="multiplayer-toggle-container"></div>
     </div>
   `;
 
   const orchestrator = new gameOrchestrator('game-screen');
-
-  // multiplayer test toggle
-  const toggleContainer = document.getElementById('multiplayer-toggle-container');
-  if (toggleContainer) {
-	multiplayerToggle.render(toggleContainer);
-  }
 
   // listen for tournament-created globally, so it works for every round
   // this is important because in the case of a TOURNAMENT, the view modal will be triggered many times
@@ -118,4 +109,63 @@ export function renderGame(containerId: string) {
       content.appendChild(el);
     }
   });
+
+  // listen for remote games modal
+  window.addEventListener('openRemoteGamesModal', () => {
+    container.insertAdjacentHTML('beforeend', `
+      <generic-modal dismissible="true" appear-delay="500">
+        <div slot="body" class="w-full h-full min-h-full flex flex-col justify-center items-center p-8" id="remote-games-modal-content">
+          <div class="flex items-center justify-between w-full mb-6">
+            <h2 class="text-2xl font-bold text-white">Available Games</h2>
+            <button id="refresh-games-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+              🔄 Refresh
+            </button>
+          </div>
+          <div class="text-center text-gray-400">Loading games...</div>
+        </div>
+      </generic-modal>
+    `);
+    
+    // add refresh button functionality
+    const refreshBtn = container.querySelector('#refresh-games-btn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        // dispatch refresh event that RemoteMultiplayerUI can listen to
+                          window.dispatchEvent(new CustomEvent('refreshRemoteGames'));
+      });
+    }
+  });
+
+  // Listen for remote multiplayer events from invite system
+  window.addEventListener('roomCreated', (e: CustomEvent) => {
+    console.log('Game page: Room created event received', e.detail);
+    // Set up the room and trigger game start directly
+    setupInviteGame(e.detail.room, true);
+  });
+
+  window.addEventListener('playerJoined', (e: CustomEvent) => {
+    console.log('Game page: Player joined event received', e.detail);
+    // Set up the room and trigger game start directly
+    setupInviteGame(e.detail.room, false);
+  });
+
+  // Set up invite game - just set up the room, let multiplayer flow handle the rest
+  function setupInviteGame(room: any, isHost: boolean) {
+    // Set the room in the existing RemoteMultiplayerManager
+    const remoteMultiplayerManager = (window as any).remoteMultiplayerManager;
+    if (remoteMultiplayerManager) {
+      // Update the manager's state to match the invite room
+      remoteMultiplayerManager.setInviteRoom(room, isHost);
+    }
+    
+    // Set player names for the game
+    PLAYER_1.name = room.hostUsername;
+    PLAYER_2.name = room.guestUsername;
+    
+    // Re-render top bar with player info
+    container.querySelector('top-bar').outerHTML = renderTopBar();
+    
+    // DON'T trigger game start directly - let the normal multiplayer flow handle it
+    // The room will be set up and users will see the waiting room
+  }
 }

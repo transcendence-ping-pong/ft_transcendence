@@ -76,7 +76,7 @@ function isAlphaNumeric(str) {
     return str.split('').every(char => {
         const isLetter = (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z');
         const isNumber = char >= '0' && char <= '9';
-        return isLetter || isNumber;
+        return isLetter || isNumber || ' ';
     });
 }
 
@@ -93,7 +93,8 @@ function isValidUsername(username) {
     if (!username || username.length < 3 || username.length > 20) {
         return false;
     }
-    return isAlphaNumeric(username);
+    // Allow letters, numbers, spaces, and some common characters
+    return /^[a-zA-Z0-9\s._-]+$/.test(username);
 }
 
 function isValidPassword(password) {

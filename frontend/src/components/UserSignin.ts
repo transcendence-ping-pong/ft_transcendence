@@ -174,7 +174,7 @@ export class UserSignin extends HTMLElement {
     this._clearError();
     this._setError('');
     this.#setUserData(res, email);
-    this.dispatchEvent(new CustomEvent('login-success', { bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent('loginSuccess', { bubbles: true, composed: true }));
   }
 
   async _onGoogleLogin(e: Event) {

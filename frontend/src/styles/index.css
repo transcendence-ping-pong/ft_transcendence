@@ -5,6 +5,8 @@
 :root {
   /* 16" screens */
   --header-font-size: 1.25rem;
+  --title-font-size: 2.25rem;
+  --title-modal-font-size: 1.5rem;
   --main-font-size: 1rem;
   --secondary-font-size: 0.85rem;
 
@@ -18,18 +20,25 @@
 
   --logo-size: 40px;
   --avatar-size: 40px;
+  --qr-size: 200px;
   --icon-size: 20px;
-  /* 16px horizontal padding */
-  --component-h-padding: 0 1rem;
+
+  --component-padding: 0.5rem;
   --sidebar-width: 30vw;
 
   --button-circle-size: 2.5rem;
   --button-default-height: 2.5rem;
 
-  --modal-height: 50vh;
-  --modal-width: 40vw;
+  --modal-height: 40vh;
+  --modal-width: 30vw;
+  --modal-small-height: 25vh;
+  --modal-small-width: 35vw;
+  --modal-large-height: 60vh;
+  --modal-large-width: 50vw;
   --button-height: 2.5rem;
   --button-min-width: 150px;
+
+  --auth-form-max-width: 400px;
 }
 
 @media (max-width: 1400px) {
@@ -37,6 +46,8 @@
   /* 14" screens */
   :root {
     --header-font-size: 1rem;
+    --title-font-size: 2rem;
+    --title-modal-font-size: 1.25rem;
     --main-font-size: 0.85rem;
     --secondary-font-size: 0.7rem;
 
@@ -50,15 +61,22 @@
 
     --logo-size: 32px;
     --avatar-size: 32px;
+    --qr-size: 180px;
     --icon-size: 16px;
-    /* 12px horizontal padding */
-    --component-h-padding: 0 0.75rem;
+
+    --component-padding: 0.5rem;
     --sidebar-width: 30vw;
 
     --modal-height: 50vh;
     --modal-width: 40vw;
+    --modal-small-height: 25vh;
+    --modal-small-width: 35vw;
+    --modal-large-height: 60vh;
+    --modal-large-width: 50vw;
     --button-height: 2rem;
     --button-min-width: 120px;
+
+    --auth-form-max-width: 340px;
   }
 }
 
@@ -67,6 +85,8 @@
   /* Large desktop */
   :root {
     --header-font-size: 1.5rem;
+    --title-font-size: 3rem;
+    --title-modal-font-size: 2rem;
     --main-font-size: 1.1rem;
     --secondary-font-size: 0.95rem;
 
@@ -80,16 +100,22 @@
 
     --logo-size: 48px;
     --avatar-size: 48px;
+    --qr-size: 250px;
     --icon-size: 24px;
-    /* 20px horizontal padding */
-    --component-h-padding: 0 1.25rem;
+
+    --component-padding: 0.75rem;
     --sidebar-width: 30vw;
 
     --modal-height: 50vh;
     --modal-width: 35vw;
-
+    --modal-small-height: 25vh;
+    --modal-small-width: 35vw;
+    --modal-large-height: 60vh;
+    --modal-large-width: 50vw;
     --button-height: 3rem;
     --button-min-width: 180px;
+
+    --auth-form-max-width: 500px;
   }
 }
 
@@ -122,7 +148,11 @@
 }
 
 .screen-1 {
-  background-image: var(--gradient) !important;
+  background-image: var(--gradient-1) !important;
+}
+
+.screen-2 {
+  background-image: var(--gradient-2) !important;
 }
 
 .game-area.with-overlay::before {
@@ -135,50 +165,39 @@
   transition: opacity 0.3s;
 }
 
-/* GOOGLE */
-/*  // background: #4285F4; */
-/* .theme-primary {
-  --body: #181818;
-  --accent: #222;
-  --border: #fff;
-  --invert: 1;
-  --success: #4caf50;
-  --warning: #ff5733;
-  --nav-hover: #333;
-  --shadow: 0 8px 32px #000a;
-  --game-gradient-start: #1f0f5c;
-  --game-gradient-end: #1a2233;
-  --game-gui: #222;
+.page-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
 }
 
-.theme-secondary {
-  --body: #fff;
-  --accent: #f4f4f4;
-  --border: #181818;
-  --invert: 0;
-  --success: #4caf50;
-  --warning: #ff5733;
-  --nav-hover: #e0e0e0;
-  --shadow: 0 8px 32px #0002;
-  --game-gradient-start: #eaf1ff;
-  --game-gradient-end: #b8d1ff;
-  --game-gui: #f4f4f4;
-} */
+@media (max-width: 1024px) {
+  .page-container {
+    max-width: 1024px;
+  }
+}
 
 .theme-primary {
   --body: #e2d7b7;
-  --gradient: linear-gradient(178.7deg, rgb(184, 167, 122) 1.7%, rgba(226, 215, 183, 1) 63%);
+  --gradient-1: linear-gradient(178.7deg, rgb(184, 167, 122) 1.7%, rgba(226, 215, 183, 1) 63%);
+  --gradient-2: linear-gradient(178.7deg, rgba(226, 215, 183, 1) 1.7%, rgb(184, 167, 122) 63%);
   --fade: linear-gradient(to bottom,
       rgba(0, 0, 0, 0) 0%,
       rgba(255, 255, 255, 0.01) 80%,
       rgba(184, 167, 122, 1) 100%);
   --accent: #b8a77a;
+  /* 80 = 50% alpha */
+  --accent-50: #b8a77a80;
   --accent-secondary: #856f35;
   --accent-tertiary: #560126;
   --border: #8a7676;
   --invert: 0;
-  --success: #45796d;
+  --success: #006d18;
   --warning: #ff5733;
+  --warning-secondary: #c32400;
   --loading: #b8a77a;
   --text: #000000;
   --text-secondary: #4a4a4a;
@@ -187,6 +206,7 @@
   --google-hover: #EEEEEE;
   --shadow: 0 8px 32px #0004;
   --shadow-soft: 0 4px 16px #0004;
+  --avatar-bg: rgba(0, 0, 0, 0.35);
   --game-gradient-start: #f8c434;
   --game-gradient-end: #b8a77a;
   --game-transition-bg: rgb(255, 255, 255);
@@ -195,18 +215,22 @@
 
 .theme-secondary {
   --body: #06022f;
-  --gradient: linear-gradient(178.7deg, rgb(2, 0, 20) 1.7%, rgba(31, 15, 92, 1) 63%);
+  --gradient-1: linear-gradient(178.7deg, rgb(2, 0, 20) 1.7%, rgba(31, 15, 92, 1) 63%);
+  --gradient-2: linear-gradient(178.7deg, rgba(31, 15, 92, 1) 1.7%, rgb(2, 0, 20) 63%);
   --fade: linear-gradient(to bottom,
       rgba(0, 0, 0, 0) 0%,
       rgba(255, 255, 255, 0.01) 60%,
       rgb(2, 0, 20) 100%);
   --accent: #2b1583;
+  /* 80 = 50% alpha */
+  --accent-50: #2b158380;
   --accent-secondary: #4724d5;
   --accent-tertiary: #4285F4;
   --border: #8982ac;
   --invert: 1;
-  --success: #00ff1a;
+  --success: #018e1f;
   --warning: #ff5733;
+  --warning-secondary: #c32400;
   --loading: #1f0f5c;
   --text: #ecebed;
   --text-secondary: #b8a77a;
@@ -214,34 +238,10 @@
   --google: #000000;
   --google-hover: #1e1e1e;
   --shadow: 0 8px 32px #8982ac;
-  --shadow-soft: 0 4px 8px #8982ac;
+  --shadow-soft: 0 2px 10px 0 #ffffff44;
+  --avatar-bg: rgba(255, 255, 255, 0.35);
   --game-gradient-start: #1f0f5c;
   --game-gradient-end: #1a2233;
   --game-transition-bg: rgb(0, 0, 0);
   --video-transition-bg: rgba(255, 255, 255, 0.1);
 }
-
-/* .theme-secondary {
-  --body: #101c19;
-  --accent: #45796d;
-  --border: #93ffe6;
-  --warning: #ff5733;
-  --nav-hover: #77ceba;
-  --shadow: 0 8px 32px #525151;
-  --game-gradient-start: #101c19;
-  --game-gradient-end: #203832;
-} */
-
-/* --primaryColorRef: #93ffe6;
-    --mixedColor1Ref: #84e6cf;
-    --mixedColor1_5Ref: #7ddac4;
-    --mixedColor2Ref: #77ceba;
-    --mixedColor3Ref: #6ab8a5;
-    --mixedColor4Ref: #5da292;
-    --mixedColor5Ref: #518d7f;
-    --mixedColor6Ref: #45796d;
-    --mixedColor7Ref: #3a665b;
-    --mixedColor7_5Ref: #355c53;
-    --mixedColor8Ref: #1e352f;
-    --secondaryColorRef: #101c19;
-    --tertiaryColorRef: #e4001c; */

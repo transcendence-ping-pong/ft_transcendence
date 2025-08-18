@@ -1,26 +1,25 @@
 
-const { dbGet } = require('./utils');
+const { dbGet, dbRun, dbAll } = require('./utils');
 
 async function friendRoutes(fastify, options) {
 
 	const db = fastify.db;
 
-	fastify.post('/friends/add/:friendId', (request, reply) => {
+	fastify.post('/friends/add/:friendId', async (request, reply) => {
 		const { friendId } = request.params;
 		const { userId } = request.body;
 
-		db.get(`SELECT userID, friendId, friendStatus FROM friendList WHERE (userId = ? AND friendId = ?) OR (userId = ? AND friendId = ?)`, [userId, friendId, friendId, userId], (err, row) => {
-			if (err) {
-				return reply.status(500).send({ error: err.message });
+		try {
+			const row = await dbGet(db, `SELECT userID, friendId, friendStatus FROM friendList WHERE (userId = ? AND friendId = ?) OR (userId = ? AND friendId = ?)`, [userId, friendId, friendId, userId]);
+			if (row)
+				throw new Error ("Friend Request / Friendship already exists");
+			else {
+				await dbRun(db, `INSERT INTO friendList (userId, friendId) VALUES (?, ?)`, [userId, friendId]);
+				return reply.send({ message: 'Sucess' });
 			}
-			if (!row) {
-				db.run(`INSERT INTO friendList (userId, friendId) VALUES (?, ?)`, [userId, friendId], (err) => {
-					if (err)
-						return;
-				});
-			}
-			return reply.send({ message: 'Success'});
-		});
+		} catch (err) {
+			return reply.status(500).send({ error: err.message });
+		}
 	});
 
 	fastify.patch('/friends/accept/:friendId', (request, reply) => {
@@ -38,32 +37,75 @@ async function friendRoutes(fastify, options) {
 		});
 	});
 
-	fastify.get('/friends/:userId', (request, reply) => {
+	fastify.get('/friends/:userId', async (request, reply) => {
 		const { userId } = request.params;
 
-		db.all(`SELECT userId, friendId, friendStatus FROM friendList WHERE userId = ? OR friendId = ?`, [userId, userId], async (err, rows) => {
-			if (err) {
-				return reply.status(500).send({ error: 'Error fetching friendships' });
-			}
-			if (!rows) {
-				return reply.status(404).send({ error: 'Error fetching user' });
-			}
+		try {
+			const rows = await dbAll(db, `SELECT userId, friendId, friendStatus FROM friendList WHERE (userId = ? AND friendStatus = ?) OR (friendId = ? AND friendStatus = ?)`, [userId, 'accepted', userId, 'accepted']);
+			if (!rows)
+				throw new Error ("No friendships found");
+
 			const object = [];
 			for (const row of rows) {
 				let friendDbId;
-				// let status = row.friendStatus;
-				if (row.userId == userId) {
+				if (row.userId == userId)
 					friendDbId = row.friendId;
-				} else {
+				else
 					friendDbId = row.userId;
-				}
 				const result = await dbGet(db, `SELECT username FROM users WHERE userId = ?`, friendDbId);
 				if (!result)
-					return reply.status(500).send({ error: 'Error fetching user' });
-				object.push({ username: result.username, userId: friendDbId, status: row.friendStatus});
+					throw new Error ("User not found");
+				object.push({ username: result.username, Id: friendDbId });
 			}
 			reply.send({ message: `Success`, result: object });
-		});
+
+		} catch (err) {
+		 	return reply.status(500).send({ error: err.message });
+		}
+	});
+
+	fastify.get('/friends/:userId/sent', async (request, reply) => {
+		const { userId } = request.params;
+
+		try {
+			const rows = await dbAll(db, `SELECT friendId, friendStatus FROM friendList WHERE (userId = ? AND friendStatus = ?)`, [userId, 'pending']);
+			if (!rows)
+				throw new Error ("No friendships found");
+
+			const object = [];
+			for (const row of rows) {
+				const result = await dbGet(db, `SELECT username FROM users WHERE userId = ?`, row.friendId);
+				if (!result)
+					throw new Error ("User not found");
+				object.push({ username: result.username, Id: row.friendId });
+			}
+			reply.send({ message: `Success`, result: object });
+
+		} catch (err) {
+		 	return reply.status(500).send({ error: err.message });
+		}
+	});
+
+	fastify.get('/friends/:userId/received', async (request, reply) => {
+		const { userId } = request.params;
+
+		try {
+			const rows = await dbAll(db, `SELECT userId, friendStatus FROM friendList WHERE (friendId = ? AND friendStatus = ?)`, [userId, 'pending']);
+			if (!rows)
+				throw new Error ("No friendships found");
+
+			const object = [];
+			for (const row of rows) {
+				const result = await dbGet(db, `SELECT username FROM users WHERE userId = ?`, row.userId);
+				if (!result)
+					throw new Error ("User not found");
+				object.push({ username: result.username, Id: row.userId });
+			}
+			reply.send({ message: `Success`, result: object });
+			
+		} catch (err) {
+		 	return reply.status(500).send({ error: err.message });
+		}
 	});
 
 	fastify.delete('/friends/remove/:friendId', (request, reply) => {
