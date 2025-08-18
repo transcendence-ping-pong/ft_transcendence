@@ -167,6 +167,24 @@ class QrAuthentication extends HTMLElement {
   private qrImage: HTMLImageElement;
   private authData: {};
 
+  private boundCancelClick = () => {
+    window.dispatchEvent(new CustomEvent('modal-dismiss', { bubbles: true, composed: true }));
+  };
+
+  private boundVerifyClick = () => {
+    this._clearError();
+    const code = this.codeInput.value.trim();
+    if (!/^\d{6}$/.test(code)) {
+      this._setError(t("profile.invalidCode"));
+      return;
+    }
+    this._showSpinner();
+    const secret = this.authData['secret'] || '';
+    const email = this.authData['email'] || '';
+    if (!email || !secret) return;
+    setTimeout(() => { this.verifyToken(email, code, secret); }, 600);
+  };
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
@@ -179,28 +197,17 @@ class QrAuthentication extends HTMLElement {
     this.qrImage = this.shadowRoot.querySelector('#qrImage') as HTMLImageElement;
     this.authData = {};
 
-    this.cancelBtn.addEventListener('click', () => {
-      this.dispatchEvent(new CustomEvent('modal-dismiss', { bubbles: true }));
-    });
+    this.cancelBtn.addEventListener('click', this.boundCancelClick);
+    this.verifyBtn.addEventListener('click', this.boundVerifyClick);
 
     this.getQrCode().then(data => {
       this.qrImage.src = data['qrCodeUrl'];
     });
+  }
 
-    this.verifyBtn.addEventListener('click', () => {
-      this._clearError();
-      const code = this.codeInput.value.trim();
-      if (!/^\d{6}$/.test(code)) {
-        this._setError(t("profile.invalidCode"));
-        return;
-      }
-      this._showSpinner();
-      const secret = this.authData['secret'] || '';
-      const email = this.authData['email'] || '';
-      if (!email || !secret) return;
-
-      setTimeout(() => { this.verifyToken(email, code, secret); }, 600);
-    });
+  disconnectedCallback() {
+    if (this.cancelBtn) this.cancelBtn.removeEventListener('click', this.boundCancelClick);
+    if (this.verifyBtn) this.verifyBtn.removeEventListener('click', this.boundVerifyClick);
   }
 
   _showSpinner() {

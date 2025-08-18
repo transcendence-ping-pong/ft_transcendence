@@ -87,6 +87,8 @@ export class GenericModal extends HTMLElement {
     return ['dismissible', 'appear-delay', 'small'];
   }
 
+  private boundGlobalModalDismiss = this.handleGlobalModalDismiss.bind(this);
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -104,6 +106,16 @@ export class GenericModal extends HTMLElement {
       e.stopPropagation(); // TODO STUDY: prevent bubbling further (?)
       this.dismiss(true); // avoid infinite loop
     });
+    // listen for global modal-dismiss (dispatched on window) ??
+    window.addEventListener('modal-dismiss', this.boundGlobalModalDismiss);
+  }
+
+  disconnectedCallback() {
+    window.removeEventListener('modal-dismiss', this.boundGlobalModalDismiss);
+  }
+
+  private handleGlobalModalDismiss() {
+    this.dismiss(true);
   }
 
   // callback parameters: name, oldValue, newValue

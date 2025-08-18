@@ -1,4 +1,3 @@
-import * as authService from '@/services/authService.js';
 import '@/components/navigation/Logo.js';
 import '@/components/navigation/ThemeToggle.js';
 import '@/components/navigation/LanguagesDropdown.js';

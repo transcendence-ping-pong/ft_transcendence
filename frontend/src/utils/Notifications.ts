@@ -40,7 +40,7 @@ export function mapNotification(payload) {
           icon: actionIcons.accept,
           label: t("notification.action.accept"),
         },
-        actionFn: () => alert("Friend request accepted!"),
+        actionFn: () => navigate(`/profile/${payload.name}`),
       };
     case "gameInvite":
       return {
@@ -65,7 +65,7 @@ export function mapNotification(payload) {
           icon: actionIcons.user,
           label: t("notification.action.viewProfile"),
         },
-        actionFn: () => alert("Viewing profile!"),
+        actionFn: () => alert(`Viewing profile! ${payload.name}`),
       };
     case "newTournament":
       return {

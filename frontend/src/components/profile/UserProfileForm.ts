@@ -4,6 +4,7 @@ import * as authService from '@/services/authService.js';
 import * as friendsService from '@/services/friendsService.js';
 import { state } from '@/state.js';
 import { makeAuthenticatedRequest } from '@/main.js';
+import { UserData } from '@/utils/playerUtils/types';
 import '@/components/_templates/CustomTag.js';
 
 const template = document.createElement('template');
@@ -237,19 +238,38 @@ export class UserProfileForm extends HTMLElement {
   private deleteBtn: HTMLButtonElement;
   private isEditMode = false;
   private pendingAvatarFile: File | null = null;
-  private isUser: boolean = false;
-  private profileData: {} = null; // TODO: check TS
+
+  private userData: UserData = { email: '', username: '', userId: 0, avatar: '' };
+
+  private boundHandleModalDismiss = this.handleModalDismiss.bind(this);
+  private boundHandleAvatarChanged = this.handleAvatarChanged.bind(this);
+  private boundHandleProfileLoaded = this.handleProfileLoaded.bind(this);
+  private boundHandleAvatarUpdated = this.handleAvatarUpdated.bind(this);
+
+  static get observedAttributes() {
+    return ['userdata'];
+  }
 
   constructor() {
     super();
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
   }
 
+  attributeChangedCallback(name: string, oldValue: string, newValue: string) {
+    if (name === 'userdata') {
+      try {
+        this.userData = JSON.parse(newValue);
+      } catch {
+        this.userData = { email: '', username: '', userId: 0, avatar: '' };
+      }
+    }
+  }
+
   connectedCallback() {
     this.assignElements();
     this.addEventListeners();
-    this.toggleEditMode();
     this.renderForm();
+    this.toggleEditMode();
   }
 
   private assignElements() {
@@ -276,12 +296,20 @@ export class UserProfileForm extends HTMLElement {
     this.saveBtn?.addEventListener('click', this.handleSaveBtnClick.bind(this));
     this.deleteBtn?.addEventListener('click', this.handleDeleteBtnClick.bind(this));
 
-    window.addEventListener('avatar-changed', this.handleAvatarChanged.bind(this));
-    window.addEventListener('profile-loaded', this.handleProfileLoaded.bind(this));
-    window.addEventListener('avatar-updated', this.handleAvatarUpdated.bind(this));
-    // { once: true } ensures the event listener is removed after the first invocation
-    // it was necessary for fixing a bug: modal was triggered multiple times
-    window.addEventListener('modal-dismiss', this.handleModalDismiss.bind(this), { once: true });
+    window.addEventListener('avatar-changed', this.boundHandleAvatarChanged);
+    window.addEventListener('profile-loaded', this.boundHandleProfileLoaded);
+    window.addEventListener('avatar-updated', this.boundHandleAvatarUpdated);
+    window.addEventListener('modal-dismiss', this.boundHandleModalDismiss);
+  }
+
+  // you do not call disconnectedCallback yourself...
+  // it is called automatically when the element is removed from the DOM
+  // it is used to clean up event listeners and prevent memory leaks
+  disconnectedCallback() {
+    window.removeEventListener('avatar-changed', this.boundHandleAvatarChanged);
+    window.removeEventListener('profile-loaded', this.boundHandleProfileLoaded);
+    window.removeEventListener('avatar-updated', this.boundHandleAvatarUpdated);
+    window.removeEventListener('modal-dismiss', this.boundHandleModalDismiss);
   }
 
   // event handlers - track user interactions
@@ -335,13 +363,19 @@ export class UserProfileForm extends HTMLElement {
     this.renderForm();
   }
 
+  // after closing a modal, update form data (maybe the user authenticated...
+  // ...flag must be set and button/modal removed)
   private handleModalDismiss() {
     this.renderForm();
   }
 
+  // rendering methods - display the form based on user data
+  // reminder: check for main user and visitor is made in page...
+  // so both avatar and userProfileForm components render accordingly...
+  // ... and it is only needed to call BE once
   private async renderForm() {
-    await this.setCurrentProfile();
-    if (this.isUser) {
+    const mainUsername = state.userData?.username;
+    if (this.userData && this.userData.username === mainUsername) {
       this.renderFormMain();
     } else {
       this.renderFormVisitor();
@@ -349,8 +383,8 @@ export class UserProfileForm extends HTMLElement {
   }
 
   private renderFormMain() {
-    this.usernameInput.value = state.userData?.username || '';
-    this.emailInput.value = state.userData?.email || '';
+    this.usernameInput.value = this.userData?.username || '';
+    this.emailInput.value = this.userData?.email || '';
     this.emailInput.disabled = true;
     this.passwordInput.value = '';
     if (this.isGoogleAccount()) {
@@ -358,7 +392,7 @@ export class UserProfileForm extends HTMLElement {
       this.confirmPasswordInput.disabled = true;
     }
 
-    authService.check2FAStatus(state.userData?.email || '').then((status) => {
+    authService.check2FAStatus(this.userData?.email || '').then((status) => {
       const enabled = !!status.has2FA;
       if (enabled) {
         this.enable2fa.textContent = t('profile.success2FA');
@@ -378,33 +412,19 @@ export class UserProfileForm extends HTMLElement {
   }
 
   private renderFormVisitor() {
-    // TODO: define the type for profileData, what will be returned from the service?
-    // @ts-ignore
-    this.usernameInput.value = this.profileData?.username || '';
+    if (!this.usernameInput || !this.emailInput) return;
+    this.usernameInput.value = this.userData?.username || '';
     this.usernameInput.disabled = true;
-    // @ts-ignore
-    this.emailInput.value = this.profileData?.email || '';
+    this.emailInput.value = this.userData?.email || '';
     this.emailInput.disabled = true;
 
     // hide, show simplified profile form for visitors, i.e. no password fields, no delete profile
+    // if more elements are needed to be hidden, add their id to the hiddenElements array
     const hiddenElements = ["passwordInput", "confirmPasswordInput", "viewBtn", "authSection", "editButton"];
     for (const element of hiddenElements) {
       if (this[element]) {
         this[element].style.display = 'none';
       }
-    }
-  }
-
-  private async setCurrentProfile() {
-    const mainUsername = state.userData?.username || '';
-    // check if the current path is the user's profile...
-    // ...as there are features specific to admin rights, e.g. delete account
-    const path = window.location.pathname;
-    const visitorUsername = path.split('/').pop() || '';
-    this.isUser = path.split('/').pop() === mainUsername;
-
-    if (!this.isUser && visitorUsername) {
-      this.profileData = await friendsService.getUserProfile(visitorUsername);
     }
   }
 
@@ -440,8 +460,8 @@ export class UserProfileForm extends HTMLElement {
     }
 
     // Update state with new username
-    if (state.userData) {
-      state.userData.username = newUsername;
+    if (this.userData) {
+      this.userData.username = newUsername;
     }
     localStorage.setItem('loggedInUser', newUsername);
   }
@@ -465,8 +485,8 @@ export class UserProfileForm extends HTMLElement {
 
   private updateAvatarDisplay(avatarUrl: string): void {
     // Update the state with new avatar
-    if (state.userData) {
-      state.userData.avatar = avatarUrl;
+    if (this.userData) {
+      this.userData.avatar = avatarUrl;
     }
 
     // Dispatch an event to update other components that might display the avatar
@@ -500,7 +520,7 @@ export class UserProfileForm extends HTMLElement {
         const confirmPassword = this.confirmPasswordInput.value;
 
         // Update username if changed
-        if (newUsername && newUsername !== state.userData.username) {
+        if (newUsername && newUsername !== this.userData.username) {
           await this.updateUsername(newUsername);
           hasChanges = true;
         }
