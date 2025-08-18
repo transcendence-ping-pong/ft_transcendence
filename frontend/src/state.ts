@@ -73,13 +73,18 @@ export interface TournamentData {
 }
 
 export interface Match {
-  matchId: number;
-  player1DisplayName: string;
-  player2DisplayName: string;
-  winnerDisplayName: string | null;
-  scorePlayer1: number | null;
-  scorePlayer2: number | null;
+  day: string;
+  time: string;
+  scorePlayer1: string,
+  scorePlayer2: string,
+  matchId: string;
+  tournId: string;
+  player1: string;
+  player2: string;
+  winLoss: string;
+  mode: string;
 }
+
 
 // chat types
 export interface ChatMessage {

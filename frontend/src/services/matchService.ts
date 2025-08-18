@@ -25,6 +25,15 @@ export async function createTournament(userId: number, players: string[]) {
   return res.json();
 }
 
+export async function getTournament(tournId: number) {
+  const res = await fetch(`${BASE_URL}/tournament/${tournId}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Erro do backend: ${res.status} - ${text}`);
+  }
+  return res.json();
+}
+
 export async function getTournamentSemi(tournId: number) {
   const res = await fetch(`${BASE_URL}/tournament/${tournId}/semi`);
   if (!res.ok) {
@@ -64,6 +73,16 @@ export async function createMatch(creatorId: number, remoteId: number, tournId: 
 
 export async function getMatch(matchId: number) {
   const res = await fetch(`${BASE_URL}/matches/${matchId}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Erro do backend: ${res.status} - ${text}`);
+  }
+  return res.json();
+}
+
+// TODO: Check if request is in the right file
+export async function getMatchHistory(userId: number) {
+  const res = await fetch(`${BASE_URL}/matches/history/${userId}`);
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Erro do backend: ${res.status} - ${text}`);
