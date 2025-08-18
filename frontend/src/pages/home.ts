@@ -4,7 +4,9 @@ import '@/components/navigation/TopBar.js';
 import '@/components/navigation/StartGameButton.js';
 import '@/components/navigation/Logo.js';
 import '@/components/notification/NotificationsBar.js';
+
 import '@/components/notification/FriendsList.js';
+import '@/components/notification/ChatBox.js'
 import { logout } from '@/services/authService.js';
 import { state } from '@/state.js';
 
@@ -34,7 +36,7 @@ export function renderHome(containerId: string) {
       </top-bar>
 
       <notifications-bar>
-        <friends-list slot="friends-list" mode="full"></friends-list>
+        <chat-box slot="chat-box" mode="full"></chat-box>
       </notifications-bar>
 
       <section class="screen-1 relative flex items-center justify-center h-screen w-screen">
@@ -55,6 +57,8 @@ export function renderHome(containerId: string) {
     }
   }
 }
+
+// <friends-list slot="friends-list" mode="full"></friends-list>
 
 /*
 TODO:

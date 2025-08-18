@@ -153,7 +153,7 @@ export class FriendsList extends HTMLElement {
   private searchInput: HTMLInputElement;
   private tab: "friends" | "pending" | "add" = "friends";
   private search: string = "";
-  public userListData: any[] = [];
+  private onlineUsersData: {} = {};
 
   static get observedAttributes() {
     return ["mode"];
@@ -181,6 +181,10 @@ export class FriendsList extends HTMLElement {
       this.search = (e.target as HTMLInputElement).value;
       this.renderList();
     });
+
+    window.addEventListener('online-users-updated', (e: CustomEvent) => {
+    }, { once: true });
+
     this.render();
   }
 

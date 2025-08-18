@@ -110,8 +110,8 @@ template.innerHTML = `
       flex-direction: column;
       gap: 1rem;
     }
-    ::slotted([slot="friends-list"]) {
-      padding: 0 1.2rem 1rem 1.2rem;
+    ::slotted([slot="chat-box"]) {
+      padding: 1rem 1.2rem 1rem 1.2rem;
     }
 
     .notif-tags {
@@ -177,7 +177,7 @@ template.innerHTML = `
       </button>
     </div>
     <div class="details-list"></div>
-    <slot name="friends-list"></slot>
+    <slot name="chat-box"></slot>
   </div>
 `;
 
@@ -214,11 +214,11 @@ export class NotificationsBar extends HTMLElement {
     }
     this.detailsClose.addEventListener('click', () => this.hideDetails());
 
-    // show side bar details on notification or compact friends-list click
+    // show side bar details on notification or compact chat-box click
     this.stack.addEventListener('click', (e) => {
       const target = e.target as Element;
       const notif = target.closest('notification-card');
-      const compactFriends = target.closest('friends-list[mode="compact"]');
+      const compactFriends = target.closest('chat-box[mode="compact"]');
       if (notif || compactFriends) this.showDetails();
     });
 
@@ -325,8 +325,8 @@ export class NotificationsBar extends HTMLElement {
       el => el.hasAttribute && el.hasAttribute('welcome')
     );
 
-    // create and insert the compact friends-list before the welcome card
-    const compact = document.createElement('friends-list');
+    // create and insert the compact chat-box before the welcome card
+    const compact = document.createElement('chat-box');
     compact.setAttribute('mode', 'compact');
     if (welcomeCard) {
       this.stack.insertBefore(compact, welcomeCard);
