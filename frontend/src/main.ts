@@ -46,7 +46,7 @@ notificationService.listen((notif) => {
 });
 
 // TODO SOCKET: REMOVE MOCK
-// startMockNotifications();
+startMockNotifications();
 
 // initialize chat system
 function initializeChatSystem() {

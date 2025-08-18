@@ -1,13 +1,6 @@
 import { t } from '@/locales/Translations';
-import { state } from '@/state';
+import { UserData } from '@/utils/playerUtils/types';
 
-// VIRTUAL_WIDTH and VIRTUAL_HEIGHT define the "design" size of the badge.
-// The badge and all its content will always render at these dimensions (in px).
-// To scale or move the badge, wrap <atari-badge> in a container and use CSS transform:
-// Example:
-// <div style="width:500px;height:500px;transform:scale(0.7) translateX(120px);transform-origin:top left;">
-//   <atari-badge username="yourname"></atari-badge>
-// </div>
 const VIRTUAL_WIDTH = 500;
 const VIRTUAL_HEIGHT = 500;
 const VIRTUAL_MARGIN_Y = 220;
@@ -22,7 +15,6 @@ template.innerHTML = `
       height: 100vh;
       position: relative;
     }
-
     .badge-border-img {
       position: absolute;
       height: 100%;
@@ -59,6 +51,9 @@ template.innerHTML = `
       border-radius: 0;
       box-shadow: none;
     }
+    .avatar-container {
+      position: relative;
+    }
     .avatar {
       width: 110px;
       height: 110px;
@@ -88,9 +83,6 @@ template.innerHTML = `
       pointer-events: none;
       color: white;
       font-size: 0.8rem;
-    }
-    .avatar-container {
-      position: relative;
     }
     .avatar-container:hover .avatar-upload-overlay {
       opacity: 1;
@@ -124,12 +116,6 @@ template.innerHTML = `
       opacity: 0.7;
       margin-bottom: 1.2em;
       letter-spacing: 0.08em;
-    }
-    .visitor-info {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-right: 1.5em;
     }
     .visitor-number {
       font-size: 1.5rem;
@@ -179,13 +165,12 @@ template.innerHTML = `
       <div class="badge__container--row">
         <hr class="badge-hr" />
       </div>
-      <span class="username-label">${t("auth.username")}</span>
-      <span class="visitor-number">${t("auth.userID")}</span>
+      <span class="username-label"></span>
+      <span class="visitor-number"></span>
       <div class="badge__container--row">
         <span class="visitor-label">${t("profile.visitorNo")}</span>
         <hr class="badge-hr" />
       </div>
-
       <div class="logo-row">
         <img class="logo-box" src="/public/logo.png" alt="Logo" />
       </div>
@@ -194,11 +179,15 @@ template.innerHTML = `
 `;
 
 export class AtariBadge extends HTMLElement {
-  private fileInput: HTMLInputElement;
-  private avatar: HTMLImageElement;
+  private fileInput!: HTMLInputElement;
+  private avatar!: HTMLImageElement;
+  private userData: UserData = { email: '', username: '', userId: 0, avatar: '' };
+
+  private boundAvatarClick = () => this.fileInput.click();
+  private boundFileInputChange = (e: Event) => this.handleFileSelect(e);
 
   static get observedAttributes() {
-    return ['username'];
+    return ['userdata'];
   }
 
   constructor() {
@@ -206,102 +195,87 @@ export class AtariBadge extends HTMLElement {
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
   }
 
+  attributeChangedCallback(name: string, oldValue: string, newValue: string) {
+    if (name === 'userdata') {
+      try {
+        this.userData = JSON.parse(newValue);
+      } catch {
+        this.userData = { email: '', username: '', userId: 0, avatar: '' };
+      }
+    }
+  }
+
   connectedCallback() {
-    this.avatar = this.shadowRoot.querySelector('.avatar') as HTMLImageElement;
-    this.fileInput = this.shadowRoot.querySelector('.hidden-file-input') as HTMLInputElement;
-    
-    this.avatar.addEventListener('click', () => {
-        this.fileInput.click();
-    });
+    this.avatar = this.shadowRoot!.querySelector('.avatar') as HTMLImageElement;
+    this.fileInput = this.shadowRoot!.querySelector('.hidden-file-input') as HTMLInputElement;
 
-    this.fileInput.addEventListener('change', (e) => {
-        this.handleFileSelect(e);
-    });
-
-    // SIMPLIFIED: Just listen for username updates
-    window.addEventListener('username-updated', () => {
-        console.log('Username updated, re-rendering badge');
-        this.render();
-    });
+    this.avatar.addEventListener('click', this.boundAvatarClick);
+    this.fileInput.addEventListener('change', this.boundFileInputChange);
 
     this.render();
   }
 
-  attributeChangedCallback() {
-    this.render();
-  }
-  private printFirstName(username: string): string {
+  private printFirstName(username: string = ''): string {
     return username.split(' ')[0];
   }
+
   private handleFileSelect(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
 
-    // Validate file type and size
     if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
-        return;
+      alert('Please select an image file');
+      return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB');
-        return;
+      alert('File size must be less than 5MB');
+      return;
     }
 
-    // Show preview immediately
     const reader = new FileReader();
     reader.onload = (e) => {
-        const result = e.target?.result as string;
-        this.avatar.src = result;
+      const result = e.target?.result as string;
+      this.avatar.src = result;
     };
     reader.readAsDataURL(file);
 
-    // Dispatch event to UserProfileForm to handle the actual upload
     window.dispatchEvent(new CustomEvent('avatar-changed', {
-        bubbles: true,
-        composed: true,
-        detail: { 
-            file,
-            enableEditMode: true
-         }
+      bubbles: true,
+      composed: true,
+      detail: {
+        file,
+        enableEditMode: true
+      }
     }));
-}
+  }
+
   render() {
-    const username = state.userData?.username || this.getAttribute('username') || '';
-    
-    const h2 = this.shadowRoot.querySelector('.badge-username');
-    if (h2) {
-        const displayName = this.printFirstName(username).toUpperCase();
-        h2.textContent = displayName;
-    }
-    
-    const visitorNumber = this.shadowRoot.querySelector('.visitor-number');
-    if (visitorNumber) {
-        const visitorNum = state.userData?.userId?.toString() || '';
-        visitorNumber.textContent = visitorNum;
-    }
-    
-    const usernameLabel = this.shadowRoot.querySelector('.username-label');
-    if (usernameLabel) {
-        usernameLabel.textContent = username;
-    }
-    
-    // Handle avatar
-    const customAvatar = state.userData?.avatar;
-    let avatarUrl;
-    
-    if (customAvatar) {
-        const baseUrl = customAvatar.split('?')[0];
-        avatarUrl = `${baseUrl}?t=${Date.now()}`;
-    } else {
-        avatarUrl = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}&t=${Date.now()}`;
-    }
-    
+    const user = this.userData || { username: '', userId: 0, avatar: '' };
+    const username = user.username || '';
+    const userId = user.userId || '';
+    const avatarUrl = user.avatar
+      ? `${user.avatar.split('?')[0]}?t=${Date.now()}`
+      : `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}&t=${Date.now()}`;
+
+    const h2 = this.shadowRoot!.querySelector('.badge-username');
+    if (h2) h2.textContent = this.printFirstName(username).toUpperCase();
+
+    const visitorNumber = this.shadowRoot!.querySelector('.visitor-number');
+    if (visitorNumber) visitorNumber.textContent = userId.toString();
+
+    const usernameLabel = this.shadowRoot!.querySelector('.username-label');
+    if (usernameLabel) usernameLabel.textContent = username;
+
     if (this.avatar) {
-        this.avatar.src = avatarUrl;
-        this.avatar.alt = "Avatar";
+      this.avatar.src = avatarUrl;
+      this.avatar.alt = "Avatar";
     }
-}
+  }
+
+  disconnectedCallback() {
+    if (this.avatar) this.avatar.removeEventListener('click', this.boundAvatarClick);
+    if (this.fileInput) this.fileInput.removeEventListener('change', this.boundFileInputChange);
+  }
 }
 
 customElements.define('atari-badge', AtariBadge);

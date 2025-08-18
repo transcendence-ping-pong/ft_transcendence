@@ -1,6 +1,8 @@
 import '@/components/navigation/ThemeToggle.js';
 import '@/components/navigation/LanguagesDropdown.js';
 import '@/components/navigation/TopBar.js';
+import '@/components/navigation/StartGameButton.js';
+import '@/components/navigation/Logo.js';
 import '@/components/NotificationsBar.js';
 import { logout } from '@/services/authService.js';
 import { state } from '@/state.js';
@@ -24,6 +26,9 @@ export function renderHome(containerId: string) {
         <pong-logo slot="logo"></pong-logo>
         <theme-toggle slot="toggle"></theme-toggle>
         <languages-dropdown slot="language"></languages-dropdown>
+
+        <start-game-button slot="logo-center"></start-game-button>
+
         <img slot="avatar" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=robot" alt="Avatar" />
         <button slot="logout" id="logoutBtn">
           <img src="https://unpkg.com/pixelarticons@1.8.1/svg/logout.svg" alt="Logout" style="width:22px;height:22px;filter:invert(1);" />
