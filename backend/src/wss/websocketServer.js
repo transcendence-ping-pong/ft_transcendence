@@ -661,10 +661,7 @@ class WebSocketServer {
 		);
 
 		// Send to receiver unless they've blocked the sender
-		const receiverBlocks = this.userManager.userBlocks.get(receiver.userId);
-		if (!(receiverBlocks && receiverBlocks.has(user.userId))) {
-			this.io.to(receiver.socketId).emit('directMessage', directMessage);
-		}
+		this.io.to(receiver.socketId).emit('directMessage', directMessage);
 
 		// Send back to sender so they can see their own message
 		socket.emit('directMessage', directMessage);
