@@ -287,7 +287,7 @@ class GameManager {
 		const rightScore = gameState.paddles.right.score;
 		const TARGET = 11; // base target; must win by 2
 
-		if (leftScore >= TARGET || rightScore >= TARGET) {
+		if (leftScore >= SCORE_MAX || rightScore >= SCORE_MAX) {
 			if (Math.abs(leftScore - rightScore) >= 2) {
 				gameState.gamePhase = 'finished';
 				gameState.winner = leftScore > rightScore ? 'left' : 'right';
