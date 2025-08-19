@@ -54,9 +54,9 @@ function initializeChatSystem() {
   const chatPanel = new ChatPanel();
 
   // add to body so it's always available
-  // document.body.appendChild(chatPanel);
+  document.body.appendChild(chatPanel);
 
-  // console.log('Chat system initialized');
+  console.log('Chat system initialized');
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -140,25 +140,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   // set style theme according to toggle state
   document.body.classList.toggle('theme-primary', state.theme === 'primary');
   document.body.classList.toggle('theme-secondary', state.theme === 'secondary');
-
-  navigate = initRouter(routes, 'app');
-
+  
   // connects to websocket server
   websocketService.connect(`ws://${window.location.hostname}:4001`);
 
+  navigate = initRouter(routes, 'app');
+
+
   // Make websocketService available globally for chat system
   (window as any).websocketService = websocketService;
-
-  // Initialize RemoteMultiplayerManager for invite flow
   (window as any).remoteMultiplayerManager = remoteMultiplayerManager;
 
-  // Connect RemoteMultiplayerManager when user is authenticated
-  window.addEventListener('websocketAuthenticated', (event: CustomEvent) => {
-    const { success, username } = event.detail;
-    if (success && username) {
-      remoteMultiplayerManager.connect(username);
-    }
-  });
+  // websocketAuthenticated is handled for UI feedback elsewhere; no socket connects here
 
 
   window.addEventListener('login-success', () => {
@@ -331,8 +324,8 @@ async function loadUserProfile() {
 function clearCacheAndRedirectToLogin() {
   localStorage.clear();
   state.userData = null;
-
-  navigate('/login');
+  if (typeof navigate === 'function') navigate('/login');
+  else window.location.assign('/login');
 }
 
 

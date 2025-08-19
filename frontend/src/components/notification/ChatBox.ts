@@ -122,6 +122,9 @@ export class ChatBox extends HTMLElement {
   private messageHistory: ChatMessage[] = [];
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
+  private _wsHandlersAttached: boolean = false;
+  private lastInvite: any = null;
+  private _initialized: boolean = false;
 
   static get observedAttributes() {
     return ["mode"];
@@ -148,6 +151,13 @@ export class ChatBox extends HTMLElement {
     this.setupWebSocketListeners();
     this.render();
     this.loadMessages();
+
+    // preload last invite from localStorage if present
+    try {
+      const raw = localStorage.getItem('lastInvite');
+      if (raw) this.lastInvite = JSON.parse(raw);
+    } catch {}
+    this._initialized = true;
   }
 
   attributeChangedCallback(name: string, oldValue: string, newValue: string) {
@@ -155,6 +165,14 @@ export class ChatBox extends HTMLElement {
   }
 
   render() {
+    // ensure refs exist (can be called before connectedCallback via attributeChangedCallback)
+    if (!this.compactDiv || !this.fullDiv || !this.messagesDiv || !this.input) {
+      this.compactDiv = this.shadowRoot?.querySelector('.chat-compact') as HTMLElement;
+      this.fullDiv = this.shadowRoot?.querySelector('.chat-full') as HTMLElement;
+      this.messagesDiv = this.shadowRoot?.querySelector('.chat-messages') as HTMLElement;
+      this.input = this.shadowRoot?.querySelector('.chat-input') as HTMLInputElement;
+      if (!this.compactDiv || !this.fullDiv) return; // wait until connected
+    }
     this.mode = (this.getAttribute("mode") as "compact" | "full") || "compact";
     if (this.mode === "compact") {
       this.compactDiv.style.display = "";
@@ -164,7 +182,7 @@ export class ChatBox extends HTMLElement {
       this.compactDiv.style.display = "none";
       this.fullDiv.style.display = "";
       this.renderMessages();
-      setTimeout(() => this.input.focus(), 0);
+      setTimeout(() => this.input?.focus(), 0);
     }
   }
 
@@ -178,12 +196,16 @@ export class ChatBox extends HTMLElement {
 
   renderMessages() {
     this.messagesDiv.innerHTML = this.messages.length
-      ? this.messages.map(msg => `
-        <div class="chat-message">
-          <span class="sender">${msg.sender}</span>
-          <span class="text">${msg.text}</span>
-        </div>
-      `).join("")
+      ? this.messages.map(msg => {
+          const isDirect = msg.category === 'direct' && msg.receiverUsername;
+          const header = isDirect ? `${msg.sender} → ${msg.receiverUsername}` : `${msg.sender} → global`;
+          return `
+            <div class="chat-message">
+              <span class="sender">${header}</span>
+              <span class="text">${msg.text}</span>
+            </div>
+          `;
+        }).join("")
       : `<div style="color:var(--text);opacity:0.7;">No messages yet.</div>`;
     this.messagesDiv.scrollTop = this.messagesDiv.scrollHeight;
   }
@@ -205,6 +227,11 @@ export class ChatBox extends HTMLElement {
   }
 
   addMessage(msg: ChatMessage) {
+    // simple de-duplication: ignore if identical to last within 750ms
+    const last = this.messages[this.messages.length - 1];
+    if (last && last.sender === msg.sender && last.text === msg.text && (msg.timestamp - last.timestamp) < 750) {
+      return;
+    }
     this.messages.push(msg);
     if (msg.type !== 'system') {
       this.messageHistory.push(msg);
@@ -217,7 +244,12 @@ export class ChatBox extends HTMLElement {
 
   // --- WebSocket listeners ---
   private setupWebSocketListeners() {
-    if (!wss || !wss.socket) return;
+    if (this._wsHandlersAttached) return;
+    if (!wss || !wss.socket) {
+      window.addEventListener('websocketConnected', () => this.setupWebSocketListeners(), { once: true });
+      return;
+    }
+    this._wsHandlersAttached = true;
     wss.socket.on('chatMessage', (data: any) => {
       if (data && data.type === 'global' && data.senderUsername && data.message) {
         this.addMessage({ sender: data.senderUsername, text: data.message, timestamp: Date.now(), type: 'other', category: 'global' });
@@ -239,6 +271,7 @@ export class ChatBox extends HTMLElement {
     });
     wss.socket.on('gameInvite', (data: any) => {
       if (data && data.type === 'invite' && data.senderUsername && data.message) {
+        this.lastInvite = data;
         this.addMessage({ sender: data.senderUsername, text: data.message, timestamp: Date.now(), type: 'other', category: 'direct', receiverUsername: data.receiverUsername, inviteData: data });
       }
     });
@@ -253,15 +286,7 @@ export class ChatBox extends HTMLElement {
   // --- Command handling ---
   private handleSlashCommand(cmd: string) {
     if (cmd === '/help') {
-      this.addMessage({ sender: '', text: t("chat.allCommandsTitle"), timestamp: Date.now(), type: 'system' });
-      this.addMessage({ sender: '', text: t("chat.help"), timestamp: Date.now(), type: 'system' });
-      this.addMessage({ sender: '', text: t("chat.list"), timestamp: Date.now(), type: 'system' });
-      this.addMessage({ sender: '', text: t("chat.pm"), timestamp: Date.now(), type: 'system' });
-      this.addMessage({ sender: '', text: t("chat.invite"), timestamp: Date.now(), type: 'system' });
-      this.addMessage({ sender: '', text: t("chat.accept"), timestamp: Date.now(), type: 'system' });
-      this.addMessage({ sender: '', text: t("chat.decline"), timestamp: Date.now(), type: 'system' });
-      this.addMessage({ sender: '', text: t("chat.profile"), timestamp: Date.now(), type: 'system' });
-      this.addMessage({ sender: '', text: t("chat.clear"), timestamp: Date.now(), type: 'system' });
+      this.addMessage({ sender: '', text: 'Available: /help /list /pm username message /invite username difficulty /accept /decline /profile username /clear', timestamp: Date.now(), type: 'system' });
     } else if (cmd === '/list') {
       this.requestOnlineUsers();
     } else if (cmd === '/clear') {
@@ -295,7 +320,7 @@ export class ChatBox extends HTMLElement {
         return;
       }
       wss.emit('chatMessage', {
-        message: `/ invite ${receiver} ${difficulty}`,
+        message: `/invite ${receiver} ${difficulty}`,
         username: this.getCurrentUsername()
       });
     } else if (cmd === '/accept') {
@@ -305,7 +330,7 @@ export class ChatBox extends HTMLElement {
     } else if (cmd.startsWith('/profile ')) {
       const [_, username] = cmd.split(/\s+/);
       if (username) {
-        window.location.href = `/ profile / ${username}`;
+        window.location.href = `/profile/${username}`;
       } else {
         this.addMessage({ sender: '', text: t("chat.profileUsage"), timestamp: Date.now(), type: 'system' });
       }
@@ -333,30 +358,29 @@ export class ChatBox extends HTMLElement {
   }
 
   private handleInviteCommand(action: 'accept' | 'decline') {
-    const inviteMessage = this.findInviteMessage();
-    if (!inviteMessage) {
+    let inv = this.lastInvite;
+    if (!inv) {
+      try { const raw = localStorage.getItem('lastInvite'); if (raw) inv = JSON.parse(raw); } catch {}
+    }
+    if (!inv) {
+      // try to find last invite in history
+      const last = [...this.messageHistory].reverse().find(m => (m as any).inviteData);
+      inv = last ? (last as any).inviteData : null;
+    }
+    if (!inv) {
       this.addMessage({ sender: '', text: t("chat.inviteNotFound"), timestamp: Date.now(), type: 'system' });
-      return;
-    }
-    if (inviteMessage.getAttribute('data-invite-processed') === 'true') {
-      this.addMessage({ sender: '', text: t("chat.inviteProcessed"), timestamp: Date.now(), type: 'system' });
-      return;
-    }
-    const inviteData = this.extractInviteDataFromMessage(inviteMessage);
-    if (!inviteData) {
-      this.addMessage({ sender: '', text: t("chat.invalidInviteData"), timestamp: Date.now(), type: 'system' });
       return;
     }
     if (wss && wss.socket) {
       wss.socket.emit('inviteResponse', {
-        inviteId: inviteData.id,
+        inviteId: inv.id,
         response: action,
-        senderUsername: inviteData.senderUsername,
-        receiverUsername: inviteData.receiverUsername,
-        difficulty: inviteData.difficulty
+        senderUsername: inv.senderUsername,
+        receiverUsername: inv.receiverUsername,
+        difficulty: inv.difficulty
       });
-      inviteMessage.setAttribute('data-invite-processed', 'true');
       this.addMessage({ sender: '', text: action === 'accept' ? t("chat.inviteAccepted") : t("chat.inviteDeclined"), timestamp: Date.now(), type: 'system' });
+      this.lastInvite = null;
     }
   }
 

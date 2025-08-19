@@ -1,5 +1,6 @@
 import { websocketService as wss } from '@/services/websocketService.js';
 import { state } from '../state.js';
+import { getUserProfile, postAddFriend, patchAcceptFriend, deleteFriend, getFriends, getReceivedRequests, getSentRequests } from '@/services/friendsService.js';
 
 export default class ChatPanel extends HTMLElement {
   private panel: HTMLDivElement;
@@ -13,6 +14,9 @@ export default class ChatPanel extends HTMLElement {
   private maxReconnectAttempts: number = 5;
   private messageHistory: Array<{ sender: string, message: string, type: 'user' | 'system' | 'other', category: 'global' | 'direct', timestamp: number }> = [];
   private isLoadingMessages: boolean = false;
+  private currentUsername: string = '';
+  private lastInvite: any = null;
+  private hasRenderedHistory: boolean = false;
 
   constructor() {
     super();
@@ -34,8 +38,11 @@ export default class ChatPanel extends HTMLElement {
       mutations.forEach((mutation) => {
         if (mutation.type === 'attributes' && mutation.attributeName === 'visible') {
           if (this.hasAttribute('visible')) {
-            // Chat opened - load messages
-            this.loadMessages();
+            // Chat opened - render history once without duplicating
+            if (!this.hasRenderedHistory) {
+              this.renderHistoryOnce();
+              this.hasRenderedHistory = true;
+            }
           }
         }
       });
@@ -54,6 +61,7 @@ export default class ChatPanel extends HTMLElement {
         // Check if already connected
         if (websocketService.isConnected()) {
           this.updateConnectionStatus('Connected', 'rgba(0,255,0,0.7)');
+          // ensure listeners are attached only once
           this.setupWebSocketListeners();
           this.authenticateUser();
         } else {
@@ -61,6 +69,7 @@ export default class ChatPanel extends HTMLElement {
           this.updateConnectionStatus('Connecting...', 'rgba(255,255,0,0.7)');
           window.addEventListener('websocketConnected', () => {
             this.updateConnectionStatus('Connected', 'rgba(0,255,0,0.7)');
+            // attach listeners only once
             this.setupWebSocketListeners();
             this.authenticateUser();
           });
@@ -69,18 +78,18 @@ export default class ChatPanel extends HTMLElement {
         // Listen for connection state changes
         window.addEventListener('websocketConnected', () => {
           this.updateConnectionStatus('Connected', 'rgba(0,255,0,0.7)');
-        });
-
+        }, { once: true });
+        
         window.addEventListener('websocketDisconnected', () => {
           this.updateConnectionStatus('Disconnected', 'rgba(255,255,0,0.7)');
           this.addMessage('', '⚠️ WebSocket disconnected. Trying to reconnect...', 'system', 'global');
           this.attemptReconnection();
-        });
-
+        }, { once: true });
+        
         window.addEventListener('websocketError', () => {
           this.updateConnectionStatus('Error', 'rgba(255,0,0,0.7)');
           this.addMessage('', '⚠️ WebSocket connection error. Check your connection.', 'system', 'global');
-        });
+        }, { once: true });
       } else {
         console.error('WebSocket service not available');
         this.updateConnectionStatus('Service not found', 'rgba(255,0,0,0.7)');
@@ -98,33 +107,62 @@ export default class ChatPanel extends HTMLElement {
     try {
       const websocketService = (window as any).websocketService;
       if (websocketService && websocketService.isConnected()) {
-        const username = state.userData?.username || localStorage.getItem('loggedInUser') || 'Anonymous';
-
-        // Send authentication event
-        websocketService.emit('authenticate', { username });
-
+        const usernameFromState = state.userData?.username || localStorage.getItem('loggedInUser') || '';
+        // avoid authenticating as Anonymous; wait for proper login-success
+        if (!usernameFromState || usernameFromState === 'Anonymous') {
+          return;
+        }
+        // Send authentication event with real username
+        websocketService.emit('authenticate', { username: usernameFromState });
+        
         // Listen for authentication response
         window.addEventListener('websocketAuthenticated', (event: CustomEvent) => {
-          const { success, error } = event.detail;
+          const { success, username } = event.detail as any;
           if (success) {
             this.updateConnectionStatus('Authenticated', 'rgba(0,255,0,0.7)');
+            if (username) {
+              try {
+                // cache username so UI shows the right sender
+                this.currentUsername = username;
+                // also keep localStorage in sync for other code paths
+                localStorage.setItem('loggedInUser', username);
+              } catch {}
+            }
           } else {
             this.updateConnectionStatus('Auth failed', 'rgba(255,0,0,0.7)');
           }
-        });
+        }, { once: true });
       }
     } catch (error) {
       console.error('Failed to authenticate user:', error);
     }
   }
 
+  // ensure proper authentication when login occurs after socket connects
+  connectedCallback() {
+    // listen once for login-success to authenticate with correct username
+    window.addEventListener('login-success', (e: any) => {
+      try {
+        const websocketService = (window as any).websocketService;
+        if (!websocketService || !websocketService.isConnected()) return;
+        const username = e?.detail?.username || state.userData?.username || localStorage.getItem('loggedInUser');
+        if (!username || username === 'Anonymous') return;
+        websocketService.authenticate(username);
+        this.currentUsername = username;
+        localStorage.setItem('loggedInUser', username);
+      } catch {}
+    }, { once: true });
+  }
+
   // Setup WebSocket event listeners - SIMPLIFIED
   private setupWebSocketListeners() {
     const websocketService = (window as any).websocketService;
-    if (!websocketService || !websocketService.socket) {
+    if (!websocketService || !websocketService.socket || (this as any)._wsHandlersAttached) {
       return;
     }
-
+    // prevent duplicate handler registration across open/close cycles
+    (this as any)._wsHandlersAttached = true;
+    
     // Simple event handling - let backend do the categorization
     websocketService.socket.on('chatMessage', (data: any) => {
       // ONLY show messages that are explicitly marked as global
@@ -157,14 +195,22 @@ export default class ChatPanel extends HTMLElement {
     });
 
     // Handle game invites
-    websocketService.socket.on('gameInvite', (data: any) => {
+    // prefer window event to avoid multiple socket handlers if ChatPanel is recreated
+    const onGameInvite = (e: any) => {
+      const data = e.detail;
       if (data && data.type === 'invite' && data.senderUsername && data.message) {
-        // Add invite message with buttons
+        this.lastInvite = data;
         this.addMessage(data.senderUsername, data.message, 'other', 'direct', data.receiverUsername, data);
       }
+    };
+    window.addEventListener('gameInvite', onGameInvite);
+
+    // feedback for sender when invite is sent
+    websocketService.socket.on('inviteSent', (data: any) => {
+      this.addMessage('', `✅ Invite sent to ${data.targetUsername}`, 'system', 'global');
     });
 
-    // Handle invite responses
+    // Handle invite responses (no redirect here; wait for roomCreated)
     websocketService.socket.on('inviteAccepted', (data: any) => {
       this.addMessage('', data.message, 'system', 'global');
     });
@@ -181,12 +227,38 @@ export default class ChatPanel extends HTMLElement {
     // Handle game start - removed direct websocket listener to prevent conflicts
     // The gameStart event should be handled by the game orchestrator, not the chat
 
-    // Handle room creation for invite flow
+    // Handle room creation for invite flow (keep existing event chain)
     websocketService.socket.on('roomCreated', (data: any) => {
-      this.addMessage('', '🎮 Game room created! You are the host.', 'system', 'global');
-
-      // Dispatch event for RemoteMultiplayerManager to handle
+      this.addMessage('', '🎮 Game room created!', 'system', 'global');
       window.dispatchEvent(new CustomEvent('roomCreated', { detail: data }));
+    });
+
+    // Navigate to game on server instruction (both host/guest)
+    window.addEventListener('navigateToGame', (e: any) => {
+      const data = e.detail;
+      try { localStorage.setItem('inviteRoom', JSON.stringify({ room: data.room, isHost: data.role === 'host' })); } catch {}
+      try { localStorage.setItem('inviteRoomId', data.room?.id || data.roomId || ''); } catch {}
+      try { localStorage.setItem('openRemoteUI', '1'); } catch {}
+      // close chat if open
+      try {
+        const panel = document.querySelector('chat-panel');
+        if (panel && panel.hasAttribute('visible')) {
+          panel.removeAttribute('visible');
+        }
+      } catch {}
+      // client-side navigate to preserve websocket connection
+      try {
+        window.history.pushState({}, '', '/game');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      } catch {}
+    });
+
+    // Fallback: accept/decline using lastInvite from localStorage if present
+    window.addEventListener('login-success', () => {
+      try {
+        const raw = localStorage.getItem('lastInvite');
+        if (raw) this.lastInvite = JSON.parse(raw);
+      } catch {}
     });
 
     // Handle player joined for invite flow
@@ -324,36 +396,31 @@ export default class ChatPanel extends HTMLElement {
     }
   }
 
-  // Load saved messages from localStorage
-  private loadMessages() {
+  // Render message history once when chat is first opened
+  private renderHistoryOnce() {
     try {
-      const savedMessages = localStorage.getItem('chatMessages');
-      if (savedMessages) {
-        const messages = JSON.parse(savedMessages);
-        console.log('Loading saved messages:', messages);
-
-        // Validate message structure before loading
-        if (!Array.isArray(messages)) {
-          console.warn('Invalid message format in localStorage, clearing...');
-          localStorage.removeItem('chatMessages');
-          return;
+      // decide source: in-memory history if present, otherwise localStorage
+      let messages: any[] = [];
+      if (this.messageHistory && this.messageHistory.length > 0) {
+        messages = this.messageHistory;
+      } else {
+        const saved = localStorage.getItem('chatMessages');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            messages = parsed;
+            this.messageHistory = parsed;
+          }
         }
-
-        // Restore message history from localStorage
-        this.messageHistory = messages;
-
-        // Load saved messages WITHOUT triggering save (to prevent loop)
+      }
+      // clear UI then render once
+      const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
+      if (messagesContainer) messagesContainer.innerHTML = '';
+      if (messages && messages.length) {
         this.loadSavedMessagesToUI(messages);
       }
     } catch (error) {
-      console.error('Failed to load chat messages:', error);
-      // Clear corrupted localStorage
-      try {
-        localStorage.removeItem('chatMessages');
-        console.log('Cleared corrupted localStorage');
-      } catch (clearError) {
-        console.error('Failed to clear localStorage:', clearError);
-      }
+      console.error('Failed to render chat history:', error);
     }
   }
 
@@ -365,10 +432,10 @@ export default class ChatPanel extends HTMLElement {
     messages.forEach((msg: any) => {
       try {
         if (msg.type === 'system' && msg.message !== 'Welcome to Pong Live Chat!' && msg.message !== 'Use /help to see available commands') {
-          this.renderMessageToUI('', msg.message, 'system', msg.category || 'global');
+          this.renderMessageToUI('', msg.message, 'system', msg.category || 'global', undefined, undefined, msg.timestamp);
         } else if ((msg.type === 'user' || msg.type === 'other') && msg.sender && msg.message) {
           const messageType = msg.sender === this.getCurrentUsername() ? 'user' : 'other';
-          this.renderMessageToUI(msg.sender, msg.message, messageType, msg.category || 'global');
+          this.renderMessageToUI(msg.sender, msg.message, messageType, msg.category || 'global', undefined, undefined, msg.timestamp);
         }
       } catch (msgError) {
         console.warn('Failed to load individual message:', msgError, msg);
@@ -377,7 +444,7 @@ export default class ChatPanel extends HTMLElement {
   }
 
   // Render message to UI without saving (for loading from localStorage)
-  private renderMessageToUI(sender: string, message: string, type: 'user' | 'system' | 'other', category: 'global' | 'direct' = 'global', receiverUsername?: string, inviteData?: any) {
+  private renderMessageToUI(sender: string, message: string, type: 'user' | 'system' | 'other', category: 'global' | 'direct' = 'global', receiverUsername?: string, inviteData?: any, timestampOverride?: number) {
     const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
     if (messagesContainer) {
       const messageDiv = document.createElement('div');
@@ -433,8 +500,17 @@ export default class ChatPanel extends HTMLElement {
 
         const timestampDiv = document.createElement('div');
         timestampDiv.style.cssText = 'color: rgba(255,255,255,0.5); font-size: 0.6rem; margin-top: 0.15rem; text-align: right;';
-        timestampDiv.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
+        const ts = timestampOverride || Date.now();
+        timestampDiv.textContent = new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        
+        // store invite metadata on the DOM node so /accept and /decline can find it
+        if (inviteData && inviteData.type === 'invite' && inviteData.id) {
+          messageDiv.setAttribute('data-invite-type', 'true');
+          messageDiv.setAttribute('data-invite-id', String(inviteData.id));
+          if (inviteData.senderUsername) messageDiv.setAttribute('data-sender', String(inviteData.senderUsername));
+          if (inviteData.receiverUsername) messageDiv.setAttribute('data-receiver', String(inviteData.receiverUsername));
+          if (inviteData.difficulty) messageDiv.setAttribute('data-difficulty', String(inviteData.difficulty));
+        }
         // Add invite info if this is an invite message
         if (inviteData && inviteData.type === 'invite') {
           // Store real invite data in the message DOM for later extraction
@@ -850,7 +926,7 @@ export default class ChatPanel extends HTMLElement {
   // No more tab switching - all messages in one chat
 
   // Add message to chat
-  private addMessage(sender: string, message: string, type: 'user' | 'system' | 'other', category: 'global' | 'direct' = 'global', receiverUsername?: string, inviteData?: any) {
+  private addMessage(sender: string, message: string, type: 'user' | 'system' | 'other', category: 'global' | 'direct' = 'global', receiverUsername?: string, inviteData?: any, timestampOverride?: number) {
     const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
     if (messagesContainer) {
       const messageDiv = document.createElement('div');
@@ -906,8 +982,9 @@ export default class ChatPanel extends HTMLElement {
 
         const timestampDiv = document.createElement('div');
         timestampDiv.style.cssText = 'color: rgba(255,255,255,0.5); font-size: 0.6rem; margin-top: 0.15rem; text-align: right;';
-        timestampDiv.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
+        const ts = timestampOverride || Date.now();
+        timestampDiv.textContent = new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        
 
 
         messageDiv.appendChild(senderDiv);
@@ -924,7 +1001,7 @@ export default class ChatPanel extends HTMLElement {
           message: message,
           type: type,
           category: category,
-          timestamp: Date.now()
+          timestamp: timestampOverride || Date.now()
         });
 
         // Limit history to prevent memory issues
@@ -981,6 +1058,8 @@ export default class ChatPanel extends HTMLElement {
       this.addMessage('', '• /decline - Decline invite', 'system', 'global');
       this.addMessage('', '• /profile username - Go to user profile page', 'system', 'global');
       this.addMessage('', '• /clear - Clear chat history', 'system', 'global');
+      this.addMessage('', '• /friend add/accept/remove username - Handle friend requests.', 'system', 'global');
+      this.addMessage('', '• /friends all/sent/received - List all friends, sent requests or received requests.', 'system', 'global');
     } else if (cmd === '/list') {
       this.requestOnlineUsers();
     } else if (cmd === '/clear') {
@@ -995,6 +1074,7 @@ export default class ChatPanel extends HTMLElement {
       let message = messageParts.join(' ');
 
       if (receiver && message) {
+        // always allowed to send; backend will validate receiver presence and warn sender if needed
         if (receiver === this.getCurrentUsername()) {
           this.addMessage('', 'You cannot send a private message to yourself!', 'system', 'global');
           return;
@@ -1016,14 +1096,17 @@ export default class ChatPanel extends HTMLElement {
         this.addMessage('', 'Usage: /invite username [difficulty]', 'system', 'global');
         return;
       }
+      // always allowed to send; backend will validate receiver presence and warn sender if needed
       wss.emit('chatMessage', {
         message: `/invite ${receiver} ${difficulty}`,
         username: this.getCurrentUsername()
       });
     } else if (cmd === '/accept') {
+      // accept from anywhere; server will validate pending invite
       // Accept the most recent game invite
       this.handleInviteCommand('accept');
     } else if (cmd === '/decline') {
+      // decline from anywhere
       // Decline the most recent game invite
       this.handleInviteCommand('decline');
     } else if (cmd.startsWith('/profile ')) {
@@ -1034,9 +1117,152 @@ export default class ChatPanel extends HTMLElement {
       } else {
         this.addMessage('', 'Usage: /profile username', 'system', 'global');
       }
+    } else if (cmd.startsWith('/friend ')) {
+      const [_, option, username] = cmd.split(/\s+/);
+
+      if (!option || !username) {
+        this.addMessage('', 'Usage: /friend add/accept/remove username', 'system', 'global');
+        return;
+      } else if (username === this.getCurrentUsername()) {
+          this.addMessage('', 'You cannot befriend/unfriend yourself! Try meeting other people!', 'system', 'global');
+          return;
+      } else {
+          switch (this.getOptions(option)) {
+            case 1:
+              this.addFriend(username);
+              break;
+            case 2:
+              this.acceptFriend(username);
+              break;
+            case 3:
+              this.removeFriend(username);
+              break;
+            case 4:
+              this.sentFriends();
+              break;
+            case 5:
+              this.receivedFriends();
+              break;
+            default:
+              this.addMessage('', 'Usage: /friend add/accept/remove username', 'system', 'global');
+              break;
+          }
+      }
+	} else if (cmd.startsWith('/friends ')) {
+      const [_, option] = cmd.split(/\s+/);
+
+      if (!option) {
+        return;
+      } else {
+          switch (this.getOptions(option)) {
+            case 4:
+              this.sentFriends();
+              break;
+            case 5:
+              this.receivedFriends();
+              break;
+            case 6:
+              this.currentFriends();
+              break;
+            default:
+              this.addMessage('', 'Usage: /friends <sent/received>', 'system', 'global');
+              break;
+          }
+      }
     } else {
       this.addMessage('', `Use /help for available commands.`, 'system', 'global');
     }
+  }
+
+  private async getUserId (username: string) {
+    const row = await getUserProfile(username);
+    return row.userId;
+  }
+
+  private async addFriend (username: string) {
+    try {
+      const friendId = await this.getUserId(username);
+      const currentId = await this.getUserId(this.getCurrentUsername());
+      const result = await postAddFriend(currentId, friendId);
+      this.addMessage('', `Friend request sent to ${username}`, 'system', 'global');
+    } catch (err) {
+        this.addMessage('', `Unable to send request`, 'system', 'global');
+    }
+  }
+
+  private async acceptFriend (username: string) {
+    try {
+      const friendId = await this.getUserId(username);
+      const currentId = await this.getUserId(this.getCurrentUsername());
+      const result = await patchAcceptFriend(currentId, friendId);
+      this.addMessage('', `You and ${username} are now friends!`, 'system', 'global');
+    } catch (err) {
+        this.addMessage('', `Unable to accept request`, 'system', 'global');
+    }
+  }
+
+  private async removeFriend (username: string) {
+    try {
+      const friendId = await this.getUserId(username);
+      const currentId = await this.getUserId(this.getCurrentUsername());
+      const result = await deleteFriend(currentId, friendId);
+      this.addMessage('', `Removed friend/request from ${username}`, 'system', 'global');
+    } catch (err) {
+        this.addMessage('', `Unable to remove friend/request`, 'system', 'global');
+    }
+  }
+
+  private async sentFriends () {
+    try {
+      const currentId = await this.getUserId(this.getCurrentUsername());
+      const reply = await getSentRequests(currentId);
+      for (const friend of reply.result) {
+        this.addMessage('', friend.username, 'system', 'global');
+      }
+    } catch (err) {
+        this.addMessage('', `Unable to retrieve sent requests`, 'system', 'global');
+    }
+  }
+
+  private async receivedFriends () {
+    try {
+      const currentId = await this.getUserId(this.getCurrentUsername());
+      const reply = await getReceivedRequests(currentId);
+      for (const friend of reply.result) {
+        this.addMessage('', friend.username, 'system', 'global');
+      }
+    } catch (err) {
+        this.addMessage('', `Unable to retrieve received requests`, 'system', 'global');
+    }
+  }
+
+  private async currentFriends () {
+    try {
+      const currentId = await this.getUserId(this.getCurrentUsername());
+      const reply = await getFriends(currentId);
+      for (const friend of reply.result) {
+          this.addMessage('', friend.username, 'system', 'global');
+      }
+    } catch (err) {
+        this.addMessage('', `Unable to retrieve friends`, 'system', 'global');
+    }
+  }
+
+  private getOptions (options: string) {
+    if (options === 'add') {
+        return 1;
+    } else if (options === 'accept') {
+        return 2;
+    } else if (options === 'remove') {
+        return 3;
+    } else if (options === 'sent') {
+        return 4;
+    } else if (options === 'received') {
+        return 5;
+    } else if (options === 'all') {
+        return 6;
+    } else
+        return 0;
   }
 
   // Request online users from backend
@@ -1093,8 +1319,25 @@ export default class ChatPanel extends HTMLElement {
   private handleInviteCommand(action: 'accept' | 'decline') {
     try {
       // Find the most recent invite message
-      const inviteMessage = this.findInviteMessage();
+      let inviteMessage = this.findInviteMessage();
       if (!inviteMessage) {
+        // fallback to lastInvite cached from socket event
+        if (this.lastInvite) {
+          const websocketService = (window as any).websocketService;
+          if (websocketService && websocketService.socket) {
+            websocketService.socket.emit('inviteResponse', {
+              inviteId: this.lastInvite.id,
+              response: action,
+              senderUsername: this.lastInvite.senderUsername,
+              receiverUsername: this.lastInvite.receiverUsername,
+              difficulty: this.lastInvite.difficulty
+            });
+            this.addMessage('', (action === 'accept') ? '🎮 Processing invite acceptance...' : '❌ Invite declined', 'system', 'global');
+            // mark as processed
+            this.lastInvite = null;
+            return;
+          }
+        }
         this.addMessage('', '⚠️ No game invite found to respond to', 'system', 'global');
         return;
       }
@@ -1125,10 +1368,8 @@ export default class ChatPanel extends HTMLElement {
 
         // Mark as processed immediately
         inviteMessage.setAttribute('data-invite-processed', 'true');
-
-        if (action === 'accept') {
-          this.addMessage('', '🎮 Processing invite acceptance...', 'system', 'global');
-        } else {
+        
+        if (action !== 'accept') {
           this.addMessage('', '❌ Invite declined', 'system', 'global');
         }
       }

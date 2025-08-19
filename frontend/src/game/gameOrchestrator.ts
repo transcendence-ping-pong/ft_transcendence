@@ -42,10 +42,41 @@ export class gameOrchestrator {
     state.scaleFactor = this.getScaleFactor();
     this.babylonCanvas = new BabylonCanvas(containerId);
     this.gui = new BabylonGUI(this.babylonCanvas.getScene());
+    // auto open remote UI on invite acceptance
+    try { (this.gui as any).attachInviteAutoOpen(); } catch {}
 
     this.setupMultiplayerEvents();
     this.setupMenuFlow();
     this.babylonCanvas.startRenderLoop();
+
+    // if redirected here from invite flow, open Remote UI automatically
+    try {
+      if (localStorage.getItem('openRemoteUI') === '1') {
+        localStorage.removeItem('openRemoteUI');
+        // if a room was cached, ensure manager has it before opening UI
+        try {
+          const raw = localStorage.getItem('inviteRoom');
+          const roomIdRaw = localStorage.getItem('inviteRoomId');
+          if (raw) {
+            const cached = JSON.parse(raw);
+            // keep inviteRoom for later safety; do not remove yet
+            const mgr = (window as any).remoteMultiplayerManager;
+            if (mgr && typeof mgr.setInviteRoom === 'function') {
+              mgr.setInviteRoom(cached.room, cached.isHost === true);
+              // also give websocketService the room id early for join/ready/leave
+              try {
+                const wss = (window as any).websocketService;
+                const roomId = cached.room?.id || cached.roomId || roomIdRaw;
+                if (wss && roomId) {
+                  (wss as any).currentRoomId = roomId;
+                }
+              } catch {}
+            }
+          }
+        } catch {}
+        this.gui.showRemoteMultiplayerUI(this.gameLevel);
+      }
+    } catch {}
 
     // TODO FIX: when refreshing the page, resume the game from where it left off
     window.addEventListener('resize', () => {
@@ -101,11 +132,22 @@ export class gameOrchestrator {
           (this.gameCanvas as any).isMultiplayerMode = true;
           (this.gameCanvas as any).currentRoomId = e.detail.room?.id || null;
           (this.gameCanvas as any).playerIndex = (this.gameCanvas as any).getPlayerIndex();
-          (this.gameCanvas as any).startGame();
+
+          // defer actual game start until server signals gameStarted (after countdown)
+
+          // wire score updates to HUD, matching single-player
+          try {
+            (this.gameCanvas as any).addEventListener('scoreChanged', (evt: CustomEvent) => {
+              this.gui.clearGUI();
+              this.gui.showScoreBoard(evt.detail, () => { });
+            });
+          } catch {}
         }
 
         console.log('GameOrchestrator: Hiding GUI and setting up multiplayer input...');
         this.gui.hideAllGUI();
+        // start server-driven countdown overlay
+        try { (this.gui as any).beginCountdownOverlay(); } catch {}
         window.dispatchEvent(new CustomEvent('hideMultiplayerUI'));
         this.setupMultiplayerInput();
 
@@ -128,15 +170,45 @@ export class gameOrchestrator {
       }, 3000);
     });
 
-    // TODO: think its somewhat buggy
+    // reflect server countdown ticks (3->2->1) then start
+    window.addEventListener('gameCountdown', (e: CustomEvent) => {
+      try { (this.gui as any).setCountdownNumber(e.detail.countdown); } catch {}
+    });
+    window.addEventListener('gameStarted', (e: CustomEvent) => {
+      try { (this.gui as any).endCountdownOverlay(); } catch {}
+      if (this.gameCanvas instanceof MultiplayerGameCanvas) {
+        (this.gameCanvas as any).startGame();
+      }
+    });
+
+	// TODO: think its somewhat buggy
     window.addEventListener('playerDisconnected', (e: CustomEvent) => {
       if (this.isMultiplayerMode) {
         this.isMultiplayerMode = false;
         this.removeMultiplayerInput();
-        this.gui.showGameOver('Player 1', { LEFT: 0, RIGHT: 0 });
         this.gui.clearGUI();
-        this.babylonCanvas.initPlaneMaterial();
-        window.dispatchEvent(new CustomEvent('showMultiplayerUI'));
+        // immediate redirect to home (keep it simple for now)
+        try {
+          window.history.pushState({}, '', '/');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        } catch {
+          window.location.href = '/';
+        }
+      }
+    });
+
+    // extra safety: redirect when server notifies someone left
+    window.addEventListener('playerLeft', (e: CustomEvent) => {
+      if (this.isMultiplayerMode) {
+        this.isMultiplayerMode = false;
+        this.removeMultiplayerInput();
+        this.gui.clearGUI();
+        try {
+          window.history.pushState({}, '', '/');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        } catch {
+          window.location.href = '/';
+        }
       }
     });
   }

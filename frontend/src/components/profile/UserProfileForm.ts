@@ -235,6 +235,7 @@ export class UserProfileForm extends HTMLElement {
   private viewBtn: HTMLSpanElement;
   private saveBtn: HTMLButtonElement;
   private deleteBtn: HTMLButtonElement;
+  private avatarOverlay: HTMLElement;
   private isEditMode = false;
   private pendingAvatarFile: File | null = null;
 
@@ -286,6 +287,7 @@ export class UserProfileForm extends HTMLElement {
     this.viewBtn = shadowRoot.getElementById('viewBtn') as HTMLSpanElement;
     this.saveBtn = shadowRoot.getElementById('saveBtn') as HTMLButtonElement;
     this.deleteBtn = shadowRoot.getElementById('deleteBtn') as HTMLButtonElement;
+    this.avatarOverlay = shadowRoot.querySelector('.avatar-upload-overlay') as HTMLElement;
   }
 
   private addEventListeners() {
@@ -419,7 +421,7 @@ export class UserProfileForm extends HTMLElement {
 
     // hide, show simplified profile form for visitors, i.e. no password fields, no delete profile
     // if more elements are needed to be hidden, add their id to the hiddenElements array
-    const hiddenElements = ["passwordInput", "confirmPasswordInput", "viewBtn", "authSection", "editButton"];
+    const hiddenElements = ["passwordInput", "confirmPasswordInput", "viewBtn", "authSection", "editButton", "avatarOverlay", "deleteBtn","saveBtn"];
     for (const element of hiddenElements) {
       if (this[element]) {
         this[element].style.display = 'none';
