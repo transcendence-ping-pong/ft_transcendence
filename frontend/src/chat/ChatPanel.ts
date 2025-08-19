@@ -550,7 +550,7 @@ export default class ChatPanel extends HTMLElement {
         position: fixed;
         bottom: calc(var(--chat-icon-size) + 3rem);
         right: 2rem;
-        width: 400px;
+        width: var(--sidebar-width);
         height: 600px;
         z-index: 9997; /* ensure it is not above topbar */
         pointer-events: none;
@@ -771,7 +771,7 @@ export default class ChatPanel extends HTMLElement {
 
     // Left side: connection ball and title
     const leftHeader = document.createElement('div');
-    leftHeader.style.cssText = 'display: flex; align-items: center; gap: 1rem;';
+    leftHeader.style.cssText = 'display: flex; align-items: center; gap: 0.5rem;';
 
     // Connection status ball
     const connectionBall = document.createElement('div');
@@ -781,6 +781,7 @@ export default class ChatPanel extends HTMLElement {
       height: 12px;
       border-radius: 50%;
       background: rgba(255,255,0,0.7);
+      border: 2px solid var(--video-transition-bg);
       flex-shrink: 0;
     `;
 
