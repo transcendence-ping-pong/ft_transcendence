@@ -2,8 +2,8 @@ import { gameOrchestrator } from '@/game/gameOrchestrator.js';
 import '@/components/navigation/TopBar.js';
 import '@/components/navigation/Logo.js';
 import '@/components/_templates/GenericModal.js';
-import '@/components/CreateTournament.js';
-import '@/components/ViewTournament.js';
+import '@/components/game/CreateTournament.js';
+import '@/components/game/ViewTournament.js';
 import { state } from '@/state';
 
 // TODO: THIS IS A MOCK, pass player names and avatars dynamically
