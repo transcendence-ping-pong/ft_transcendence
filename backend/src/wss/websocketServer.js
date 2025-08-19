@@ -33,6 +33,22 @@ class WebSocketServer {
 		Logger.info(`WebSocket server running at ws://localhost:${this.port}`);
 	}
 
+	// DB-backed block check helper
+	async isBlocked(blockerId, blockedId) {
+		try {
+			if (!blockerId || !blockedId) return false;
+			const fetch = require('node-fetch');
+			const base = process.env.API_BASE_URL || 'http://backend:3001/api';
+			const res = await fetch(`${base}/blocked/${blockerId}`);
+			if (!res.ok) return false;
+			const body = await res.json();
+			const list = Array.isArray(body?.result) ? body.result.map(x => x.blockedId) : Array.isArray(body) ? body : [];
+			return list.includes(blockedId);
+		} catch {
+			return false;
+		}
+	}
+
 	setupEventHandlers() {
 		this.io.on('connection', (socket) => {
 			socket.on('authenticate', (data) => {
@@ -542,7 +558,7 @@ class WebSocketServer {
 	}
 
 	// Chat system methods
-	handleChatMessage(socket, data) {
+	async handleChatMessage(socket, data) {
 		const user = this.userManager.getUser(socket.id);
 		if (!user) return;
 
@@ -568,18 +584,23 @@ class WebSocketServer {
 		const chatMessage = this.chatManager.addChatMessage(user.userId, user.username, validation.message, 'global');
 		// always echo back to sender
 		socket.emit('chatMessage', chatMessage);
-		// broadcast to others except those who have blocked the sender
+		// broadcast to others except those who have blocked the sender (DB as source of truth)
 		for (const [socketId, recipient] of this.userManager.connectedUsers.entries()) {
 			if (socketId === socket.id) continue;
-			const theirBlocks = this.userManager.userBlocks.get(recipient.userId);
-			if (theirBlocks && theirBlocks.has(user.userId)) continue;
-			this.io.to(socketId).emit('chatMessage', chatMessage);
+			try {
+				const blocked = await this.isBlocked(recipient.userId, user.userId);
+				if (blocked) continue;
+				this.io.to(socketId).emit('chatMessage', chatMessage);
+			} catch (e) {
+				// on DB error, default to delivering to avoid over-blocking
+				this.io.to(socketId).emit('chatMessage', chatMessage);
+			}
 		}
 
 		Logger.logChatEvent('message', user.username, { message: validation.message });
 	}
 
-	handleDirectMessage(socket, data) {
+	async handleDirectMessage(socket, data) {
 		const user = this.userManager.getUser(socket.id);
 		if (!user) return;
 
@@ -613,7 +634,8 @@ class WebSocketServer {
 		}
 
 		// disallow PM if either side has blocked the other
-		if (this.userManager.isUserBlocked(receiver.userId, user.userId) || this.userManager.isUserBlocked(user.userId, receiver.userId)) {
+		// DB as source of truth: forbid if either has blocked the other
+		if (await this.isBlocked(receiver.userId, user.userId) || await this.isBlocked(user.userId, receiver.userId)) {
 			socket.emit('chatError', { message: 'Cannot send message to this user' });
 			return;
 		}
@@ -793,7 +815,7 @@ class WebSocketServer {
 		});
 	}
 
-	handleGameInvite(socket, user, targetUsername, difficulty = 'MEDIUM') {
+	async handleGameInvite(socket, user, targetUsername, difficulty = 'MEDIUM') {
 		// validate invite data using invite manager
 		const validation = this.inviteManager.validateInvite(user.username, targetUsername, difficulty);
 		if (!validation.valid) {
@@ -815,8 +837,8 @@ class WebSocketServer {
 			return;
 		}
 
-		// block checks: disallow inviting if either user blocked the other
-		if (this.userManager.isUserBlocked(user.userId, targetUser.userId) || this.userManager.isUserBlocked(targetUser.userId, user.userId)) {
+		// block checks via DB: disallow inviting if either user blocked the other
+		if (await this.isBlocked(user.userId, targetUser.userId) || await this.isBlocked(targetUser.userId, user.userId)) {
 			socket.emit('chatError', { message: 'Cannot invite this user' });
 			return;
 		}
@@ -862,7 +884,7 @@ class WebSocketServer {
 		});
 	}
 
-	handleInviteResponse(socket, data) {
+	async handleInviteResponse(socket, data) {
 		const { inviteId, response, senderUsername, receiverUsername, difficulty } = data;
 		const user = this.userManager.getUser(socket.id);
 
@@ -892,8 +914,8 @@ class WebSocketServer {
 				return;
 			}
 
-			// block checks before creating room (mutual blocks forbid)
-			if (this.userManager.isUserBlocked(senderUser.userId, receiverUser.userId) || this.userManager.isUserBlocked(receiverUser.userId, senderUser.userId)) {
+			// block checks via DB before creating room (mutual blocks forbid)
+			if (await this.isBlocked(senderUser.userId, receiverUser.userId) || await this.isBlocked(receiverUser.userId, senderUser.userId)) {
 				socket.emit('chatError', { message: 'Cannot start match: one of the users has blocked the other' });
 				return;
 			}
