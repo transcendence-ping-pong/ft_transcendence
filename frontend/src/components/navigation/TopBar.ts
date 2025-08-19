@@ -238,13 +238,6 @@ template.innerHTML = `
       <slot name="logo"></slot>
       <span class="top-bar__title"><slot name="title"></slot></span>
 
-	  <button class="top-bar__chat-button" id="chatButton" type="button">
-        <svg class="top-bar__chat-icon" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
-        </svg>
-        Chat
-      </button>
-
       <slot name="player1-avatar"></slot>
       <slot name="player1-username"></slot>
     </div>
@@ -287,11 +280,9 @@ export class TopBar extends HTMLElement {
     const shadow = this.shadowRoot;
     this.logoutButton = shadow?.getElementById('logout') as HTMLButtonElement;
     this.profileButton = shadow?.getElementById('avatar') as HTMLButtonElement;
-    const chatButton = shadow?.getElementById('chatButton') as HTMLButtonElement;
 
     this.logoutButton.addEventListener('click', (e) => this.handleLogout(e));
     this.profileButton.addEventListener('click', (e) => this.handleProfile(e));
-    chatButton.addEventListener('click', (e) => this.handleChat(e));
 
     // SIMPLIFIED: Just one listener
     window.addEventListener('username-updated', () => this.updateAvatar());
@@ -324,12 +315,6 @@ export class TopBar extends HTMLElement {
     const loggedIn = !!state.userData?.accessToken;
     this.logoutButton?.classList.toggle('hidden', isGame || !loggedIn);
     this.profileButton?.classList.toggle('hidden', isGame || !loggedIn);
-
-    // Hide chat button in game mode
-    const chatButton = this.shadowRoot?.getElementById('chatButton') as HTMLButtonElement;
-    if (chatButton) {
-      chatButton.style.display = isGame ? 'none' : 'flex';
-    }
   }
 
   private async handleLogout(e: Event) {
@@ -353,45 +338,6 @@ export class TopBar extends HTMLElement {
     const username = state.userData?.username;
     if (username) navigate(`/profile/${username}`);
   }
-
-  private handleChat(e: Event) {
-    e.preventDefault();
-    console.log('Chat button clicked!');
-
-    // only open chat panel, don't toggle
-    const chatPanel = document.querySelector('chat-panel');
-    console.log('Found chat panel:', chatPanel);
-
-    if (chatPanel) {
-      chatPanel.setAttribute('visible', '');
-      this.updateChatButtonState(true);
-      console.log('Chat panel shown');
-    } else {
-      console.error('Chat panel not found in DOM');
-    }
-  }
-
-  private updateChatButtonState(isOpen: boolean) {
-    const chatButton = this.shadowRoot?.getElementById('chatButton');
-    if (chatButton) {
-      if (isOpen) {
-        chatButton.style.background = 'rgba(255, 255, 255, 0.3)';
-        chatButton.style.borderColor = 'rgba(255, 255, 255, 0.6)';
-      } else {
-        chatButton.style.background = 'var(--video-transition-bg, rgba(0, 0, 0, 0.8))';
-        chatButton.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-      }
-    }
-  }
 }
 
 customElements.define('top-bar', TopBar);
-
-/*
-      <button class="top-bar__chat-button" id="chatButton" type="button">
-        <svg class="top-bar__chat-icon" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
-        </svg>
-        Chat
-      </button>
-*/

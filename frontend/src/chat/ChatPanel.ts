@@ -1,5 +1,7 @@
 import { websocketService as wss } from '@/services/websocketService.js';
 import { state } from '../state.js';
+import { actionIcons } from '@/utils/Constants.js';
+import { t } from '@/locales/Translations.js'
 import { getUserProfile, postAddFriend, patchAcceptFriend, deleteFriend, getFriends, getReceivedRequests, getSentRequests } from '@/services/friendsService.js';
 
 export default class ChatPanel extends HTMLElement {
@@ -79,13 +81,13 @@ export default class ChatPanel extends HTMLElement {
         window.addEventListener('websocketConnected', () => {
           this.updateConnectionStatus('Connected', 'rgba(0,255,0,0.7)');
         }, { once: true });
-        
+
         window.addEventListener('websocketDisconnected', () => {
           this.updateConnectionStatus('Disconnected', 'rgba(255,255,0,0.7)');
           this.addMessage('', '⚠️ WebSocket disconnected. Trying to reconnect...', 'system', 'global');
           this.attemptReconnection();
         }, { once: true });
-        
+
         window.addEventListener('websocketError', () => {
           this.updateConnectionStatus('Error', 'rgba(255,0,0,0.7)');
           this.addMessage('', '⚠️ WebSocket connection error. Check your connection.', 'system', 'global');
@@ -114,7 +116,7 @@ export default class ChatPanel extends HTMLElement {
         }
         // Send authentication event with real username
         websocketService.emit('authenticate', { username: usernameFromState });
-        
+
         // Listen for authentication response
         window.addEventListener('websocketAuthenticated', (event: CustomEvent) => {
           const { success, username } = event.detail as any;
@@ -126,7 +128,7 @@ export default class ChatPanel extends HTMLElement {
                 this.currentUsername = username;
                 // also keep localStorage in sync for other code paths
                 localStorage.setItem('loggedInUser', username);
-              } catch {}
+              } catch { }
             }
           } else {
             this.updateConnectionStatus('Auth failed', 'rgba(255,0,0,0.7)');
@@ -150,7 +152,7 @@ export default class ChatPanel extends HTMLElement {
         websocketService.authenticate(username);
         this.currentUsername = username;
         localStorage.setItem('loggedInUser', username);
-      } catch {}
+      } catch { }
     }, { once: true });
   }
 
@@ -162,7 +164,7 @@ export default class ChatPanel extends HTMLElement {
     }
     // prevent duplicate handler registration across open/close cycles
     (this as any)._wsHandlersAttached = true;
-    
+
     // Simple event handling - let backend do the categorization
     websocketService.socket.on('chatMessage', (data: any) => {
       // ONLY show messages that are explicitly marked as global
@@ -236,21 +238,21 @@ export default class ChatPanel extends HTMLElement {
     // Navigate to game on server instruction (both host/guest)
     window.addEventListener('navigateToGame', (e: any) => {
       const data = e.detail;
-      try { localStorage.setItem('inviteRoom', JSON.stringify({ room: data.room, isHost: data.role === 'host' })); } catch {}
-      try { localStorage.setItem('inviteRoomId', data.room?.id || data.roomId || ''); } catch {}
-      try { localStorage.setItem('openRemoteUI', '1'); } catch {}
+      try { localStorage.setItem('inviteRoom', JSON.stringify({ room: data.room, isHost: data.role === 'host' })); } catch { }
+      try { localStorage.setItem('inviteRoomId', data.room?.id || data.roomId || ''); } catch { }
+      try { localStorage.setItem('openRemoteUI', '1'); } catch { }
       // close chat if open
       try {
         const panel = document.querySelector('chat-panel');
         if (panel && panel.hasAttribute('visible')) {
           panel.removeAttribute('visible');
         }
-      } catch {}
+      } catch { }
       // client-side navigate to preserve websocket connection
       try {
         window.history.pushState({}, '', '/game');
         window.dispatchEvent(new PopStateEvent('popstate'));
-      } catch {}
+      } catch { }
     });
 
     // Fallback: accept/decline using lastInvite from localStorage if present
@@ -258,7 +260,7 @@ export default class ChatPanel extends HTMLElement {
       try {
         const raw = localStorage.getItem('lastInvite');
         if (raw) this.lastInvite = JSON.parse(raw);
-      } catch {}
+      } catch { }
     });
 
     // Handle player joined for invite flow
@@ -455,11 +457,10 @@ export default class ChatPanel extends HTMLElement {
         messageDiv.style.cssText = `
           margin: 0.5rem 0;
           padding: 0.5rem 0.75rem;
-          background: rgba(255,255,255,0.08);
-          border-radius: 8px;
-          border-left: 3px solid rgba(255,255,255,0.3);
-          font-size: 0.85rem;
-          color: rgba(255,255,255,0.7);
+          background: var(--video-transition-bg);
+          border-left: 3px solid var(--accent);
+          font-size: var(--secondary-font-size);
+          color: var(--border);
           font-style: italic;
         `;
 
@@ -473,14 +474,13 @@ export default class ChatPanel extends HTMLElement {
         messageDiv.style.cssText = `
           margin: 0.2rem 0;
           padding: 0.3rem 0.5rem;
-          background: ${isOwnMessage ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)'};
-          border-radius: 4px;
-          border: 1px solid ${isOwnMessage ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.2)'};
+          background: var(--placeholder-bg);
+          border: 2px solid var(--video-transition-bg);
         `;
 
         // Show sender and message with different styles for global vs direct
         const senderDiv = document.createElement('div');
-        senderDiv.style.cssText = 'color: rgba(255,255,255,0.8); font-size: 0.7rem; margin-bottom: 0.15rem; font-weight: 500;';
+        senderDiv.style.cssText = 'color: var(--border); font-size: var(--secondary-font-size); margin-bottom: 0.15rem; font-weight: 500;';
 
         if (category === 'direct') {
           // Direct message: show "sender -> receiver"
@@ -495,14 +495,14 @@ export default class ChatPanel extends HTMLElement {
         }
 
         const messageDiv2 = document.createElement('div');
-        messageDiv2.style.cssText = 'color: rgba(255,255,255,0.9); font-size: 0.8rem; line-height: 1.2;';
+        messageDiv2.style.cssText = 'color: var(--border); font-size: var(--secondary-font-size); line-height: 1.2;';
         messageDiv2.textContent = message;
 
         const timestampDiv = document.createElement('div');
-        timestampDiv.style.cssText = 'color: rgba(255,255,255,0.5); font-size: 0.6rem; margin-top: 0.15rem; text-align: right;';
+        timestampDiv.style.cssText = 'color: var(--border); font-size: var(--secondary-font-size); margin-top: 0.15rem; text-align: right;';
         const ts = timestampOverride || Date.now();
         timestampDiv.textContent = new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        
+
         // store invite metadata on the DOM node so /accept and /decline can find it
         if (inviteData && inviteData.type === 'invite' && inviteData.id) {
           messageDiv.setAttribute('data-invite-type', 'true');
@@ -521,7 +521,7 @@ export default class ChatPanel extends HTMLElement {
           messageDiv.setAttribute('data-invite-type', 'true');
 
           const inviteInfoDiv = document.createElement('div');
-          inviteInfoDiv.style.cssText = 'text-align: center; margin-top: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 4px;';
+          inviteInfoDiv.style.cssText = 'text-align: center; margin-top: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.05);';
 
           const inviteText = document.createElement('div');
           inviteText.style.cssText = 'color: rgba(255,255,255,0.7); font-size: 0.7rem; margin-bottom: 0.3rem;';
@@ -548,11 +548,11 @@ export default class ChatPanel extends HTMLElement {
     style.textContent = `
       :host {
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        z-index: 9999;
+        bottom: calc(var(--chat-icon-size) + 3rem);
+        right: 2rem;
+        width: 400px;
+        height: 600px;
+        z-index: 9997; /* ensure it is not above topbar */
         pointer-events: none;
         transition: opacity 0.3s ease;
       }
@@ -562,17 +562,16 @@ export default class ChatPanel extends HTMLElement {
       }
 
       .chat-panel {
-        position: fixed;
-        top: var(--topbar-height);
-        left: 2rem; /* Position to the left where the chat button is */
+        position: absolute;
+        bottom: 0;
+        right: 0;
         width: 400px;
         height: 600px;
-        background: rgba(0, 0, 0, 0.95);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        border-radius: 16px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        background: var(--video-transition-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 2px solid var(--video-transition-bg);
+        box-shadow: var(--shadow);
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -580,14 +579,12 @@ export default class ChatPanel extends HTMLElement {
         opacity: 0;
         transition: all 0.3s ease;
         z-index: 1000;
-        /* Debug: make sure it's visible */
         pointer-events: auto;
       }
 
       :host([visible]) .chat-panel {
         transform: translateY(0);
         opacity: 1;
-        /* Debug: ensure visibility */
         visibility: visible;
         display: flex;
       }
@@ -597,12 +594,12 @@ export default class ChatPanel extends HTMLElement {
         align-items: center;
         justify-content: space-between;
         padding: 1rem 1.5rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.05);
+        border: 2px solid var(--video-transition-bg);
+        background: var(--video-transition-bg);
       }
 
       .chat-title {
-        color: white;
+        color: var(--text);
         font-size: 1.2rem;
         font-weight: 600;
         margin: 0;
@@ -639,11 +636,10 @@ export default class ChatPanel extends HTMLElement {
 
       .chat-messages {
         flex: 1;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
+        background: var(--video-transition-bg);
         padding: 1rem;
         margin-bottom: 1rem;
-        color: white;
+        color: var(--text);
         overflow-y: auto;
       }
 
@@ -654,33 +650,34 @@ export default class ChatPanel extends HTMLElement {
 
       .chat-input {
         flex: 1;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 8px;
+        background: var(--video-transition-bg);
+        border: 2px solid var(--video-transition-bg);
         padding: 0.75rem 1rem;
-        color: white;
-        font-size: 0.9rem;
+        color: var(--text);
+        font-size: var(--secondary-font-size);
         outline: none;
       }
 
       .chat-input::placeholder {
-        color: rgba(255, 255, 255, 0.5);
+        color: var(--border);
       }
 
       .send-button {
-        background: rgba(255, 255, 255, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: 8px;
-        color: white;
+        margin-left: 0.5rem;
+        background: var(--accent);
+        border: 2px solid var(--border);
+        color: var(--text);
         padding: 0.75rem 1rem;
         cursor: pointer;
-        font-size: 0.9rem;
-        font-weight: 500;
+        font-size: var(--main-font-size);
+        font-weight: bold;
         min-width: 60px;
       }
 
       .send-button:hover {
-        background: rgba(255, 255, 255, 0.3);
+        background: var(--accent-secondary);
+        box-shadow: var(--shadow-soft);
+        color: #fff;
       }
 
       .invite-buttons {
@@ -692,12 +689,11 @@ export default class ChatPanel extends HTMLElement {
 
       .invite-btn {
         padding: 0.3rem 0.8rem;
-        border-radius: 4px;
         cursor: pointer;
         font-size: 0.7rem;
         transition: all 0.2s;
         border: none;
-        color: white;
+        color: var(--text);
       }
 
       .invite-btn.accept {
@@ -719,6 +715,40 @@ export default class ChatPanel extends HTMLElement {
         background: rgba(255,0,0,0.5);
         border-color: rgba(255,0,0,0.7);
       }
+
+      .chat-close__button {
+        margin-left: auto;
+        background: none;
+        border: none;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        cursor: pointer;
+      }
+      .chat-close__button--icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.20);
+      }
+      .chat-close__button--icon img {
+        width: 1.5rem;
+        height: 1.5rem;
+        display: block;
+        filter: invert(var(--invert, 1));
+      }
+      .chat-close__button--icon:hover {
+        background: rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        box-shadow: var(--shadow-soft, 0 2px 8px rgba(0,0,0,0.15));
+      }
+      .chat-close__button--icon img:hover {
+        filter: invert(1);
+      }
     `;
     this.shadowRoot!.appendChild(style);
   }
@@ -735,8 +765,8 @@ export default class ChatPanel extends HTMLElement {
       justify-content: space-between;
       align-items: center;
       padding: 1rem;
-      border-bottom: 1px solid rgba(255,255,255,0.2);
-      background: rgba(255,255,255,0.05);
+      border-bottom: 2px solid var(--video-transition-bg);
+      background: var(--video-transition-bg);
     `;
 
     // Left side: connection ball and title
@@ -757,29 +787,21 @@ export default class ChatPanel extends HTMLElement {
     // Chat title
     const chatTitle = document.createElement('h4');
     chatTitle.style.cssText = `
-      color: white;
-      font-size: 1rem;
-      font-weight: 600;
+      color: var(--text);
+      font-size: var(--title-modal-font-size);
+      font-weight: bold;
       margin: 0;
     `;
-    chatTitle.textContent = 'Chat';
+    chatTitle.textContent = t("chat.compactTitle");
 
     leftHeader.appendChild(connectionBall);
     leftHeader.appendChild(chatTitle);
 
     // Right side: close button
     this.closeButton = document.createElement('button');
-    this.closeButton.innerHTML = '✕';
-    this.closeButton.style.cssText = `
-      background: none;
-      border: none;
-      color: rgba(255,255,255,0.7);
-      font-size: 1.2rem;
-      cursor: pointer;
-      padding: 0.25rem;
-      border-radius: 4px;
-      transition: color 0.2s;
-    `;
+    this.closeButton.className = 'chat-close__button';
+    this.closeButton.title = 'Close side panel';
+    this.closeButton.innerHTML = `<span class="chat-close__button--icon">${actionIcons.close}</span>`;
 
     this.header.appendChild(leftHeader);
     this.header.appendChild(this.closeButton);
@@ -793,11 +815,11 @@ export default class ChatPanel extends HTMLElement {
     messagesArea.className = 'chat-messages';
     messagesArea.style.cssText = `
       flex: 1;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
+      background: var(--body);
+      border: 2px solid var(--border);
       padding: 1rem;
       margin-bottom: 1rem;
-      color: white;
+      color: var(--text);
       overflow-y: auto;
     `;
 
@@ -818,33 +840,21 @@ export default class ChatPanel extends HTMLElement {
     input.id = 'chat-message-input';
     input.name = 'chat-message';
     input.type = 'text';
-    input.placeholder = 'Type a message or use /help for commands...';
+    input.placeholder = t("chat.inputPlaceholder");
     input.style.cssText = `
       width: 100%;
       padding: 0.75rem;
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 8px;
-      color: white;
-      font-size: 0.9rem;
+      background: var(--body);
+      border: 2px solid var(--border);
+      color: var(--text);
+      font-size: var(--secondary-font-size);
       outline: none;
       transition: border-color 0.2s;
     `;
 
     const sendButton = document.createElement('button');
     sendButton.className = 'send-button';
-    sendButton.textContent = 'Send';
-    sendButton.style.cssText = `
-      margin-left: 0.5rem;
-      padding: 0.75rem 1.5rem;
-      background: rgba(255,255,255,0.2);
-      border: 1px solid rgba(255,255,255,0.3);
-      border-radius: 8px;
-      color: white;
-      cursor: pointer;
-      transition: all 0.2s;
-      white-space: nowrap;
-    `;
+    sendButton.textContent = t("chat.send");
 
     // Add send functionality
     const sendMessage = () => {
@@ -852,7 +862,7 @@ export default class ChatPanel extends HTMLElement {
       if (message) {
         // Input validation
         if (message.length > 500) {
-          this.addMessage('', 'Message too long. Maximum 500 characters allowed.', 'system', 'global');
+          this.addMessage('', t("chat.messageTooLong"), 'system', 'global');
           return;
         }
 
@@ -872,17 +882,6 @@ export default class ChatPanel extends HTMLElement {
       if (e.key === 'Enter') {
         sendMessage();
       }
-    });
-
-    // Add hover effects
-    sendButton.addEventListener('mouseenter', () => {
-      sendButton.style.background = 'rgba(255,255,255,0.3)';
-      sendButton.style.borderColor = 'rgba(255,255,255,0.5)';
-    });
-
-    sendButton.addEventListener('mouseleave', () => {
-      sendButton.style.background = 'rgba(255,255,255,0.2)';
-      sendButton.style.borderColor = 'rgba(255,255,255,0.3)';
     });
 
     input.addEventListener('focus', () => {
@@ -937,11 +936,10 @@ export default class ChatPanel extends HTMLElement {
         messageDiv.style.cssText = `
           margin: 0.5rem 0;
           padding: 0.5rem 0.75rem;
-          background: rgba(255,255,255,0.08);
-          border-radius: 8px;
-          border-left: 3px solid rgba(255,255,255,0.3);
-          font-size: 0.85rem;
-          color: rgba(255,255,255,0.7);
+          background: var(--video-transition-bg);
+          border-left: 3px solid var(--accent-secondary);
+          font-size: var(--secondary-font-size);
+          color: var(--text);
           font-style: italic;
         `;
 
@@ -953,38 +951,37 @@ export default class ChatPanel extends HTMLElement {
         const isOwnMessage = sender === this.getCurrentUsername();
 
         messageDiv.style.cssText = `
-          margin: 0.2rem 0;
+          margin: 0.35rem 0;
           padding: 0.3rem 0.5rem;
-          background: ${isOwnMessage ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)'};
-          border-radius: 4px;
-          border: 1px solid ${isOwnMessage ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.2)'};
+          background: var(--video-transition-bg);
+          border: 2px solid ${isOwnMessage ? 'var(--accent-secondary)' : 'var(--text)'};
         `;
 
         // Show sender and message with different styles for global vs direct
         const senderDiv = document.createElement('div');
-        senderDiv.style.cssText = 'color: rgba(255,255,255,0.8); font-size: 0.7rem; margin-bottom: 0.15rem; font-weight: 500;';
+        senderDiv.style.cssText = 'color: var(--border); font-size: var(--secondary-font-size); margin-bottom: 0.15rem; font-weight: 500;';
 
         if (category === 'direct') {
           // Direct message: show "sender -> receiver"
           const displayReceiver = receiverUsername || this.getCurrentUsername();
           senderDiv.textContent = `${sender} -> ${displayReceiver}`;
           // Different color for direct messages
-          messageDiv.style.background = 'rgba(100,150,255,0.15)';
-          messageDiv.style.borderColor = 'rgba(100,150,255,0.3)';
+          messageDiv.style.background = 'var(--video-transition-bg)';
+          messageDiv.style.borderColor = 'var(--accent-tertiary)';
         } else {
           // Global message: show "sender -> global"
           senderDiv.textContent = `${sender} -> global`;
         }
 
         const messageDiv2 = document.createElement('div');
-        messageDiv2.style.cssText = 'color: rgba(255,255,255,0.9); font-size: 0.8rem; line-height: 1.2;';
+        messageDiv2.style.cssText = 'color: var(--text); font-size: var(--main-font-size); line-height: 1.2;';
         messageDiv2.textContent = message;
 
         const timestampDiv = document.createElement('div');
-        timestampDiv.style.cssText = 'color: rgba(255,255,255,0.5); font-size: 0.6rem; margin-top: 0.15rem; text-align: right;';
+        timestampDiv.style.cssText = 'color: var(--border); font-size: var(--secondary-font-size); margin-top: 0.15rem; text-align: right;';
         const ts = timestampOverride || Date.now();
         timestampDiv.textContent = new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        
+
 
 
         messageDiv.appendChild(senderDiv);
@@ -1049,17 +1046,17 @@ export default class ChatPanel extends HTMLElement {
   // Handle slash commands
   private handleSlashCommand(cmd: string) {
     if (cmd === '/help') {
-      this.addMessage('', 'Available commands:', 'system', 'global');
-      this.addMessage('', '• /help - Show this help message', 'system', 'global');
-      this.addMessage('', '• /list - Show online users', 'system', 'global');
-      this.addMessage('', '• /pm username message - Send private message', 'system', 'global');
-      this.addMessage('', '• /invite username difficulty - Invite user to play Pong (easy, medium, hard)', 'system', 'global');
-      this.addMessage('', '• /accept - Accept invite', 'system', 'global');
-      this.addMessage('', '• /decline - Decline invite', 'system', 'global');
-      this.addMessage('', '• /profile username - Go to user profile page', 'system', 'global');
-      this.addMessage('', '• /clear - Clear chat history', 'system', 'global');
-      this.addMessage('', '• /friend add/accept/remove username - Handle friend requests.', 'system', 'global');
-      this.addMessage('', '• /friends all/sent/received - List all friends, sent requests or received requests.', 'system', 'global');
+      this.addMessage('', t("chat.allCommandsTitle"), 'system', 'global');
+      this.addMessage('', t("chat.help"), 'system', 'global');
+      this.addMessage('', t("chat.list"), 'system', 'global');
+      this.addMessage('', t("chat.pm"), 'system', 'global');
+      this.addMessage('', t("chat.invite"), 'system', 'global');
+      this.addMessage('', t("chat.accept"), 'system', 'global');
+      this.addMessage('', t("chat.decline"), 'system', 'global');
+      this.addMessage('', t("chat.profile"), 'system', 'global');
+      this.addMessage('', t("chat.clear"), 'system', 'global');
+      this.addMessage('', t("chat.friend"), 'system', 'global');
+      this.addMessage('', t("chat.friendsAll"), 'system', 'global');
     } else if (cmd === '/list') {
       this.requestOnlineUsers();
     } else if (cmd === '/clear') {
@@ -1124,95 +1121,95 @@ export default class ChatPanel extends HTMLElement {
         this.addMessage('', 'Usage: /friend add/accept/remove username', 'system', 'global');
         return;
       } else if (username === this.getCurrentUsername()) {
-          this.addMessage('', 'You cannot befriend/unfriend yourself! Try meeting other people!', 'system', 'global');
-          return;
+        this.addMessage('', 'You cannot befriend/unfriend yourself! Try meeting other people!', 'system', 'global');
+        return;
       } else {
-          switch (this.getOptions(option)) {
-            case 1:
-              this.addFriend(username);
-              break;
-            case 2:
-              this.acceptFriend(username);
-              break;
-            case 3:
-              this.removeFriend(username);
-              break;
-            case 4:
-              this.sentFriends();
-              break;
-            case 5:
-              this.receivedFriends();
-              break;
-            default:
-              this.addMessage('', 'Usage: /friend add/accept/remove username', 'system', 'global');
-              break;
-          }
+        switch (this.getOptions(option)) {
+          case 1:
+            this.addFriend(username);
+            break;
+          case 2:
+            this.acceptFriend(username);
+            break;
+          case 3:
+            this.removeFriend(username);
+            break;
+          case 4:
+            this.sentFriends();
+            break;
+          case 5:
+            this.receivedFriends();
+            break;
+          default:
+            this.addMessage('', 'Usage: /friend add/accept/remove username', 'system', 'global');
+            break;
+        }
       }
-	} else if (cmd.startsWith('/friends ')) {
+    } else if (cmd.startsWith('/friends ')) {
       const [_, option] = cmd.split(/\s+/);
 
       if (!option) {
         return;
       } else {
-          switch (this.getOptions(option)) {
-            case 4:
-              this.sentFriends();
-              break;
-            case 5:
-              this.receivedFriends();
-              break;
-            case 6:
-              this.currentFriends();
-              break;
-            default:
-              this.addMessage('', 'Usage: /friends <sent/received>', 'system', 'global');
-              break;
-          }
+        switch (this.getOptions(option)) {
+          case 4:
+            this.sentFriends();
+            break;
+          case 5:
+            this.receivedFriends();
+            break;
+          case 6:
+            this.currentFriends();
+            break;
+          default:
+            this.addMessage('', 'Usage: /friends <sent/received>', 'system', 'global');
+            break;
+        }
       }
     } else {
       this.addMessage('', `Use /help for available commands.`, 'system', 'global');
     }
   }
 
-  private async getUserId (username: string) {
+  private async getUserId(username: string) {
     const row = await getUserProfile(username);
     return row.userId;
   }
 
-  private async addFriend (username: string) {
+  private async addFriend(username: string) {
     try {
       const friendId = await this.getUserId(username);
       const currentId = await this.getUserId(this.getCurrentUsername());
       const result = await postAddFriend(currentId, friendId);
       this.addMessage('', `Friend request sent to ${username}`, 'system', 'global');
     } catch (err) {
-        this.addMessage('', `Unable to send request`, 'system', 'global');
+      this.addMessage('', `Unable to send request`, 'system', 'global');
     }
   }
 
-  private async acceptFriend (username: string) {
+  private async acceptFriend(username: string) {
     try {
       const friendId = await this.getUserId(username);
       const currentId = await this.getUserId(this.getCurrentUsername());
       const result = await patchAcceptFriend(currentId, friendId);
       this.addMessage('', `You and ${username} are now friends!`, 'system', 'global');
     } catch (err) {
-        this.addMessage('', `Unable to accept request`, 'system', 'global');
+      this.addMessage('', `Unable to accept request`, 'system', 'global');
     }
   }
 
-  private async removeFriend (username: string) {
+  private async removeFriend(username: string) {
     try {
       const friendId = await this.getUserId(username);
       const currentId = await this.getUserId(this.getCurrentUsername());
       const result = await deleteFriend(currentId, friendId);
       this.addMessage('', `Removed friend/request from ${username}`, 'system', 'global');
     } catch (err) {
-        this.addMessage('', `Unable to remove friend/request`, 'system', 'global');
+      this.addMessage('', `Unable to remove friend/request`, 'system', 'global');
     }
   }
 
-  private async sentFriends () {
+  private async sentFriends() {
     try {
       const currentId = await this.getUserId(this.getCurrentUsername());
       const reply = await getSentRequests(currentId);
@@ -1220,11 +1217,11 @@ export default class ChatPanel extends HTMLElement {
         this.addMessage('', friend.username, 'system', 'global');
       }
     } catch (err) {
-        this.addMessage('', `Unable to retrieve sent requests`, 'system', 'global');
+      this.addMessage('', `Unable to retrieve sent requests`, 'system', 'global');
     }
   }
 
-  private async receivedFriends () {
+  private async receivedFriends() {
     try {
       const currentId = await this.getUserId(this.getCurrentUsername());
       const reply = await getReceivedRequests(currentId);
@@ -1232,37 +1229,37 @@ export default class ChatPanel extends HTMLElement {
         this.addMessage('', friend.username, 'system', 'global');
       }
     } catch (err) {
-        this.addMessage('', `Unable to retrieve received requests`, 'system', 'global');
+      this.addMessage('', `Unable to retrieve received requests`, 'system', 'global');
     }
   }
 
-  private async currentFriends () {
+  private async currentFriends() {
     try {
       const currentId = await this.getUserId(this.getCurrentUsername());
       const reply = await getFriends(currentId);
       for (const friend of reply.result) {
-          this.addMessage('', friend.username, 'system', 'global');
+        this.addMessage('', friend.username, 'system', 'global');
       }
     } catch (err) {
-        this.addMessage('', `Unable to retrieve friends`, 'system', 'global');
+      this.addMessage('', `Unable to retrieve friends`, 'system', 'global');
     }
   }
 
-  private getOptions (options: string) {
+  private getOptions(options: string) {
     if (options === 'add') {
-        return 1;
+      return 1;
     } else if (options === 'accept') {
-        return 2;
+      return 2;
     } else if (options === 'remove') {
-        return 3;
+      return 3;
     } else if (options === 'sent') {
-        return 4;
+      return 4;
     } else if (options === 'received') {
-        return 5;
+      return 5;
     } else if (options === 'all') {
-        return 6;
+      return 6;
     } else
-        return 0;
+      return 0;
   }
 
   // Request online users from backend
@@ -1368,7 +1365,7 @@ export default class ChatPanel extends HTMLElement {
 
         // Mark as processed immediately
         inviteMessage.setAttribute('data-invite-processed', 'true');
-        
+
         if (action !== 'accept') {
           this.addMessage('', '❌ Invite declined', 'system', 'global');
         }

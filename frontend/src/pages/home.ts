@@ -3,12 +3,9 @@ import '@/components/navigation/LanguagesDropdown.js';
 import '@/components/navigation/TopBar.js';
 import '@/components/navigation/StartGameButton.js';
 import '@/components/navigation/Logo.js';
-import '@/components/notification/NotificationsBar.js';
+import '@/components/notification/ToogleChatBox.js';
 
-import '@/components/notification/FriendsList.js';
-import '@/components/notification/ChatBox.js'
 import { logout } from '@/services/authService.js';
-import { state } from '@/state.js';
 
 export function renderHome(containerId: string) {
   const container = document.getElementById(containerId);
@@ -35,9 +32,7 @@ export function renderHome(containerId: string) {
         </button>
       </top-bar>
 
-      <notifications-bar>
-        <chat-box slot="chat-box"></chat-box>
-      </notifications-bar>
+      <toggle-chat-box></toggle-chat-box>
 
       <section class="screen-1 relative flex items-center justify-center h-screen w-screen">
         <div class="intro-text text-4xl text-white text-center z-10">[PLACEHOLDER]</div>
@@ -58,6 +53,7 @@ export function renderHome(containerId: string) {
   }
 }
 
+// <chat-box slot="chat-box"></chat-box>
 // <friends-list slot="friends-list" mode="full"></friends-list>
 
 /*
