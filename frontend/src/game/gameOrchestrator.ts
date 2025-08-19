@@ -175,8 +175,15 @@ export class gameOrchestrator {
             if (creatorId && remoteId) {
               const res = await createMatch(creatorId, remoteId, null, hostUsername, guest.username);
               if (res && typeof res.id === 'number') this.matchId = res.id;
+              // surface a lightweight system line for host only
+              try {
+                const panel = document.querySelector('chat-panel') as any;
+                if (panel && typeof panel.addMessage === 'function') {
+                  panel.addMessage('', `match created (#${this.matchId}): ${hostUsername} vs ${guest.username}`, 'system', 'global');
+                }
+              } catch { /* ignore: best-effort debug message */ }
             }
-          } catch {}
+          } catch { /* ignore: match create failure should not block game */ }
         })();
       } catch (error) {
         console.error('GameOrchestrator: Error setting up multiplayer game:', error);

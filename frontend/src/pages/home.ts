@@ -6,7 +6,7 @@ import '@/components/navigation/Logo.js';
 // notifications UI removed for delivery scope
 
 import '@/components/notification/FriendsList.js';
-import '@/components/notification/ChatBox.js'
+// chat-box removed from delivery scope
 import { logout } from '@/services/authService.js';
 import { state } from '@/state.js';
 
