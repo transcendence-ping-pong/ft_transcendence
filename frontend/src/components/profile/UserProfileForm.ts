@@ -13,7 +13,6 @@ template.innerHTML = `
     :host {
       display: block;
       width: 100%;
-      height: 100%;
       margin: 0 auto;
       box-sizing: border-box;
     }
@@ -42,13 +41,13 @@ template.innerHTML = `
       background: var(--accent);
       border-radius: 50%;
       border: var(--border);
-      width: 3.5rem;   /* increased */
-      height: 3.5rem;  /* increased */
+      width: var(--button-rounded-size);
+      height: var(--button-rounded-size);
       box-shadow: 0 1px 2px #0002;
     }
     .profile-form__edit-btn span img {
-      width: 2.5rem;   /* increased */
-      height: 2.5rem;  /* increased */
+      width: 2rem;
+      height: 2rem;
       display: block;
       filter: invert(var(--invert));
     }
