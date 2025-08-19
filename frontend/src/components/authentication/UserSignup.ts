@@ -89,7 +89,7 @@ template.innerHTML = `
     <form slot="content" id="signupForm" autocomplete="off">
       <input id="username" class="auth-form__input" name="username" type="text" required autocomplete="username" placeholder="${t('auth.username')}" />
       <input id="email" class="auth-form__input" name="email" type="email" required autocomplete="email" placeholder="${t('auth.email')}" />
-      <input id="password" class="auth-form__input" name="password" type="password" minlength="6" required autocomplete="new-password" placeholder="${t('auth.password')}" />
+      <input id="password" class="auth-form__input" name="password" type="password" minlength="7" required autocomplete="new-password" placeholder="${t('auth.password')}" />
     </form>
     <div slot="error" id="error" class="auth-form__error"></div>
     <div slot="footer" class="auth-form__footer">

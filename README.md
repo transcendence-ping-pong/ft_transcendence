@@ -203,6 +203,20 @@ sqlite> SELECT * FROM users;
 sqlite> .quit
 exit
 ```
+```
+// check if vite is serving the frontend
+curl -I http://localhost:3000
+
+// hard reset frontend dev server
+pkill -f vite
+make frontend-dev
+
+// check for firewall
+sudo ufw status
+sudo ufw allow 3000
+sudo ufw allow 4000
+sudo ufw status
+```
 
 ## Concepts
 
