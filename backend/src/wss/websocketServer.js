@@ -550,8 +550,11 @@ class WebSocketServer {
 
 		// create chat message using chat manager
 		const chatMessage = this.chatManager.addChatMessage(user.userId, user.username, validation.message, 'global');
-		// broadcast to everyone except those who have blocked the sender
+		// always echo back to sender
+		socket.emit('chatMessage', chatMessage);
+		// broadcast to others except those who have blocked the sender
 		for (const [socketId, recipient] of this.userManager.connectedUsers.entries()) {
+			if (socketId === socket.id) continue;
 			const theirBlocks = this.userManager.userBlocks.get(recipient.userId);
 			if (theirBlocks && theirBlocks.has(user.userId)) continue;
 			this.io.to(socketId).emit('chatMessage', chatMessage);
