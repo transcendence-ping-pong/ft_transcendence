@@ -198,15 +198,14 @@ template.innerHTML = `
     </button>
   </section>
   <hr/>
-
   <form id="profileForm" class="profile-form__edit" autocomplete="off">
     <input id="username" class="profile-form__input" name="username" type="text" required autocomplete="username" placeholder="${t('auth.username')}" />
     <input id="email" name="email" class="profile-form__input" type="email" required autocomplete="email" placeholder="${t('auth.email')}" />
     <div class="profile-form__input-wrapper">
-      <input id="password" name="password" class="profile-form__input" type="password" minlength="7" required autocomplete="current-password" placeholder="${t('profile.currentPassword')}" />
+      <input id="password" name="password" class="profile-form__input" type="password" minlength="7" required autocomplete="current-password" placeholder="${t('profile.newPassword')}" />
       <span id="viewBtn" class="profile-form__input--icon">${actionIcons.eye}</span>
     </div>
-    <input id="confirm-password" name="password" class="profile-form__input confirm-password" type="password" minlength="7" required autocomplete="current-password" placeholder="${t('profile.changePassword')}" />
+    <input id="confirm-password" name="password" class="profile-form__input confirm-password" type="password" minlength="7" required autocomplete="current-password" placeholder="${t('profile.rewriteNewPassword')}" />
 
     <p class="profile-form__error" id="error"></p>
 
@@ -487,6 +486,7 @@ export class UserProfileForm extends HTMLElement {
         this.passwordInput.value = '';
         this.confirmPasswordInput.value = '';
         this.isEditMode = false;
+        this.viewBtn.style.display = 'none';// TODO disable it or hide it // not working 
         this.editButton.style.backgroundColor = 'var(--accent)';
         this.toggleEditMode();
       } else {
