@@ -91,11 +91,11 @@ export class gameOrchestrator {
       try {
         console.log('GameOrchestrator: gameStart event received', e.detail);
         console.log('GameOrchestrator: Creating multiplayer game...');
-        
+
         this.isMultiplayerMode = true;
         this.babylonCanvas.createMultiplayerGameCanvas();
         this.gameCanvas = this.babylonCanvas.getGameCanvas();
-        
+
         if (this.gameCanvas instanceof MultiplayerGameCanvas) {
           console.log('GameOrchestrator: MultiplayerGameCanvas created successfully');
           (this.gameCanvas as any).isMultiplayerMode = true;
@@ -103,12 +103,12 @@ export class gameOrchestrator {
           (this.gameCanvas as any).playerIndex = (this.gameCanvas as any).getPlayerIndex();
           (this.gameCanvas as any).startGame();
         }
-        
+
         console.log('GameOrchestrator: Hiding GUI and setting up multiplayer input...');
         this.gui.hideAllGUI();
         window.dispatchEvent(new CustomEvent('hideMultiplayerUI'));
         this.setupMultiplayerInput();
-        
+
         console.log('GameOrchestrator: Multiplayer game setup complete');
       } catch (error) {
         console.error('GameOrchestrator: Error setting up multiplayer game:', error);
@@ -184,64 +184,64 @@ export class gameOrchestrator {
   }
 
   private clearStateTournament() {
-      state.tournamentData = {
-            players: {},
-            matches: {},
-            currentMatchIndex: 0,
-            stage: 1,
-            tournamentId: 0
+    state.tournamentData = {
+      players: {},
+      matches: {},
+      currentMatchIndex: 0,
+      stage: 1,
+      tournamentId: 0
     } as TournamentData;
   };
 
   private async updateTournamentMatches(matchIndex: number) {
     if (matchIndex == 4 && state.tournamentData.stage == 1) {
 
-        state.tournamentData.stage++;
-        state.tournamentData.currentMatchIndex = 0;
+      state.tournamentData.stage++;
+      state.tournamentData.currentMatchIndex = 0;
 
-        const result = await getTournamentSemi(state.tournamentData.tournamentId);
-        state.tournamentData.players = result.players;
-        
+      const result = await getTournamentSemi(state.tournamentData.tournamentId);
+      state.tournamentData.players = result.players;
+
     } else if (matchIndex == 2 && state.tournamentData.stage == 2) {
 
-        state.tournamentData.stage++;
-        state.tournamentData.currentMatchIndex = 0;
+      state.tournamentData.stage++;
+      state.tournamentData.currentMatchIndex = 0;
 
-        const result = await getTournamentFinal(state.tournamentData.tournamentId);
-        state.tournamentData.players = result.players;
+      const result = await getTournamentFinal(state.tournamentData.tournamentId);
+      state.tournamentData.players = result.players;
 
     } else if (state.tournamentData.stage == 3) {
-        state.tournamentData.stage++;
+      state.tournamentData.stage++;
     }
-    return ;
-}
+    return;
+  }
 
   private async handleTournamentEvents() {
     await this.updateTournamentMatches(state.tournamentData.currentMatchIndex);
     const matches = state.tournamentData.players;
     if (state.tournamentData.stage < 4) {
-        this.babylonCanvas.cleanupGame();
-        window.dispatchEvent(new CustomEvent('tournament-stage', {
-          detail: { matches },
-          bubbles: true,
-          composed: true
-        }));
+      this.babylonCanvas.cleanupGame();
+      window.dispatchEvent(new CustomEvent('tournament-stage', {
+        detail: { matches },
+        bubbles: true,
+        composed: true
+      }));
     } else {
-        this.clearStateTournament();
-        this.babylonCanvas.endingGame();
-        setTimeout(() => {
-            this.gui.clearGUI();
-        }, 2000);
-    }    
+      this.clearStateTournament();
+      this.babylonCanvas.endingGame();
+      setTimeout(() => {
+        this.gui.clearGUI();
+      }, 2000);
+    }
   }
 
   private setupGameOverTracking() {
     this.gameCanvas.addEventListener('gameOver', async (e: CustomEvent) => {
       let winner;
       if (e.detail.winner == 'LEFT')
-            winner = state.players.p1;
-          else
-            winner = state.players.p2;
+        winner = state.players.p1;
+      else
+        winner = state.players.p2;
       console.log("Final winner:", winner);
       console.log("Final score Left: ", e.detail.score.LEFT, "Final score Right: ", e.detail.score.RIGHT);
       await updateMatch(this.matchId, winner, e.detail.score.LEFT, e.detail.score.RIGHT);
@@ -261,9 +261,9 @@ export class gameOrchestrator {
 
   public async startGame() {
     // start game!!!!! countdown and then ball starts moving
-	// TODO: Change placeholder 0 for remoteUserId for the actual Id
+    // TODO: Change placeholder 0 for remoteUserId for the actual Id
     const match = await createMatch(state.userData.userId, 0, state.tournamentData.tournamentId, state.players.p1, state.players.p2);
-	this.matchId = match.id;
+    this.matchId = match.id;
     this.babylonCanvas.createGameCanvas(this.gameLevel, this.gamePlayerMode);
     this.gameCanvas = this.babylonCanvas.getGameCanvas();
 
@@ -281,7 +281,7 @@ export class gameOrchestrator {
 
   private setupMenuFlow() {
     if (this.isMultiplayerMode) {
-        return;
+      return;
     }
     // user starts the game from the main menu. Flow starting point
     this.gui.showStartButton(() => {

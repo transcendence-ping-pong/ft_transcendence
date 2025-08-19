@@ -168,7 +168,7 @@ template.innerHTML = `
       justify-content: center;
       height: 100%;
       text-align: center;
-      background: var(--video-transition-bg);
+      background: var(--placeholder-bg);
     }
     .no-matches__button {
       display: flex;

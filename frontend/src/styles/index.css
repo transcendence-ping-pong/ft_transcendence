@@ -214,6 +214,7 @@
   --game-gradient-end: #b8a77a;
   --game-transition-bg: rgb(255, 255, 255);
   --video-transition-bg: rgba(0, 0, 0, 0.1);
+  --placeholder-bg: rgba(0, 0, 0, 0.05);
 }
 
 .theme-secondary {
@@ -247,4 +248,5 @@
   --game-gradient-end: #1a2233;
   --game-transition-bg: rgb(0, 0, 0);
   --video-transition-bg: rgba(255, 255, 255, 0.1);
+  --placeholder-bg: rgba(255, 255, 255, 0.05);
 }
