@@ -1057,7 +1057,6 @@ export default class ChatPanel extends HTMLElement {
       this.addMessage('', t("chat.profile"), 'system', 'global');
       this.addMessage('', t("chat.clear"), 'system', 'global');
       this.addMessage('', t("chat.friend"), 'system', 'global');
-      this.addMessage('', t("chat.friendsAll"), 'system', 'global');
     } else if (cmd === '/list') {
       this.requestOnlineUsers();
     } else if (cmd === '/clear') {
@@ -1074,7 +1073,7 @@ export default class ChatPanel extends HTMLElement {
       if (receiver && message) {
         // always allowed to send; backend will validate receiver presence and warn sender if needed
         if (receiver === this.getCurrentUsername()) {
-          this.addMessage('', 'You cannot send a private message to yourself!', 'system', 'global');
+          this.addMessage('', t("pmError"), 'system', 'global');
           return;
         }
         wss.emit('directMessage', {
@@ -1085,13 +1084,13 @@ export default class ChatPanel extends HTMLElement {
           timestamp: Date.now()
         });
       } else {
-        this.addMessage('', 'Usage: /pm username message', 'system', 'global');
+        this.addMessage('', t("chat.pmUsage"), 'system', 'global');
       }
     } else if (cmd.startsWith('/invite ')) {
       const [_, receiver, difficulty] = cmd.split(/\s+/);
 
       if (!receiver || !difficulty) {
-        this.addMessage('', 'Usage: /invite username [difficulty]', 'system', 'global');
+        this.addMessage('', t("chat.inviteUsage"), 'system', 'global');
         return;
       }
       // always allowed to send; backend will validate receiver presence and warn sender if needed
@@ -1113,45 +1112,19 @@ export default class ChatPanel extends HTMLElement {
       if (username) {
         window.location.href = `/profile/${username}`;
       } else {
-        this.addMessage('', 'Usage: /profile username', 'system', 'global');
+        this.addMessage('', t("chat.profileUsage"), 'system', 'global');
       }
     } else if (cmd.startsWith('/friend ')) {
       const [_, option, username] = cmd.split(/\s+/);
 
-      if (!option || !username) {
-        this.addMessage('', 'Usage: /friend add/accept/remove username', 'system', 'global');
+      console.log("Something");
+      if (!option) {
+        this.addMessage('', t("chat.friendUsage"), 'system', 'global');
         return;
       } else if (username === this.getCurrentUsername()) {
-        this.addMessage('', 'You cannot befriend/unfriend yourself! Try meeting other people!', 'system', 'global');
+        this.addMessage('', t("chat.friendError"), 'system', 'global');
         return;
-      } else {
-        switch (this.getOptions(option)) {
-          case 1:
-            this.addFriend(username);
-            break;
-          case 2:
-            this.acceptFriend(username);
-            break;
-          case 3:
-            this.removeFriend(username);
-            break;
-          case 4:
-            this.sentFriends();
-            break;
-          case 5:
-            this.receivedFriends();
-            break;
-          default:
-            this.addMessage('', 'Usage: /friend add/accept/remove username', 'system', 'global');
-            break;
-        }
-      }
-    } else if (cmd.startsWith('/friends ')) {
-      const [_, option] = cmd.split(/\s+/);
-
-      if (!option) {
-        return;
-      } else {
+      } else if (!username) {
         switch (this.getOptions(option)) {
           case 4:
             this.sentFriends();
@@ -1163,12 +1136,27 @@ export default class ChatPanel extends HTMLElement {
             this.currentFriends();
             break;
           default:
-            this.addMessage('', 'Usage: /friends <sent/received>', 'system', 'global');
+            this.addMessage('', t("chat.friendUsage"), 'system', 'global');
+            break;
+        }
+      } else {
+        switch (this.getOptions(option)) {
+          case 1:
+            this.addFriend(username);
+            break;
+          case 2:
+            this.acceptFriend(username);
+            break;
+          case 3:
+            this.removeFriend(username);
+            break;
+          default:
+            this.addMessage('', t("chat.friendUsage"), 'system', 'global');
             break;
         }
       }
     } else {
-      this.addMessage('', `Use /help for available commands.`, 'system', 'global');
+      this.addMessage('', t("chat.helpUsage"), 'system', 'global');
     }
   }
 
@@ -1182,9 +1170,9 @@ export default class ChatPanel extends HTMLElement {
       const friendId = await this.getUserId(username);
       const currentId = await this.getUserId(this.getCurrentUsername());
       const result = await postAddFriend(currentId, friendId);
-      this.addMessage('', `Friend request sent to ${username}`, 'system', 'global');
+      this.addMessage('', t("chat.friendAdd", {username: username}), 'system', 'global');
     } catch (err) {
-      this.addMessage('', `Unable to send request`, 'system', 'global');
+      this.addMessage('', t("chat.friendAddError"), 'system', 'global');
     }
   }
 
@@ -1193,9 +1181,9 @@ export default class ChatPanel extends HTMLElement {
       const friendId = await this.getUserId(username);
       const currentId = await this.getUserId(this.getCurrentUsername());
       const result = await patchAcceptFriend(currentId, friendId);
-      this.addMessage('', `You and ${username} are now friends!`, 'system', 'global');
+      this.addMessage('', t("chat.friendAcc", {username: username}), 'system', 'global');
     } catch (err) {
-      this.addMessage('', `Unable to accept request`, 'system', 'global');
+      this.addMessage('', t("chat.friendAccError"), 'system', 'global');
     }
   }
 
@@ -1204,9 +1192,9 @@ export default class ChatPanel extends HTMLElement {
       const friendId = await this.getUserId(username);
       const currentId = await this.getUserId(this.getCurrentUsername());
       const result = await deleteFriend(currentId, friendId);
-      this.addMessage('', `Removed friend/request from ${username}`, 'system', 'global');
+      this.addMessage('', t("chat.friendRm", {username: username}), 'system', 'global');
     } catch (err) {
-      this.addMessage('', `Unable to remove friend/request`, 'system', 'global');
+      this.addMessage('', t("chat.friendRmError"), 'system', 'global');
     }
   }
 
@@ -1218,7 +1206,7 @@ export default class ChatPanel extends HTMLElement {
         this.addMessage('', friend.username, 'system', 'global');
       }
     } catch (err) {
-      this.addMessage('', `Unable to retrieve sent requests`, 'system', 'global');
+      this.addMessage('', t("chat.friendSentError"), 'system', 'global');
     }
   }
 
@@ -1230,7 +1218,7 @@ export default class ChatPanel extends HTMLElement {
         this.addMessage('', friend.username, 'system', 'global');
       }
     } catch (err) {
-      this.addMessage('', `Unable to retrieve received requests`, 'system', 'global');
+      this.addMessage('', t("chat.friendRecError"), 'system', 'global');
     }
   }
 
@@ -1242,7 +1230,7 @@ export default class ChatPanel extends HTMLElement {
         this.addMessage('', friend.username, 'system', 'global');
       }
     } catch (err) {
-      this.addMessage('', `Unable to retrieve friends`, 'system', 'global');
+      this.addMessage('', t("chat.friendAllError"), 'system', 'global');
     }
   }
 
