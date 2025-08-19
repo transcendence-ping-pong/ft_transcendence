@@ -111,7 +111,7 @@ template.innerHTML = `
       gap: 1rem;
     }
     ::slotted([slot="chat-box"]) {
-      padding: 1rem 1.2rem 1rem 1.2rem;
+      padding: 0 1.2rem 1rem 1.2rem;
     }
 
     .notif-tags {

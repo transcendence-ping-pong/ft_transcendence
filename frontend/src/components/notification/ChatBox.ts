@@ -1,3 +1,7 @@
+import { websocketService as wss } from '@/services/websocketService.js';
+import { state } from '@/state.js';
+import { t } from '@/locales/Translations.js';
+
 const template = document.createElement('template');
 template.innerHTML = `
   <style>
@@ -81,13 +85,17 @@ template.innerHTML = `
       font-weight: bold;
       cursor: pointer;
     }
+    .chat-input-form button:hover {
+      background: var(--accent-secondary);
+      color: #fff;
+    }
   </style>
   <div class="chat-compact" style="display:none"></div>
   <div class="chat-full" style="display:none">
     <div class="chat-messages"></div>
     <form class="chat-input-form" onsubmit="return false;">
-      <input type="text" class="chat-input" placeholder="Type a message..." maxlength="500" />
-      <button type="submit">Send</button>
+      <input type="text" class="chat-input" placeholder="${t("chat.inputPlaceholder")}" maxlength="500" />
+      <button type="submit">${t("chat.send")}</button>
     </form>
   </div>
 `;
@@ -96,6 +104,10 @@ interface ChatMessage {
   sender: string;
   text: string;
   timestamp: number;
+  type?: 'user' | 'system' | 'other';
+  category?: 'global' | 'direct';
+  receiverUsername?: string;
+  inviteData?: any;
 }
 
 export class ChatBox extends HTMLElement {
@@ -106,6 +118,10 @@ export class ChatBox extends HTMLElement {
   private form: HTMLFormElement;
   private mode: "compact" | "full" = "compact";
   private messages: ChatMessage[] = [];
+  private requestedOnlineUsers = false;
+  private messageHistory: ChatMessage[] = [];
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
 
   static get observedAttributes() {
     return ["mode"];
@@ -123,12 +139,15 @@ export class ChatBox extends HTMLElement {
     this.input = this.shadowRoot.querySelector('.chat-input');
     this.form = this.shadowRoot.querySelector('.chat-input-form');
 
+    this.compactDiv.addEventListener('click', () => this.setAttribute('mode', 'full'));
     this.form.addEventListener('submit', (e) => {
       e.preventDefault();
       this.handleSend();
     });
 
+    this.setupWebSocketListeners();
     this.render();
+    this.loadMessages();
   }
 
   attributeChangedCallback(name: string, oldValue: string, newValue: string) {
@@ -150,11 +169,10 @@ export class ChatBox extends HTMLElement {
   }
 
   renderCompact() {
-    // show a summary (e.g., unread count or last message)
     const lastMsg = this.messages[this.messages.length - 1];
     this.compactDiv.innerHTML = `
-      <span>Chat</span>
-      <span>${lastMsg ? lastMsg.text.slice(0, 24) + (lastMsg.text.length > 24 ? "..." : "") : "No messages"}</span>
+      <span>${t("chat.compactTitle")}</span>
+      <span>${lastMsg ? lastMsg.text.slice(0, 24) + (lastMsg.text.length > 24 ? "..." : "") : t("chat.noMessages")}</span>
     `;
   }
 
@@ -173,15 +191,259 @@ export class ChatBox extends HTMLElement {
   handleSend() {
     const text = this.input.value.trim();
     if (!text) return;
-    // For demo, sender is always "You"
-    this.messages.push({
-      sender: "You",
-      text,
-      timestamp: Date.now()
-    });
+    if (text.length > 500) {
+      this.addMessage({ sender: '', text: t("chat.messageTooLong"), timestamp: Date.now(), type: 'system' });
+      this.input.value = "";
+      return;
+    }
+    if (text.startsWith('/')) {
+      this.handleSlashCommand(text);
+    } else {
+      this.sendGlobalMessage(text);
+    }
     this.input.value = "";
+  }
+
+  addMessage(msg: ChatMessage) {
+    this.messages.push(msg);
+    if (msg.type !== 'system') {
+      this.messageHistory.push(msg);
+      if (this.messageHistory.length > 100) this.messageHistory.shift();
+      this.saveMessages();
+    }
     this.renderMessages();
     this.renderCompact();
+  }
+
+  // --- WebSocket listeners ---
+  private setupWebSocketListeners() {
+    if (!wss || !wss.socket) return;
+    wss.socket.on('chatMessage', (data: any) => {
+      if (data && data.type === 'global' && data.senderUsername && data.message) {
+        this.addMessage({ sender: data.senderUsername, text: data.message, timestamp: Date.now(), type: 'other', category: 'global' });
+      }
+    });
+    wss.socket.on('directMessage', (data: any) => {
+      if (data && data.type === 'direct' && data.senderUsername && data.message) {
+        this.addMessage({ sender: data.senderUsername, text: data.message, timestamp: Date.now(), type: 'other', category: 'direct', receiverUsername: data.receiverUsername });
+      }
+    });
+    wss.socket.on('onlineUsers', (data: any) => this.handleOnlineUsersUpdate(data));
+    wss.socket.on('chatError', (data: any) => {
+      const errorMessage = data.message || 'Unknown error';
+      if (errorMessage.includes('timed out') || errorMessage.includes('spam')) {
+        this.handleTimeoutError(errorMessage);
+      } else {
+        this.addMessage({ sender: '', text: t("chat.error", { error: errorMessage }), timestamp: Date.now(), type: 'system' });
+      }
+    });
+    wss.socket.on('gameInvite', (data: any) => {
+      if (data && data.type === 'invite' && data.senderUsername && data.message) {
+        this.addMessage({ sender: data.senderUsername, text: data.message, timestamp: Date.now(), type: 'other', category: 'direct', receiverUsername: data.receiverUsername, inviteData: data });
+      }
+    });
+    wss.socket.on('inviteAccepted', (data: any) => this.addMessage({ sender: '', text: data.message, timestamp: Date.now(), type: 'system' }));
+    wss.socket.on('inviteDeclined', (data: any) => this.addMessage({ sender: '', text: data.message, timestamp: Date.now(), type: 'system' }));
+    wss.socket.on('gameCountdown', (data: any) => this.addMessage({
+      sender: '', text: t("chat.gameStarting", { countdown: data.countdown }), timestamp: Date.now(), type: 'system'
+    }));
+    // ...add more listeners as needed
+  }
+
+  // --- Command handling ---
+  private handleSlashCommand(cmd: string) {
+    if (cmd === '/help') {
+      this.addMessage({ sender: '', text: t("chat.allCommandsTitle"), timestamp: Date.now(), type: 'system' });
+      this.addMessage({ sender: '', text: t("chat.help"), timestamp: Date.now(), type: 'system' });
+      this.addMessage({ sender: '', text: t("chat.list"), timestamp: Date.now(), type: 'system' });
+      this.addMessage({ sender: '', text: t("chat.pm"), timestamp: Date.now(), type: 'system' });
+      this.addMessage({ sender: '', text: t("chat.invite"), timestamp: Date.now(), type: 'system' });
+      this.addMessage({ sender: '', text: t("chat.accept"), timestamp: Date.now(), type: 'system' });
+      this.addMessage({ sender: '', text: t("chat.decline"), timestamp: Date.now(), type: 'system' });
+      this.addMessage({ sender: '', text: t("chat.profile"), timestamp: Date.now(), type: 'system' });
+      this.addMessage({ sender: '', text: t("chat.clear"), timestamp: Date.now(), type: 'system' });
+    } else if (cmd === '/list') {
+      this.requestOnlineUsers();
+    } else if (cmd === '/clear') {
+      this.messages = [];
+      this.messageHistory = [];
+      this.saveMessages();
+      this.renderMessages();
+      this.renderCompact();
+    } else if (cmd.startsWith('/pm ')) {
+      const [_, receiver, ...messageParts] = cmd.split(/\s+/);
+      let message = messageParts.join(' ');
+      if (receiver && message) {
+        if (receiver === this.getCurrentUsername()) {
+          this.addMessage({ sender: '', text: t("chat.pmError"), timestamp: Date.now(), type: 'system' });
+          return;
+        }
+        wss.emit('directMessage', {
+          type: 'direct',
+          senderUsername: this.getCurrentUsername(),
+          receiverUsername: receiver,
+          message: message,
+          timestamp: Date.now()
+        });
+      } else {
+        this.addMessage({ sender: '', text: t("chat.pmUsage"), timestamp: Date.now(), type: 'system' });
+      }
+    } else if (cmd.startsWith('/invite ')) {
+      const [_, receiver, difficulty] = cmd.split(/\s+/);
+      if (!receiver || !difficulty) {
+        this.addMessage({ sender: '', text: t("chat.inviteUsage"), timestamp: Date.now(), type: 'system' });
+        return;
+      }
+      wss.emit('chatMessage', {
+        message: `/ invite ${receiver} ${difficulty}`,
+        username: this.getCurrentUsername()
+      });
+    } else if (cmd === '/accept') {
+      this.handleInviteCommand('accept');
+    } else if (cmd === '/decline') {
+      this.handleInviteCommand('decline');
+    } else if (cmd.startsWith('/profile ')) {
+      const [_, username] = cmd.split(/\s+/);
+      if (username) {
+        window.location.href = `/ profile / ${username}`;
+      } else {
+        this.addMessage({ sender: '', text: t("chat.profileUsage"), timestamp: Date.now(), type: 'system' });
+      }
+    } else {
+      this.addMessage({ sender: '', text: t("chat.helpUsage"), timestamp: Date.now(), type: 'system' });
+    }
+  }
+
+  private requestOnlineUsers() {
+    if (wss && wss.isConnected()) {
+      wss.emit('getOnlineUsers');
+      this.requestedOnlineUsers = true;
+    } else {
+      this.addMessage({ sender: '', text: t("chat.onlineUsersError"), timestamp: Date.now(), type: 'system' });
+    }
+  }
+
+  private sendGlobalMessage(message: string) {
+    if (wss && wss.isConnected()) {
+      let username = this.getCurrentUsername();
+      wss.emit('chatMessage', { message, username });
+    } else {
+      this.addMessage({ sender: '', text: t("chat.sendError"), timestamp: Date.now(), type: 'system' });
+    }
+  }
+
+  private handleInviteCommand(action: 'accept' | 'decline') {
+    const inviteMessage = this.findInviteMessage();
+    if (!inviteMessage) {
+      this.addMessage({ sender: '', text: t("chat.inviteNotFound"), timestamp: Date.now(), type: 'system' });
+      return;
+    }
+    if (inviteMessage.getAttribute('data-invite-processed') === 'true') {
+      this.addMessage({ sender: '', text: t("chat.inviteProcessed"), timestamp: Date.now(), type: 'system' });
+      return;
+    }
+    const inviteData = this.extractInviteDataFromMessage(inviteMessage);
+    if (!inviteData) {
+      this.addMessage({ sender: '', text: t("chat.invalidInviteData"), timestamp: Date.now(), type: 'system' });
+      return;
+    }
+    if (wss && wss.socket) {
+      wss.socket.emit('inviteResponse', {
+        inviteId: inviteData.id,
+        response: action,
+        senderUsername: inviteData.senderUsername,
+        receiverUsername: inviteData.receiverUsername,
+        difficulty: inviteData.difficulty
+      });
+      inviteMessage.setAttribute('data-invite-processed', 'true');
+      this.addMessage({ sender: '', text: action === 'accept' ? t("chat.inviteAccepted") : t("chat.inviteDeclined"), timestamp: Date.now(), type: 'system' });
+    }
+  }
+
+  private findInviteMessage(inviteId?: number): HTMLElement | null {
+    const nodes = this.messagesDiv.querySelectorAll('.chat-message');
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const msg = nodes[i] as HTMLElement;
+      if (msg.getAttribute('data-invite-type') === 'true') {
+        if (!inviteId) return msg;
+        const msgInviteId = msg.getAttribute('data-invite-id');
+        if (msgInviteId && parseInt(msgInviteId) === inviteId) return msg;
+      }
+    }
+    return null;
+  }
+
+  private extractInviteDataFromMessage(messageElement: HTMLElement): any {
+    if (messageElement.getAttribute('data-invite-type') !== 'true') return null;
+    const inviteId = messageElement.getAttribute('data-invite-id');
+    const senderUsername = messageElement.getAttribute('data-sender');
+    const receiverUsername = messageElement.getAttribute('data-receiver');
+    const difficulty = messageElement.getAttribute('data-difficulty');
+    if (!inviteId || !senderUsername || !receiverUsername || !difficulty) return null;
+    return {
+      id: parseInt(inviteId),
+      senderUsername,
+      receiverUsername,
+      difficulty
+    };
+  }
+
+  private handleOnlineUsersUpdate(data: any) {
+    if (this.requestedOnlineUsers) {
+      if (data && Array.isArray(data)) {
+        const currentUsername = this.getCurrentUsername();
+        const otherUsers = data.filter((user: any) => user.username !== currentUsername);
+        if (otherUsers.length === 0) {
+          this.addMessage({ sender: '', text: t("chat.noOtherUsersOnline"), timestamp: Date.now(), type: 'system' });
+        } else {
+          const userList = data.map((user: any) => user.username === currentUsername ? `${user.username}(You)` : user.username).join(', ');
+          this.addMessage({ sender: '', text: t("chat.onlineUsers", { users: userList }), timestamp: Date.now(), type: 'system' });
+        }
+      } else {
+        this.addMessage({ sender: '', text: t("chat.failedToGetOnlineUsers"), timestamp: Date.now(), type: 'system' });
+      }
+      this.requestedOnlineUsers = false;
+    }
+  }
+
+  private handleTimeoutError(errorMessage: string) {
+    this.addMessage({ sender: '', text: `⚠️ ${errorMessage}`, timestamp: Date.now(), type: 'system' });
+    this.input.disabled = true;
+    setTimeout(() => {
+      this.input.disabled = false;
+      this.addMessage({ sender: '', text: t("chat.chatReenabled"), timestamp: Date.now(), type: 'system' });
+    }, 120000);
+  }
+
+  private getCurrentUsername(): string {
+    return state.userData?.username || localStorage.getItem('loggedInUser') || 'Anonymous';
+  }
+
+  private saveMessages() {
+    try {
+      if (this.messageHistory.length > 0) {
+        localStorage.setItem('chatMessages', JSON.stringify(this.messageHistory));
+      }
+    } catch (error) {
+      localStorage.removeItem('chatMessages');
+    }
+  }
+
+  private loadMessages() {
+    try {
+      const savedMessages = localStorage.getItem('chatMessages');
+      if (savedMessages) {
+        const messages = JSON.parse(savedMessages);
+        if (Array.isArray(messages)) {
+          this.messages = messages;
+          this.messageHistory = messages;
+          this.renderMessages();
+          this.renderCompact();
+        }
+      }
+    } catch {
+      localStorage.removeItem('chatMessages');
+    }
   }
 }
 

@@ -182,9 +182,6 @@ export class FriendsList extends HTMLElement {
       this.renderList();
     });
 
-    window.addEventListener('online-users-updated', (e: CustomEvent) => {
-    }, { once: true });
-
     this.render();
   }
 

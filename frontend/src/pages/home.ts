@@ -36,7 +36,7 @@ export function renderHome(containerId: string) {
       </top-bar>
 
       <notifications-bar>
-        <chat-box slot="chat-box" mode="full"></chat-box>
+        <chat-box slot="chat-box"></chat-box>
       </notifications-bar>
 
       <section class="screen-1 relative flex items-center justify-center h-screen w-screen">
