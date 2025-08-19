@@ -13,6 +13,8 @@ export default class ChatPanel extends HTMLElement {
   private maxReconnectAttempts: number = 5;
   private messageHistory: Array<{sender: string, message: string, type: 'user' | 'system' | 'other', category: 'global' | 'direct', timestamp: number}> = [];
   private isLoadingMessages: boolean = false;
+  private currentUsername: string = '';
+  private lastInvite: any = null;
 
   constructor() {
     super();
@@ -98,24 +100,51 @@ export default class ChatPanel extends HTMLElement {
     try {
       const websocketService = (window as any).websocketService;
       if (websocketService && websocketService.isConnected()) {
-        const username = state.userData?.username || localStorage.getItem('loggedInUser') || 'Anonymous';
-        
-        // Send authentication event
-        websocketService.emit('authenticate', { username });
+        const usernameFromState = state.userData?.username || localStorage.getItem('loggedInUser') || '';
+        // avoid authenticating as Anonymous; wait for proper login-success
+        if (!usernameFromState || usernameFromState === 'Anonymous') {
+          return;
+        }
+        // Send authentication event with real username
+        websocketService.emit('authenticate', { username: usernameFromState });
         
         // Listen for authentication response
         window.addEventListener('websocketAuthenticated', (event: CustomEvent) => {
-          const { success, error } = event.detail;
+          const { success, username } = event.detail as any;
           if (success) {
             this.updateConnectionStatus('Authenticated', 'rgba(0,255,0,0.7)');
+            if (username) {
+              try {
+                // cache username so UI shows the right sender
+                this.currentUsername = username;
+                // also keep localStorage in sync for other code paths
+                localStorage.setItem('loggedInUser', username);
+              } catch {}
+            }
           } else {
             this.updateConnectionStatus('Auth failed', 'rgba(255,0,0,0.7)');
           }
-        });
+        }, { once: true });
       }
     } catch (error) {
       console.error('Failed to authenticate user:', error);
     }
+  }
+
+  // ensure proper authentication when login occurs after socket connects
+  connectedCallback() {
+    // listen once for login-success to authenticate with correct username
+    window.addEventListener('login-success', (e: any) => {
+      try {
+        const websocketService = (window as any).websocketService;
+        if (!websocketService || !websocketService.isConnected()) return;
+        const username = e?.detail?.username || state.userData?.username || localStorage.getItem('loggedInUser');
+        if (!username || username === 'Anonymous') return;
+        websocketService.authenticate(username);
+        this.currentUsername = username;
+        localStorage.setItem('loggedInUser', username);
+      } catch {}
+    }, { once: true });
   }
 
   // Setup WebSocket event listeners - SIMPLIFIED
@@ -157,14 +186,22 @@ export default class ChatPanel extends HTMLElement {
     });
 
     // Handle game invites
-    websocketService.socket.on('gameInvite', (data: any) => {
+    // prefer window event to avoid multiple socket handlers if ChatPanel is recreated
+    const onGameInvite = (e: any) => {
+      const data = e.detail;
       if (data && data.type === 'invite' && data.senderUsername && data.message) {
-        // Add invite message with buttons
+        this.lastInvite = data;
         this.addMessage(data.senderUsername, data.message, 'other', 'direct', data.receiverUsername, data);
       }
+    };
+    window.addEventListener('gameInvite', onGameInvite);
+
+    // feedback for sender when invite is sent
+    websocketService.socket.on('inviteSent', (data: any) => {
+      this.addMessage('', `✅ Invite sent to ${data.targetUsername}`, 'system', 'global');
     });
 
-    // Handle invite responses
+    // Handle invite responses (no redirect here; wait for roomCreated)
     websocketService.socket.on('inviteAccepted', (data: any) => {
       this.addMessage('', data.message, 'system', 'global');
     });
@@ -181,12 +218,31 @@ export default class ChatPanel extends HTMLElement {
     // Handle game start - removed direct websocket listener to prevent conflicts
     // The gameStart event should be handled by the game orchestrator, not the chat
 
-    // Handle room creation for invite flow
+    // Handle room creation for invite flow (keep existing event chain)
     websocketService.socket.on('roomCreated', (data: any) => {
-      this.addMessage('', '🎮 Game room created! You are the host.', 'system', 'global');
-      
-      // Dispatch event for RemoteMultiplayerManager to handle
+      this.addMessage('', '🎮 Game room created!', 'system', 'global');
       window.dispatchEvent(new CustomEvent('roomCreated', { detail: data }));
+    });
+
+    // Navigate to game on server instruction (both host/guest)
+    window.addEventListener('navigateToGame', (e: any) => {
+      const data = e.detail;
+      try { localStorage.setItem('inviteRoom', JSON.stringify({ room: data.room, isHost: data.role === 'host' })); } catch {}
+      try { localStorage.setItem('inviteRoomId', data.room?.id || data.roomId || ''); } catch {}
+      try { localStorage.setItem('openRemoteUI', '1'); } catch {}
+      // client-side navigate to preserve websocket connection
+      try {
+        window.history.pushState({}, '', '/game');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      } catch {}
+    });
+
+    // Fallback: accept/decline using lastInvite from localStorage if present
+    window.addEventListener('login-success', () => {
+      try {
+        const raw = localStorage.getItem('lastInvite');
+        if (raw) this.lastInvite = JSON.parse(raw);
+      } catch {}
     });
 
     // Handle player joined for invite flow
@@ -435,6 +491,14 @@ export default class ChatPanel extends HTMLElement {
         timestampDiv.style.cssText = 'color: rgba(255,255,255,0.5); font-size: 0.6rem; margin-top: 0.15rem; text-align: right;';
         timestampDiv.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         
+        // store invite metadata on the DOM node so /accept and /decline can find it
+        if (inviteData && inviteData.type === 'invite' && inviteData.id) {
+          messageDiv.setAttribute('data-invite-type', 'true');
+          messageDiv.setAttribute('data-invite-id', String(inviteData.id));
+          if (inviteData.senderUsername) messageDiv.setAttribute('data-sender', String(inviteData.senderUsername));
+          if (inviteData.receiverUsername) messageDiv.setAttribute('data-receiver', String(inviteData.receiverUsername));
+          if (inviteData.difficulty) messageDiv.setAttribute('data-difficulty', String(inviteData.difficulty));
+        }
         // Add invite info if this is an invite message
         if (inviteData && inviteData.type === 'invite') {
           // Store real invite data in the message DOM for later extraction
@@ -995,6 +1059,7 @@ export default class ChatPanel extends HTMLElement {
       let message = messageParts.join(' ');
       
       if (receiver && message) {
+        // always allowed to send; backend will validate receiver presence and warn sender if needed
         if (receiver === this.getCurrentUsername()) {
           this.addMessage('', 'You cannot send a private message to yourself!', 'system', 'global');
           return;
@@ -1016,14 +1081,17 @@ export default class ChatPanel extends HTMLElement {
         this.addMessage('', 'Usage: /invite username [difficulty]', 'system', 'global');
         return;
       }
+      // always allowed to send; backend will validate receiver presence and warn sender if needed
       wss.emit('chatMessage', {
 		message: `/invite ${receiver} ${difficulty}`,
 		username: this.getCurrentUsername()
 	  });
     } else if (cmd === '/accept') {
+      // accept from anywhere; server will validate pending invite
       // Accept the most recent game invite
       this.handleInviteCommand('accept');
     } else if (cmd === '/decline') {
+      // decline from anywhere
       // Decline the most recent game invite
       this.handleInviteCommand('decline');
     } else if (cmd.startsWith('/profile ')) {
@@ -1093,8 +1161,25 @@ export default class ChatPanel extends HTMLElement {
   private handleInviteCommand(action: 'accept' | 'decline') {
     try {
       // Find the most recent invite message
-      const inviteMessage = this.findInviteMessage();
+      let inviteMessage = this.findInviteMessage();
       if (!inviteMessage) {
+        // fallback to lastInvite cached from socket event
+        if (this.lastInvite) {
+          const websocketService = (window as any).websocketService;
+          if (websocketService && websocketService.socket) {
+            websocketService.socket.emit('inviteResponse', {
+              inviteId: this.lastInvite.id,
+              response: action,
+              senderUsername: this.lastInvite.senderUsername,
+              receiverUsername: this.lastInvite.receiverUsername,
+              difficulty: this.lastInvite.difficulty
+            });
+            this.addMessage('', (action === 'accept') ? '🎮 Processing invite acceptance...' : '❌ Invite declined', 'system', 'global');
+            // mark as processed
+            this.lastInvite = null;
+            return;
+          }
+        }
         this.addMessage('', '⚠️ No game invite found to respond to', 'system', 'global');
         return;
       }
@@ -1126,9 +1211,7 @@ export default class ChatPanel extends HTMLElement {
         // Mark as processed immediately
         inviteMessage.setAttribute('data-invite-processed', 'true');
         
-        if (action === 'accept') {
-          this.addMessage('', '🎮 Processing invite acceptance...', 'system', 'global');
-        } else {
+        if (action !== 'accept') {
           this.addMessage('', '❌ Invite declined', 'system', 'global');
         }
       }

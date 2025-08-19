@@ -12,7 +12,7 @@ class WebSocketServer {
 	constructor(port) {
 		this.port = port;
 		this.io = null;
-
+		
 		// initialize manager classes
 		this.gameManager = new GameManager();
 		this.roomManager = new RoomManager();
@@ -93,13 +93,6 @@ class WebSocketServer {
 				this.handleBlockUser(socket, data);
 			});
 
-			// track client route/presence to gate certain commands
-			socket.on('updatePresence', (data) => {
-				const user = this.userManager.getUser(socket.id);
-				if (!user) return;
-				user.currentPath = data?.path || '/';
-			});
-
 			// handles user disconnection
 			socket.on('disconnect', () => {
 				this.handleDisconnect(socket);
@@ -138,7 +131,7 @@ class WebSocketServer {
 
 			Logger.logUserEvent('authenticated', username);
 		} catch (error) {
-			Logger.error('Authentication failed', { username: data.username, error: error.message });
+			Logger.error('Authentication failed', { username, error: error.message });
 			socket.emit('authenticated', { success: false, error: 'Authentication failed' });
 		}
 	}
@@ -405,6 +398,206 @@ class WebSocketServer {
 	}
 
 	/**
+	 * Updates the game state every frame (60 FPS)
+	 * Handles ball movement, paddle movement, and collision detection
+	 * This is the main game loop that runs on the server
+	 */
+	updateGameState(roomId) {
+		const room = this.gameRooms.get(roomId);
+		if (!room || !room.gameState) return;
+
+		const gameState = room.gameState;
+		const now = Date.now();
+		const deltaTime = (now - gameState.lastUpdate) / 1000;
+		gameState.lastUpdate = now;
+
+		// update ball position using physics (position = position + velocity * time)
+		gameState.ball.x += gameState.ball.velocityX * deltaTime;
+		gameState.ball.y += gameState.ball.velocityY * deltaTime;
+
+		// left paddle movement
+		if (gameState.paddles.left.moving && gameState.paddles.left.direction !== 0) {
+			const oldY = gameState.paddles.left.y;
+			const newY = gameState.paddles.left.y + gameState.paddles.left.direction * gameState.paddles.left.speed * deltaTime;
+
+			const courtTop = VIRTUAL_BORDER_TOP;
+			const courtBottom = VIRTUAL_HEIGHT - VIRTUAL_BORDER_BOTTOM;
+			const paddleGap = PADDLE_WIDTH * 0.02;
+			const paddleHeight = gameState.paddles.left.height;
+
+			if (gameState.paddles.left.direction > 0) { // moveDown
+				gameState.paddles.left.y = Math.min(newY, courtBottom - paddleHeight - paddleGap);
+			} else { // moveUp
+				gameState.paddles.left.y = Math.max(newY, courtTop + paddleGap);
+			}
+		}
+
+		// right paddle
+		if (gameState.paddles.right.moving && gameState.paddles.right.direction !== 0) {
+			const oldY = gameState.paddles.right.y;
+			const newY = gameState.paddles.right.y + gameState.paddles.right.direction * gameState.paddles.right.speed * deltaTime;
+
+			const courtTop = VIRTUAL_BORDER_TOP;
+			const courtBottom = VIRTUAL_HEIGHT - VIRTUAL_BORDER_BOTTOM;
+			const paddleGap = PADDLE_WIDTH * 0.02;
+			const paddleHeight = gameState.paddles.right.height;
+
+			if (gameState.paddles.right.direction > 0) { // moveDown
+				gameState.paddles.right.y = Math.min(newY, courtBottom - paddleHeight - paddleGap);
+			} else { // moveUp
+				gameState.paddles.right.y = Math.max(newY, courtTop + paddleGap);
+			}
+		}
+
+		// collision detection now handled by GameManager
+	}
+
+	/**
+	 * Checks for collisions between ball and paddles/walls
+	 * Uses the same collision detection logic as single-player
+	 * Handles ball bouncing, scoring, and game end conditions
+	 */
+	// checkCollisions method removed - now handled by GameManager
+		const room = this.gameRooms.get(roomId);
+		if (!room || !room.gameState) return;
+
+		const gameState = room.gameState;
+		const ball = gameState.ball;
+
+		if (ball.y <= VIRTUAL_BORDER_TOP || ball.y >= VIRTUAL_HEIGHT - VIRTUAL_BORDER_BOTTOM) {
+			ball.velocityY = -ball.velocityY;
+		}
+
+		const leftPaddle = gameState.paddles.left;
+		const rightPaddle = gameState.paddles.right;
+
+		// left paddle collision (ball moving left)
+		if (ball.velocityX < 0) {
+			const paddleX = leftPaddle.x;
+			const paddleTop = leftPaddle.y;
+			const paddleBottom = leftPaddle.y + leftPaddle.height;
+
+			if (ball.x + ball.size / 2 >= paddleX &&
+				ball.x - ball.size / 2 <= paddleX + leftPaddle.width &&
+				ball.y + ball.size / 2 >= paddleTop &&
+				ball.y - ball.size / 2 <= paddleBottom) {
+
+				this.bounceOffPaddle(ball, leftPaddle, 'left');
+			}
+		}
+
+		// right paddle collision (ball moving right)
+		if (ball.velocityX > 0) {
+			const paddleX = rightPaddle.x;
+			const paddleTop = rightPaddle.y;
+			const paddleBottom = rightPaddle.y + rightPaddle.height;
+
+			if (ball.x + ball.size / 2 >= paddleX &&
+				ball.x - ball.size / 2 <= paddleX + rightPaddle.width &&
+				ball.y + ball.size / 2 >= paddleTop &&
+				ball.y - ball.size / 2 <= paddleBottom) {
+
+				this.bounceOffPaddle(ball, rightPaddle, 'right');
+			}
+		}
+
+		// ball goes out of bounds (scoring)
+		if (ball.x <= VIRTUAL_BORDER_X) {
+			gameState.paddles.right.score++;
+			gameState.lastScorer = 'right';
+			this.resetBall(roomId);
+			this.checkGameEnd(roomId);
+		} else if (ball.x >= VIRTUAL_WIDTH - VIRTUAL_BORDER_X) {
+			gameState.paddles.left.score++;
+			gameState.lastScorer = 'left';
+			this.resetBall(roomId);
+			this.checkGameEnd(roomId);
+		}
+	}
+
+	/**
+	 * Handles ball bouncing off paddles with realistic physics
+	 * Calculates bounce angle based on where the ball hits the paddle
+	 * Increases ball speed gradually for more exciting gameplay
+
+	 */
+	bounceOffPaddle(ball, paddle, paddleSide) {
+		// prevent sticking to the paddle
+		if (paddleSide === 'left') {
+			ball.x = paddle.x + paddle.width + ball.size / 2 + 1;
+		} else {
+			ball.x = paddle.x - ball.size / 2 - 1;
+		}
+
+		// calculate normalized hit position (-1 to 1)
+		const relativeIntersectY = (ball.y - (paddle.y + paddle.height / 2));
+		const normalized = relativeIntersectY / (paddle.height / 2);
+		const maxBounceAngle = Math.PI / 4; // 45 degrees (medium difficulty)
+		const bounceAngle = normalized * maxBounceAngle;
+
+		// calculate current speed and increase by 25%
+		let speed = Math.sqrt(ball.velocityX * ball.velocityX + ball.velocityY * ball.velocityY);
+		speed = Math.max(Math.min(speed * 1.25, BALL_SPEED_MAX), BALL_SPEED_MIN);
+
+		// update velocity: always right direction after left paddle, or left direction after right paddle
+		ball.velocityX = (paddleSide === 'left' ? Math.abs(speed * Math.cos(bounceAngle)) : -Math.abs(speed * Math.cos(bounceAngle)));
+		ball.velocityY = speed * Math.sin(bounceAngle);
+	}
+
+	resetBall(roomId) {
+		const room = this.gameRooms.get(roomId);
+		if (!room || !room.gameState) return;
+
+		const ball = room.gameState.ball;
+		ball.x = VIRTUAL_WIDTH / 2;
+		ball.y = VIRTUAL_HEIGHT / 2;
+
+		// serve toward the player who just scored
+		const direction = room.gameState.lastScorer === 'left' ? 1 : -1; // left scored = serve right, right scored = serve left
+		const angle = (Math.random() - 0.5) * Math.PI / 4; // Random angle up to 45 degrees
+		ball.velocityX = direction * BALL_SPEED_MIN * Math.cos(angle);
+		ball.velocityY = BALL_SPEED_MIN * Math.sin(angle);
+	}
+
+	checkGameEnd(roomId) {
+		const room = this.gameRooms.get(roomId);
+		if (!room || !room.gameState) return;
+
+		const leftScore = room.gameState.paddles.left.score;
+		const rightScore = room.gameState.paddles.right.score;
+
+		if (leftScore >= SCORE_MAX || rightScore >= SCORE_MAX) {
+			room.gameState.gamePhase = 'finished';
+			room.status = 'waiting';
+
+			const winner = leftScore >= SCORE_MAX ? room.players[0] : room.players[1];
+			const loser = leftScore >= SCORE_MAX ? room.players[1] : room.players[0];
+
+			winner.wins++;
+			loser.losses++;
+
+			room.gameState.winner = winner.userId;
+
+			// reset player ready states for next game
+			room.players.forEach(player => {
+				player.isReady = false;
+			});
+
+			// clear the game loop
+			if (room.gameLoop) {
+				clearInterval(room.gameLoop);
+				room.gameLoop = null;
+			}
+
+			this.io.to(roomId).emit('gameEnd', {
+				gameState: room.gameState,
+				winner: winner,
+				players: room.players
+			});
+		}
+	}
+
+	/**
 	 * Handles game input from clients (paddle movement, ready status, etc.)
 	 * Validates user authentication and room membership
 	 * Updates game state based on player actions
@@ -466,7 +659,7 @@ class WebSocketServer {
 			const roomCheck = this.roomManager.isPlayerInRoom(socket.id);
 			if (roomCheck.inRoom) {
 				const result = this.roomManager.removePlayerFromRoom(roomCheck.roomId, socket.id);
-
+				
 				// if game was in progress, end it immediately
 				if (result.room && result.room.status === 'playing' && result.room.gameState && result.room.gameState.gamePhase === 'playing') {
 					// stop game loop
@@ -570,18 +763,12 @@ class WebSocketServer {
 			return;
 		}
 
-		// presence requirement: receiver must be on Home for PMs for now
-		if (receiver.currentPath && receiver.currentPath !== '/') {
-			socket.emit('chatError', { message: `${receiverUsername} is not on Home. Try again when they are on Home.` });
-			return;
-		}
-
 		// create direct message using chat manager
 		const directMessage = this.chatManager.createDirectMessage(
-			user.userId,
-			senderUsername || user.username,
-			receiver.userId,
-			receiverUsername,
+			user.userId, 
+			senderUsername || user.username, 
+			receiver.userId, 
+			receiverUsername, 
 			validation.message
 		);
 
@@ -758,12 +945,7 @@ class WebSocketServer {
 		Logger.logInviteEvent('created', user.username, targetUsername, { difficulty });
 
 		if (targetUser.socketId) {
-			// presence requirement: receiver must be on Home to receive invite commands cleanly
-			if (targetUser.currentPath && targetUser.currentPath !== '/') {
-				socket.emit('chatError', { message: `${targetUsername} is not on Home. Try again when they are on Home.` });
-			} else {
-				this.io.to(targetUser.socketId).emit('gameInvite', result.inviteMessage);
-			}
+			this.io.to(targetUser.socketId).emit('gameInvite', result.inviteMessage);
 		}
 
 		socket.emit('inviteSent', {
@@ -836,35 +1018,26 @@ class WebSocketServer {
 			const receiverSocket = Array.from(this.io.sockets.sockets.values())
 				.find(s => this.userManager.getUser(s.id)?.username === receiverUsername);
 
-			// Host joins and navigates
+			// Host creates the room (follows normal flow)
 			if (senderSocket) {
 				senderSocket.join(roomId);
+				senderSocket.emit('inviteAccepted', {
+					room,
+					message: 'Match accepted! Creating game room...'
+				});
+
+				// Send roomCreated to host (like normal room creation)
 				senderSocket.emit('roomCreated', { roomId, room });
-				senderSocket.emit('navigateToGame', { roomId, room, role: 'host' });
 			}
 
-			// Auto-join guest server-side to avoid race and navigate
+			// Don't automatically add guest - let them join manually like normal flow
+			// This ensures the waiting room is shown properly
 			if (receiverSocket) {
-				receiverSocket.join(roomId);
-				receiverSocket.emit('navigateToGame', { roomId, room, role: 'guest' });
-				// add guest to room model
-				const addResult = this.roomManager.addPlayerToRoom(roomId, receiverUser);
-				if (addResult.success) {
-					const updatedRoom = addResult.room;
-					this.io.to(roomId).emit('playerJoined', {
-						player: receiverUser,
-						players: updatedRoom.players,
-						roomId: roomId,
-						room: updatedRoom
-					});
-				}
-			}
-
-			// Auto-ready both players and start immediately
-			const roomForReady = this.roomManager.getRoom(roomId);
-			if (roomForReady) {
-				roomForReady.players.forEach(p => { p.isReady = true; });
-				this.checkGameStart(roomId);
+				// Just notify guest that invite was accepted
+				receiverSocket.emit('inviteAccepted', {
+					room,
+					message: 'Match accepted! You can now join the game room.'
+				});
 			}
 
 			Logger.logInviteEvent('accepted', senderUsername, receiverUsername, { difficulty });
@@ -878,7 +1051,7 @@ class WebSocketServer {
 				.find(s => this.userManager.getUser(s.id)?.username === senderUsername);
 
 			if (senderSocket) {
-				senderSocket.emit('inviteDeclined', {
+				socket.emit('inviteDeclined', {
 					message: `${receiverUsername} declined your invite`
 				});
 			}

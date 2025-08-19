@@ -28,7 +28,7 @@ dev: frontend-dev backend-dev
 
 build: frontend-build
 
-a:
+a: clean
 	@echo "--------------------------------"
 	@echo "Multiplayer addresss:"
 	@ifconfig | grep "inet " | grep -v 127.0.0.1
@@ -42,7 +42,6 @@ clean:
 	@echo "Cleaning up..."
 	docker compose down -v
 	docker system prune -af
-	docker volume prune -f
 	docker network prune -f
 	clear
 

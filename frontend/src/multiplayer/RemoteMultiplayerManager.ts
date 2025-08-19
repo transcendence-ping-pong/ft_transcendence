@@ -11,6 +11,8 @@ export class RemoteMultiplayerManager {
   };
   
   private currentUsername: string = '';
+  private hasAutoJoined: boolean = false;
+  private hasAutoReadied: boolean = false;
 
   constructor() {
     this.setupEventListeners();
@@ -19,8 +21,7 @@ export class RemoteMultiplayerManager {
   // PUBLIC API - Simple methods for UI to call
   public connect(username: string) {
     this.currentUsername = username;
-    websocketService.connect(`http://localhost:3000`);
-    websocketService.authenticate(username);
+    // socket is connected and authenticated by main.ts
   }
 
   public createRoom(settings: any) {
@@ -65,6 +66,13 @@ export class RemoteMultiplayerManager {
 
   // PRIVATE - Event handling (clean signal system)
   private setupEventListeners() {
+    // After socket authentication, auto-join the invite room and auto-ready
+    window.addEventListener('websocketAuthenticated', () => {
+      if (this.state.currentRoomId && !this.hasAutoJoined) {
+        this.joinRoom(this.state.currentRoomId);
+        this.hasAutoJoined = true;
+      }
+    });
     // Room creation - Host becomes host
     window.addEventListener('roomCreated', (e: CustomEvent) => {
       console.log('RemoteMultiplayerManager: Room created', e.detail);
@@ -118,6 +126,15 @@ export class RemoteMultiplayerManager {
           detail: { room: this.state.currentRoom } 
         }));
       }
+
+      // if the joining player is us, auto-ready once joined
+      try {
+        const joiningUsername = e.detail.player?.username;
+        if (!this.hasAutoReadied && joiningUsername && joiningUsername === this.currentUsername) {
+          this.hasAutoReadied = true;
+          this.setReady();
+        }
+      } catch {}
     });
 
     // Player ready - Someone clicked ready
@@ -226,6 +243,26 @@ export class RemoteMultiplayerManager {
     this.state.isHost = isHost;
     this.state.isReady = false;
     this.state.isConnected = true;
+
+    // ensure websocketService knows our room id early to avoid "Room not found" on first ready
+    try {
+      (websocketService as any).currentRoomId = mappedRoom.id;
+    } catch {}
+
+    // reset auto-flow flags for a fresh invite session
+    this.hasAutoJoined = false;
+    this.hasAutoReadied = false;
+
+    // hard sync: if we are guest, immediately try to join once authenticated
+    if (!this.state.isHost && this.state.currentRoomId) {
+      if ((websocketService as any).isAuthenticatedFlag) {
+        this.joinRoom(this.state.currentRoomId);
+      } else {
+        window.addEventListener('websocketAuthenticated', () => {
+          this.joinRoom(this.state.currentRoomId as string);
+        }, { once: true });
+      }
+    }
     
     console.log('RemoteMultiplayerManager: Invite room set', this.state);
     

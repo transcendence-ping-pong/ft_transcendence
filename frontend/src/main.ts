@@ -140,25 +140,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   // set style theme according to toggle state
   document.body.classList.toggle('theme-primary', state.theme === 'primary');
   document.body.classList.toggle('theme-secondary', state.theme === 'secondary');
-
-  navigate = initRouter(routes, 'app');
-
-  // connects to websocket server
-  websocketService.connect(`ws://${window.location.hostname}:4001`);
-  
-  // Make websocketService available globally for chat system
+  // Expose globals BEFORE router renders so pages can use them during initial render
   (window as any).websocketService = websocketService;
-
-  // Initialize RemoteMultiplayerManager for invite flow
   (window as any).remoteMultiplayerManager = remoteMultiplayerManager;
 
-  // Connect RemoteMultiplayerManager when user is authenticated
-  window.addEventListener('websocketAuthenticated', (event: CustomEvent) => {
-    const { success, username } = event.detail;
-    if (success && username) {
-      remoteMultiplayerManager.connect(username);
-    }
-  });
+  // Connect to websocket server
+  websocketService.connect(`ws://${window.location.hostname}:4001`);
+
+  // Initialize router after globals are available
+  navigate = initRouter(routes, 'app');
+
+  // websocketAuthenticated is handled for UI feedback elsewhere; no socket connects here
 
   
   window.addEventListener('login-success', () => {
@@ -333,8 +325,8 @@ async function loadUserProfile() {
 function clearCacheAndRedirectToLogin() {
   localStorage.clear();
   state.userData = null;
-
-  navigate('/login');
+  if (typeof navigate === 'function') navigate('/login');
+  else window.location.assign('/login');
 }
 
 

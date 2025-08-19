@@ -58,6 +58,14 @@ export function initRouter(
     } else if (contentDiv) {
       contentDiv.innerHTML = `<h1>404 Not Found</h1>`;
     }
+
+    // notify backend of current page for presence-aware features
+    try {
+      const wss = (window as any).websocketService;
+      if (wss && typeof wss.emit === 'function') {
+        wss.emit('updatePresence', { path });
+      }
+    } catch {}
   }
 
   window.addEventListener('popstate', () => {

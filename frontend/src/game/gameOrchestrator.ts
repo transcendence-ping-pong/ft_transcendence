@@ -40,10 +40,41 @@ export class gameOrchestrator {
     state.scaleFactor = this.getScaleFactor();
     this.babylonCanvas = new BabylonCanvas(containerId);
     this.gui = new BabylonGUI(this.babylonCanvas.getScene());
+    // auto open remote UI on invite acceptance
+    try { (this.gui as any).attachInviteAutoOpen(); } catch {}
 
 	this.setupMultiplayerEvents();
     this.setupMenuFlow();
     this.babylonCanvas.startRenderLoop();
+
+    // if redirected here from invite flow, open Remote UI automatically
+    try {
+      if (localStorage.getItem('openRemoteUI') === '1') {
+        localStorage.removeItem('openRemoteUI');
+        // if a room was cached, ensure manager has it before opening UI
+        try {
+          const raw = localStorage.getItem('inviteRoom');
+          const roomIdRaw = localStorage.getItem('inviteRoomId');
+          if (raw) {
+            const cached = JSON.parse(raw);
+            // keep inviteRoom for later safety; do not remove yet
+            const mgr = (window as any).remoteMultiplayerManager;
+            if (mgr && typeof mgr.setInviteRoom === 'function') {
+              mgr.setInviteRoom(cached.room, cached.isHost === true);
+              // also give websocketService the room id early for join/ready/leave
+              try {
+                const wss = (window as any).websocketService;
+                const roomId = cached.room?.id || cached.roomId || roomIdRaw;
+                if (wss && roomId) {
+                  (wss as any).currentRoomId = roomId;
+                }
+              } catch {}
+            }
+          }
+        } catch {}
+        this.gui.showRemoteMultiplayerUI(this.gameLevel);
+      }
+    } catch {}
 
     // TODO FIX: when refreshing the page, resume the game from where it left off
     window.addEventListener('resize', () => {

@@ -21,13 +21,38 @@ export class RemoteMultiplayerUI {
   }
 
   public show() {
-    // show main remote multiplayer menu
+    // always attach listeners so UI re-renders on updates
+    this.setupSignalListeners();
+
+    // if already in a room (e.g., invite accepted), jump straight to waiting room
+    if (remoteMultiplayerManager.isInRoom()) {
+      const room = remoteMultiplayerManager.getCurrentRoom();
+      if (room) {
+        // if we are the guest (not host), auto-join the room on the server
+        const state = remoteMultiplayerManager.getState();
+        if (state && state.isHost === false && room.id) {
+          remoteMultiplayerManager.joinRoom(room.id);
+        }
+        this.renderGameRoom(room);
+        return;
+      }
+    }
+    // otherwise show main remote multiplayer menu
     this.renderMainMenu();
   }
 
   private renderMainMenu() {
     // completely clear everything and render main menu
     this.clearAllElements();
+
+    // if room exists by the time UI is shown, render it directly
+    if (remoteMultiplayerManager.isInRoom()) {
+      const room = remoteMultiplayerManager.getCurrentRoom();
+      if (room) {
+        this.renderGameRoom(room);
+        return;
+      }
+    }
     
     // Create game button
     const createButton = this.createButton("Create New Game", "createButton");
@@ -48,8 +73,7 @@ export class RemoteMultiplayerUI {
     // Connect and request rooms
     remoteMultiplayerManager.connect(this.currentUsername);
     
-    // Listen for clean signals
-    this.setupSignalListeners();
+    // Listen for clean signals (already attached in show())
   }
 
   private setupSignalListeners() {
@@ -331,6 +355,11 @@ export class RemoteMultiplayerUI {
     });
     
     remoteMultiplayerManager.leaveRoom();
+    // also clear any invite caches so UI resets cleanly
+    try {
+      localStorage.removeItem('inviteRoom');
+      localStorage.removeItem('inviteRoomId');
+    } catch {}
     // re-render main menu
     this.renderMainMenu();
   }

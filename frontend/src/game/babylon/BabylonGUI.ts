@@ -121,10 +121,23 @@ export class BabylonGUI {
   }
 
   public showRemoteMultiplayerUI(difficulty?: GameLevel) {
+    // ensure legacy start/menu buttons are removed when opening remote UI
+    this.clearGUI();
     // simple integration point - delegate to remotemultiplayerui
     // pass this instance so RemoteMultiplayerUI can reuse existing methods
     const remoteUI = new RemoteMultiplayerUI(this.advancedTexture, this.GUIConstants, difficulty, this);
     remoteUI.show();
+  }
+
+  // auto-open remote UI when an invite is accepted
+  public attachInviteAutoOpen() {
+    window.addEventListener('inviteAccepted', () => {
+      try {
+        this.showRemoteMultiplayerUI();
+      } catch (e) {
+        console.warn('Failed to auto-open RemoteMultiplayerUI:', e);
+      }
+    });
   }
 
   public showDifficultySelector(onDifficultySelected: (difficulty: string) => void) {
