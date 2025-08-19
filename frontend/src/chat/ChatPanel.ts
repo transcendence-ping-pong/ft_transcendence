@@ -1120,27 +1120,33 @@ export default class ChatPanel extends HTMLElement {
         username: this.getCurrentUsername()
       });
     } else if (cmd.startsWith('/block ')) {
-      const [_, target] = cmd.split(/\s+/);
+      const [_, raw] = cmd.split(/\s+/);
+      const target = raw?.trim();
       if (!target) { this.addMessage('', 'Usage: /block username', 'system', 'global'); return; }
-      // call REST to persist block
+      const me = this.getCurrentUsername();
+      if (target.toLowerCase() === me.toLowerCase()) {
+        this.addMessage('', 'You cannot block yourself!', 'system', 'global');
+        return;
+      }
+      // runtime enforcement via socket; server will emit userBlocked to blocker
+      wss.emit('blockUser', { targetUsername: target });
+      // best-effort REST persistence only
       (async () => {
         try {
           const mod: any = await import('@/services/blockService.js');
-          const me = this.getCurrentUsername();
           const meProfile = await getUserProfile(me);
           const targetProfile = await getUserProfile(target);
           const userId = meProfile?.userId || parseInt(localStorage.getItem('userId') || '0');
           const blockedId = targetProfile?.userId || 0;
-          console.log("BACKEND: ", userId, blockedId);
           if (userId && blockedId) await mod.blockUser(userId, blockedId);
-          this.addMessage('', `Blocked ${target}`, 'system', 'global');
-        } catch { this.addMessage('', `Blocked failed`, 'system', 'global'); }
+        } catch {}
       })();
-      // emit socket for immediate runtime enforcement
-      wss.emit('blockUser', { targetUsername: target });
     } else if (cmd.startsWith('/unblock ')) {
-      const [_, target] = cmd.split(/\s+/);
+      const [_, raw] = cmd.split(/\s+/);
+      const target = raw?.trim();
       if (!target) { this.addMessage('', 'Usage: /unblock username', 'system', 'global'); return; }
+      if ((wss as any).socket) (wss as any).socket.emit('unblockUser', { targetUsername: target });
+      // best-effort REST persistence only
       (async () => {
         try {
           const mod: any = await import('@/services/blockService.js');
@@ -1150,10 +1156,8 @@ export default class ChatPanel extends HTMLElement {
           const userId = meProfile?.userId || parseInt(localStorage.getItem('userId') || '0');
           const blockedId = targetProfile?.userId || 0;
           if (userId && blockedId) await mod.unblockUser(userId, blockedId);
-          this.addMessage('', `Unblocked ${target}`, 'system', 'global');
-        } catch { this.addMessage('', `Unblocked ${target}`, 'system', 'global'); }
+        } catch {}
       })();
-      if ((wss as any).socket) (wss as any).socket.emit('unblockUser', { targetUsername: target });
     } else if (cmd === '/accept') {
       // accept from anywhere; server will validate pending invite
       // Accept the most recent game invite
