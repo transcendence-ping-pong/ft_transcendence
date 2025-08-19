@@ -17,6 +17,8 @@ template.innerHTML = `
       text-align: center;
       font-size: var(--title-modal-font-size);
       font-weight: bold;
+      margin: 0;
+      padding: 0;
     }
     hr {
       border: none;

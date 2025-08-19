@@ -1,66 +1,70 @@
 import { t } from '@/locales/Translations';
 import { UserData } from '@/utils/playerUtils/types';
-import { state } from '@/state';
-const VIRTUAL_WIDTH = 500;
-const VIRTUAL_HEIGHT = 500;
-const VIRTUAL_MARGIN_Y = 220;
-const VIRTUAL_MARGIN_X = 80;
+
+const VIRTUAL_WIDTH = 725;
+const VIRTUAL_HEIGHT = 1080;
+const VIRTUAL_MARGIN_Y = 40;
+const VIRTUAL_MARGIN_X = 40;
 
 const template = document.createElement('template');
 template.innerHTML = `
   <style>
     :host {
       display: block;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      max-width: 700px;
+      margin: 0;
+      background: none;
+    }
+    .badge-virtual-container {
       position: relative;
+      width: 100%;
+      aspect-ratio: ${(VIRTUAL_WIDTH + VIRTUAL_MARGIN_X * 2) / (VIRTUAL_HEIGHT + VIRTUAL_MARGIN_Y * 2)};
+      max-width: ${VIRTUAL_WIDTH + VIRTUAL_MARGIN_X * 2}px;
+      margin: 0 auto;
+      background: none;
     }
     .badge-border-img {
       position: absolute;
       height: 100%;
       z-index: 20;
       pointer-events: none;
-      left: 0;
-      top: 0;
     }
     .badge-content-outer {
-      position: relative;
-      top: ${VIRTUAL_MARGIN_Y}px;
-      left: ${VIRTUAL_MARGIN_X}px;
-      width: ${VIRTUAL_WIDTH}px;
-      height: ${VIRTUAL_HEIGHT}px;
-      z-index: 10;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
       display: flex;
       align-items: center;
       justify-content: center;
       pointer-events: none;
-      background: var(--accent);
-      box-shadow: 0 0 80px 40px rgba(0,0,0,0.45) inset;
+      background: none;
     }
     .profile-card.atari-badge {
+      position: relative;
       width: 340px;
       height: 420px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: center;
       padding: 2.5rem 1.5rem 1.5rem 1.5rem;
+      gap: var(--avatar-badge-gap);
       pointer-events: auto;
-      position: relative;
-      background: none;
       border-radius: 0;
-      box-shadow: none;
+      background: var(--accent);
+      box-shadow: 0 0 80px 40px rgba(0,0,0,0.45) inset;
     }
     .avatar-container {
       position: relative;
     }
     .avatar {
-      width: 110px;
-      height: 110px;
+      width: var(--avatar-badge-size);
+      height: var(--avatar-badge-size);
       border-radius: 50%;
       background: #222;
       border: 3px solid #fff;
-      margin-bottom: 0.7em;
       cursor: pointer;
       transition: opacity 0.2s ease;
     }
@@ -90,31 +94,64 @@ template.innerHTML = `
     .hidden-file-input {
       display: none;
     }
+
+    .badge__container--username {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      gap: 0.3rem;
+    }
     .badge-username {
-      font-size: 2.1rem;
+      font-size: var(--avatar-badge-username-size);
       font-weight: bold;
+      padding: 0;
+      margin: 0;
       letter-spacing: 0.08em;
       color: var(--text);
-      margin-bottom: 0.2em;
       text-transform: uppercase;
     }
-    .badge__container--row {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: 0.5rem;
+    .badge__container--username .badge-username {
+      margin-bottom: 0;
+    }
+    .badge__container--username .badge-hr {
       width: 80%;
+      margin: 0.2rem 0;
+    }
+    .badge__container--username .username-label {
+      margin-bottom: 0;
     }
     .badge-hr {
       flex: 1 1 auto;
       border: none;
       border-top: 2.5px solid var(--text);
     }
+
+    .badge__container--visitor {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-end;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .visitor-number-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.1rem;
+    }
+    .visitor-number-col .visitor-number {
+      margin-bottom: 0;
+    }
+    .visitor-number-col .badge-hr {
+      margin: 0;
+    }
+
+    .visitor-label,
     .username-label {
-      font-size: 0.95rem;
+      font-size: var(--secondary-text-size);
       color: var(--text);
       opacity: 0.7;
-      margin-bottom: 1.2em;
       letter-spacing: 0.08em;
     }
     .visitor-number {
@@ -123,18 +160,11 @@ template.innerHTML = `
       color: var(--text);
       line-height: 1;
     }
-    .visitor-label {
-      font-size: 0.8rem;
-      margin-right: 0.5em;
-      color: var(--text);
-      opacity: 0.7;
-      letter-spacing: 0.08em;
-    }
+
     .logo-row {
       width: 100%;
       display: flex;
       justify-content: center;
-      margin-top: 1.5rem;
     }
     .logo-box {
       width: 64px;
@@ -147,32 +177,39 @@ template.innerHTML = `
     }
   </style>
 
-  <img 
-    src="/public/badge-border1.png"
-    alt="Badge profile image"
-    class="badge-border-img"
-  />
-  <div class="badge-content-outer">
-    <div class="profile-card atari-badge">
-      <div class="avatar-container">
-        <img class="avatar" />
-        <div class="avatar-upload-overlay">
-          📷 Change
+  <div class="badge-virtual-container">
+    <img 
+      src="/public/badge-border1.png"
+      alt="Badge profile image"
+      class="badge-border-img"
+    />
+    <div class="badge-content-outer">
+      <div class="profile-card atari-badge">
+        <div class="avatar-container">
+          <img class="avatar" />
+          <div class="avatar-upload-overlay">
+            📷 Change
+          </div>
         </div>
-      </div>
-      <input type="file" class="hidden-file-input" accept="image/*" />
-      <h2 class="badge-username"></h2>
-      <div class="badge__container--row">
-        <hr class="badge-hr" />
-      </div>
-      <span class="username-label"></span>
-      <span class="visitor-number"></span>
-      <div class="badge__container--row">
-        <span class="visitor-label">${t("profile.visitorNo")}</span>
-        <hr class="badge-hr" />
-      </div>
-      <div class="logo-row">
-        <img class="logo-box" src="/public/logo.png" alt="Logo" />
+        <input type="file" class="hidden-file-input" accept="image/*" style="display: none;" />
+
+        <div class="badge__container--username">
+          <h2 class="badge-username"></h2>
+          <hr class="badge-hr" />
+          <span class="username-label"></span>
+        </div>
+
+        <div class="badge__container--visitor">
+          <span class="visitor-label">${t("profile.visitorNo")}</span>
+          <div class="visitor-number-col">
+            <span class="visitor-number"></span>
+            <hr class="badge-hr" />
+          </div>
+        </div>
+
+        <div class="logo-row">
+          <img class="logo-box" src="/public/logo.png" alt="Logo" />
+        </div>
       </div>
     </div>
   </div>
@@ -206,13 +243,18 @@ export class AtariBadge extends HTMLElement {
   }
 
   connectedCallback() {
-    this.avatar = this.shadowRoot!.querySelector('.avatar') as HTMLImageElement;
-    this.fileInput = this.shadowRoot!.querySelector('.hidden-file-input') as HTMLInputElement;
+    this.avatar = this.shadowRoot!.querySelector('.avatar') as HTMLImageElement | null;
+    this.fileInput = this.shadowRoot!.querySelector('.hidden-file-input') as HTMLInputElement | null;
 
-    this.avatar.addEventListener('click', this.boundAvatarClick);
-    this.fileInput.addEventListener('change', this.boundFileInputChange);
+    if (this.avatar) this.avatar.addEventListener('click', this.boundAvatarClick);
+    if (this.fileInput) this.fileInput.addEventListener('change', this.boundFileInputChange);
 
     this.render();
+  }
+
+  disconnectedCallback() {
+    if (this.avatar) this.avatar.removeEventListener('click', this.boundAvatarClick);
+    if (this.fileInput) this.fileInput.removeEventListener('change', this.boundFileInputChange);
   }
 
   private printFirstName(username: string = ''): string {
@@ -235,7 +277,7 @@ export class AtariBadge extends HTMLElement {
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result as string;
-      this.avatar.src = result;
+      if (this.avatar) this.avatar.src = result;
     };
     reader.readAsDataURL(file);
 
@@ -292,11 +334,6 @@ export class AtariBadge extends HTMLElement {
     const mainUsername = state?.userData?.username;
     const isVisitor = !(this.userData && this.userData.username === mainUsername);
     this.setVisitorMode(isVisitor);
-  }
-
-  disconnectedCallback() {
-    if (this.avatar) this.avatar.removeEventListener('click', this.boundAvatarClick);
-    if (this.fileInput) this.fileInput.removeEventListener('change', this.boundFileInputChange);
   }
 }
 

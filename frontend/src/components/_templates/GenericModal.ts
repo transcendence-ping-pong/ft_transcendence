@@ -192,6 +192,8 @@ export class GenericModal extends HTMLElement {
   }
 
   private dismiss(fromChild = false) {
+    const dismissible = this.getAttribute('dismissible') === 'true';
+    if (!dismissible) return;
     this.remove();
     if (!fromChild) {
       window.dispatchEvent(new CustomEvent('modal-dismiss', { bubbles: true }));

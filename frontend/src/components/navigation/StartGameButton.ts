@@ -7,10 +7,7 @@ template.innerHTML = `
     :host {
       display: block;
       width: 100%;
-      height: 100%;
-      margin: 0 auto;
       box-sizing: border-box;
-      box-shadow: var(--shadow-soft);
     }
     .template__primary-button {
       padding: var(--component-padding);
@@ -28,6 +25,7 @@ template.innerHTML = `
       gap: 0.5rem;
       justify-content: center;
       border: 2px solid var(--border);
+      box-shadow: var(--shadow-soft);
     }
     .template__primary-button:hover, .template__primary-button:focus {
       background: var(--accent);
