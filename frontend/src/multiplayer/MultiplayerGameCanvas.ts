@@ -180,6 +180,10 @@ export class MultiplayerGameCanvas extends GameCanvas {
 			return;
 		}
 
+		if (this.playerIndex === 1 && this.getIsBotEnable()) {
+			return;
+		}
+
 		switch (event.key) {
 			case 'w':
 			case 'W':

@@ -125,15 +125,34 @@ export class GameCanvas extends EventTarget {
     // move paddles if direction is set
     for (let i = 0; i < this.paddles.length; i++) {
       if (this.bots[i]) {
-        if (this.gameManager.isStarted) { //To be sure the bot is update when the game start
-          this.bots[i]!.update(deltaTime);
+        if (this.gameManager.isStarted) {
+          this.bots[i]!.update();
         }
+      }
+      
+      const dir = this.paddleDirections[i];
+      if (!this.bots[i]) { // <-- só move se não for bot
+        if (dir === 'up') this.paddles[i].moveUp(deltaTime);
+        else if (dir === 'down') this.paddles[i].moveDown(deltaTime);
       } else {
-        const dir = this.paddleDirections[i];
+        // se for bot, já recebeu direção em setPaddleDirection()
         if (dir === 'up') this.paddles[i].moveUp(deltaTime);
         else if (dir === 'down') this.paddles[i].moveDown(deltaTime);
       }
     }
+
+    // // move paddles if direction is set
+    // for (let i = 0; i < this.paddles.length; i++) {
+    //   if (this.bots[i]) {
+    //     if (this.gameManager.isStarted) { //To be sure the bot is update when the game start
+    //       this.bots[i]!.update(deltaTime);
+    //     }
+    //   } else {
+    //     const dir = this.paddleDirections[i];
+    //     if (dir === 'up') this.paddles[i].moveUp(deltaTime);
+    //     else if (dir === 'down') this.paddles[i].moveDown(deltaTime);
+    //   }
+    // }
 
     // draw stuff
     const { PADDLE_WIDTH_RATIO, PADDLE_HEIGHT_RATIO } = GameSize;
@@ -198,8 +217,23 @@ export class GameCanvas extends EventTarget {
     this.isBotEnable = enable;
   }
 
+  public getIsBotEnable()
+  {
+    return this.isBotEnable;
+  }
+
+  public setPaddleDirection(playerIndex: 0 | 1, direction: 'up' | 'down' | null) {
+    this.paddleDirections[playerIndex] = direction;
+  }
+
   public enableBotForPlayer(playerIndex: 0 | 1): void {
-    this.bots[playerIndex] = new BotPlayer(this.paddles[playerIndex], this.ball, this.getLevel());
+    this.bots[playerIndex] = new BotPlayer(
+      this.paddles[playerIndex], 
+      this.ball,                 
+      this,                      
+      playerIndex,              
+      this.getLevel()            
+    );
   }
 
   public reset() {
@@ -218,10 +252,15 @@ export class GameCanvas extends EventTarget {
   private onKeyDown(event: KeyboardEvent) {
     switch (event.key) {
       case 'ArrowUp':
-        this.paddleDirections[1] = 'up';
+        // Só permite mover o player 2 se não for bot
+        if (!this.bots[1]) {
+          this.paddleDirections[1] = 'up';
+        }
         break;
       case 'ArrowDown':
-        this.paddleDirections[1] = 'down';
+        if (!this.bots[1]) {
+          this.paddleDirections[1] = 'down';
+        }
         break;
       case 'w':
       case 'W':
@@ -238,7 +277,10 @@ export class GameCanvas extends EventTarget {
     switch (event.key) {
       case 'ArrowUp':
       case 'ArrowDown':
-        this.paddleDirections[1] = null;
+        // Só permite parar o player 2 se não for bot
+        if (!this.bots[1]) {
+          this.paddleDirections[1] = null;
+        }
         break;
       case 'w':
       case 'W':
