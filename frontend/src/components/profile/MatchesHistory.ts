@@ -205,7 +205,6 @@ export class MatchesHistory extends HTMLElement {
   }
 
   async connectedCallback() {
-	console.log('UserData:', this.userData);
 	await this.getMatches();
     this.renderTimeline(this.matchObject);
   }
@@ -219,7 +218,7 @@ export class MatchesHistory extends HTMLElement {
         <div class="timeline-content">
           <div class="timeline-side">
             <span class="date">${m.day} ${m.time}</span>
-            <span class="status">Winner: ${m.winLoss.toUpperCase()}</span>
+            <span class="status">${t('profile.winner')}: ${m.winLoss.toUpperCase()}</span>
           </div>
           <div class="timeline-info">
             <span class="score">${m.scorePlayer1} vs ${m.scorePlayer2}</span>
@@ -233,8 +232,6 @@ export class MatchesHistory extends HTMLElement {
 
   private async getMatches() {
 	const rows = await getMatchHistory(this.userData.userId);
-	console.log('UserId:', this.userData.userId);
-	console.log('Rows:', rows);
 	for (const row of rows) {
 
 		const match = await getMatch(row.matchId);
@@ -244,23 +241,23 @@ export class MatchesHistory extends HTMLElement {
 			const tourn =  await getTournament(match.tournId);
 			switch (row.matchId) {
 				case tourn.semiId1:
-					mode = 'TOURNAMENT SEMIFINAL';
+					mode = `${t('profile.semifinal').toUpperCase()}`;
 					break;
 				case tourn.semiId2:
-					mode = 'TOURNAMENT SEMIFINAL';
+					mode = `${t('profile.semifinal').toUpperCase()}`;
 					break;
 				case tourn.finalId:
-					mode = 'TOURNAMENT FINAL';
+					mode = `${t('profile.final').toUpperCase()}`;
 					break;
 				default:
-					mode = 'TOURNAMENT QUARTERFINAL';
+					mode = `${t('profile.quarterfinal').toUpperCase()}`;
 			}
 		}
 		else if (match.remoteId) {
-			mode = 'REMOTE';
+			mode = `${t('game.mode2').toUpperCase()}`;
 		}
 		else
-			mode = 'LOCAL';
+			mode = `${t('game.mode1').toUpperCase()}`;
 
 		this.matchObject.push({
 			day: match.date,
