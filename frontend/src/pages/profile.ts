@@ -7,7 +7,7 @@ import '@/components/navigation/LanguagesDropdown.js';
 import '@/components/profile/UserProfileForm.js';
 import '@/components/profile/AtariBadge.js';
 import '@/components/_templates/GenericModal.js';
-import '@/components/MatchesHistory.js';
+import '@/components/profile/MatchesHistory.js';
 import '@/components/profile/DeleteProfile.js';
 import '@/components/profile/QrAuthentication.js';
 import * as friendsService from '@/services/friendsService.js';
@@ -44,7 +44,7 @@ export async function renderProfile(containerId: string, params: Record<string, 
   if (setCurrentProfile(params.username)) {
     userData = state.userData;
   } else {
-    userData = await getVisitorData(params.username);
+    userData = await friendsService.getUserProfile(params.username);
   }
 
   if (container) {
@@ -70,7 +70,7 @@ export async function renderProfile(containerId: string, params: Record<string, 
       </section>
       <section class="screen-2 h-screen w-screen">
         <div class="page-container">
-          <matches-history></matches-history>
+          <matches-history userdata='${JSON.stringify(userData)}'></matches-history>
         </div>
       </section>
     `;
@@ -90,8 +90,4 @@ export async function renderProfile(containerId: string, params: Record<string, 
 function setCurrentProfile(paramsUsername: string) {
   const mainUsername = state.userData?.username || '';
   return paramsUsername === mainUsername;
-}
-
-async function getVisitorData(paramsUsername: string) {
-  return await friendsService.getUserProfile(paramsUsername);
 }

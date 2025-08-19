@@ -3,7 +3,10 @@ import '@/components/navigation/LanguagesDropdown.js';
 import '@/components/navigation/TopBar.js';
 import '@/components/navigation/StartGameButton.js';
 import '@/components/navigation/Logo.js';
-import '@/components/NotificationsBar.js';
+import '@/components/notification/NotificationsBar.js';
+
+import '@/components/notification/FriendsList.js';
+import '@/components/notification/ChatBox.js'
 import { logout } from '@/services/authService.js';
 import { state } from '@/state.js';
 
@@ -11,16 +14,12 @@ export function renderHome(containerId: string) {
   const container = document.getElementById(containerId);
   if (container) {
     container.innerHTML = `
-      <!-- Video disabled for testing -->
-      <!-- <div class="video-bg-container w-full h-screen relative overflow-hidden">
+      <div class="video-bg-container w-full h-screen relative overflow-hidden">
         <video class="video-bg absolute top-0 left-0 w-full h-full object-cover z-0" autoplay muted loop playsinline>
           <source src="/public/pong_video_1080.mp4" type="video/mp4" />
         </video>
         <div class="fade-bottom"></div>
-      </div> -->
-      
-      <!-- Static background instead -->
-      <div class="w-full h-screen bg-black"></div>
+      </div>
 
       <top-bar>
         <pong-logo slot="logo"></pong-logo>
@@ -36,7 +35,9 @@ export function renderHome(containerId: string) {
         </button>
       </top-bar>
 
-      <notifications-bar></notifications-bar>
+      <notifications-bar>
+        <chat-box slot="chat-box"></chat-box>
+      </notifications-bar>
 
       <section class="screen-1 relative flex items-center justify-center h-screen w-screen">
         <div class="intro-text text-4xl text-white text-center z-10">[PLACEHOLDER]</div>
@@ -56,6 +57,8 @@ export function renderHome(containerId: string) {
     }
   }
 }
+
+// <friends-list slot="friends-list" mode="full"></friends-list>
 
 /*
 TODO:

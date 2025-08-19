@@ -1,6 +1,7 @@
 import { t } from "@/locales/Translations";
 import { actionIcons } from '@/utils/Constants';
 import { currentMatches, state } from '@/state.js';
+import { gameOrchestrator } from "@/game/gameOrchestrator";
 
 const banana = "banana";
 
@@ -160,7 +161,7 @@ export class ViewTournament extends HTMLElement {
   }
 
   private setPlayersDescription() {
-	this.shadowRoot.getElementById("players").textContent = t('game.nextMatch', { players: `${this._matches[this._currentMatchIndex].player1} and ${this._matches[this._currentMatchIndex].player2}` })
+	this.shadowRoot.getElementById("players").textContent = t('game.nextMatch', { players: `${this._matches[this._currentMatchIndex].player1} ${t('game.and')} ${this._matches[this._currentMatchIndex].player2}` })
   }
 }
 

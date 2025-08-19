@@ -20,15 +20,15 @@ CREATE TABLE IF NOT EXISTS userStats (
 	matchLossCount INTEGER DEFAULT 0,
 	tournamentCount INTEGER DEFAULT 0,
 	tournamentWinCount INTEGER DEFAULT 0,
-	FOREIGN KEY (userId) REFERENCES users (userId)
+	FOREIGN KEY (userId) REFERENCES users (userId) ON DELETE CASCADE	
 );
 
 CREATE TABLE IF NOT EXISTS friendList (
 	userId INTEGER NOT NULL,
 	friendId INTEGER NOT NULL,
 	friendStatus TEXT DEFAULT 'pending',
-	FOREIGN KEY (userId) REFERENCES users (userId),
-	FOREIGN KEY (friendId) REFERENCES users (userId)
+	FOREIGN KEY (userId) REFERENCES users (userId) ON DELETE CASCADE,
+	FOREIGN KEY (friendId) REFERENCES users (userId) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS matches (

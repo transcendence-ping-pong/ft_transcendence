@@ -46,17 +46,17 @@ notificationService.listen((notif) => {
 });
 
 // TODO SOCKET: REMOVE MOCK
-startMockNotifications();
+// startMockNotifications();
 
 // initialize chat system
 function initializeChatSystem() {
   // create only the chat panel (button is now in TopBar)
   const chatPanel = new ChatPanel();
-  
+
   // add to body so it's always available
-  document.body.appendChild(chatPanel);
-  
-  console.log('Chat system initialized');
+  // document.body.appendChild(chatPanel);
+
+  // console.log('Chat system initialized');
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -140,25 +140,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   // set style theme according to toggle state
   document.body.classList.toggle('theme-primary', state.theme === 'primary');
   document.body.classList.toggle('theme-secondary', state.theme === 'secondary');
-  // Expose globals BEFORE router renders so pages can use them during initial render
+  
+  // connects to websocket server
+  websocketService.connect(`ws://${window.location.hostname}:4001`);
+
+  navigate = initRouter(routes, 'app');
+
+
+  // Make websocketService available globally for chat system
   (window as any).websocketService = websocketService;
   (window as any).remoteMultiplayerManager = remoteMultiplayerManager;
 
-  // Connect to websocket server
-  websocketService.connect(`ws://${window.location.hostname}:4001`);
-
-  // Initialize router after globals are available
-  navigate = initRouter(routes, 'app');
-
   // websocketAuthenticated is handled for UI feedback elsewhere; no socket connects here
 
-  
+
   window.addEventListener('login-success', () => {
-	  renderLoading('app'); 
-	  setTimeout(() => {
-		  navigate('/');
-		}, 1200);
-	});
+    renderLoading('app');
+    setTimeout(() => {
+      navigate('/');
+    }, 1200);
+  });
 
   // Connect RemoteMultiplayerManager when user logs in
   window.addEventListener('login-success', () => {
@@ -173,10 +174,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (loggedInUser) {
     remoteMultiplayerManager.connect(loggedInUser);
   }
-	
-	// initialize chat system
-	initializeChatSystem();
-	
+
+  // initialize chat system
+  initializeChatSystem();
+
 
   window.addEventListener('login-success', async (e: CustomEvent) => {
     if (state.userData && !localStorage.getItem('accessToken')) {

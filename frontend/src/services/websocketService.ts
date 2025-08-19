@@ -20,7 +20,7 @@ interface PlayerEventWithRoom {
 }
 
 class WebSocketService {
-  private socket: any = null;
+  public socket: any = null;
   private currentRoom: GameRoom | null = null;
   private currentRoomId: string | null = null;
   private authToken: string | null = null;
@@ -36,7 +36,7 @@ class WebSocketService {
 
   connect(url: string) {
     if (this.socket) return;
-    
+
     this.socket = io(url);
 
     // Bind any listeners registered before connect
@@ -50,7 +50,7 @@ class WebSocketService {
     this.socket.on('connect', () => {
       // dispatch connection event for chat system
       window.dispatchEvent(new CustomEvent('websocketConnected'));
-      
+
       // Process pending event listeners
       this.processPendingEventListeners();
     });
@@ -83,18 +83,18 @@ class WebSocketService {
     this.socket.on('playerJoined', (data: PlayerEventWithRoom) => {
       this.currentRoom = data.room || this.currentRoom;
       this.currentRoomId = data.roomId;
-      
+
       if (this.currentRoom) {
         this.currentRoom.players = data.players;
       }
-      
-            window.dispatchEvent(new CustomEvent('playerJoined', {
-        detail: { 
-          player: data.player, 
-          players: data.players, 
+
+      window.dispatchEvent(new CustomEvent('playerJoined', {
+        detail: {
+          player: data.player,
+          players: data.players,
           roomId: data.roomId,
-          room: this.currentRoom 
-        } 
+          room: this.currentRoom
+        }
       }));
     });
 
@@ -103,15 +103,15 @@ class WebSocketService {
         this.currentRoom.status = 'playing';
         this.currentRoom.players = data.players;
       }
-      window.dispatchEvent(new CustomEvent('gameStart', { 
-        detail: { 
-          ...data, 
-          room: this.currentRoom 
-        } 
+      window.dispatchEvent(new CustomEvent('gameStart', {
+        detail: {
+          ...data,
+          room: this.currentRoom
+        }
       }));
     });
 
-	// todo: add proper countdown ui
+    // todo: add proper countdown ui
     this.socket.on('countdown', (data: { countdown: number }) => {
       window.dispatchEvent(new CustomEvent('gameCountdown', { detail: data }));
     });
@@ -135,13 +135,13 @@ class WebSocketService {
       if (this.currentRoom) {
         this.currentRoom.players = data.players;
       }
-      window.dispatchEvent(new CustomEvent('playerLeft', { 
-        detail: { 
-          player: data.player, 
-          players: data.players, 
+      window.dispatchEvent(new CustomEvent('playerLeft', {
+        detail: {
+          player: data.player,
+          players: data.players,
           roomId: data.roomId,
-          room: this.currentRoom 
-        } 
+          room: this.currentRoom
+        }
       }));
     });
 
@@ -165,13 +165,13 @@ class WebSocketService {
       if (this.currentRoom) {
         this.currentRoom.players = data.players;
       }
-      window.dispatchEvent(new CustomEvent('playerReady', { 
-        detail: { 
-          player: data.player, 
-          players: data.players, 
+      window.dispatchEvent(new CustomEvent('playerReady', {
+        detail: {
+          player: data.player,
+          players: data.players,
           roomId: data.roomId,
-          room: this.currentRoom 
-        } 
+          room: this.currentRoom
+        }
       }));
     });
 
@@ -391,21 +391,21 @@ class WebSocketService {
   private handleDisconnect() {
     // dispatch disconnect event
     window.dispatchEvent(new CustomEvent('websocketDisconnected'));
-    
+
     // attempt reconnection if not already reconnecting
     if (!this.isReconnecting && this.reconnectAttempts < this.maxReconnectAttempts) {
       this.isReconnecting = true;
       this.reconnectAttempts++;
-      
+
       this.reconnectTimer = setTimeout(() => {
         this.attemptReconnect();
       }, this.reconnectDelay);
-      
+
       // exponential backoff: double the delay for next attempt
       this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30000); // max 30 seconds
     } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      window.dispatchEvent(new CustomEvent('websocketError', { 
-        detail: { message: 'Connection lost. Max reconnection attempts reached.' } 
+      window.dispatchEvent(new CustomEvent('websocketError', {
+        detail: { message: 'Connection lost. Max reconnection attempts reached.' }
       }));
     }
   }
@@ -423,7 +423,7 @@ class WebSocketService {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
-    
+
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
