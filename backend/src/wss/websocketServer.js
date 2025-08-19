@@ -644,10 +644,16 @@ class WebSocketServer {
 		const { targetUsername } = data;
 		if (!targetUsername) return;
 
+		// prevent blocking self
+		if (targetUsername.toLowerCase() === String(user.username).toLowerCase()) {
+			socket.emit('chatError', { message: 'You cannot block yourself' });
+			return;
+		}
+
 		// block user using user manager
 		const result = this.userManager.blockUser(user.userId, targetUsername);
 		if (!result.success) {
-			socket.emit('chatError', { message: result.error });
+			socket.emit('chatError', { message: result.error || 'User not found or offline' });
 			return;
 		}
 
