@@ -1,5 +1,6 @@
 import { websocketService as wss } from '@/services/websocketService.js';
 import { state } from '../state.js';
+import { getUserProfile, postAddFriend, patchAcceptFriend, deleteFriend, getFriends, getReceivedRequests, getSentRequests } from '@/services/friendsService.js';
 
 export default class ChatPanel extends HTMLElement {
   private panel: HTMLDivElement;
@@ -976,19 +977,21 @@ export default class ChatPanel extends HTMLElement {
       this.addMessage('', '• /help - Show this help message', 'system', 'global');
       this.addMessage('', '• /list - Show online users', 'system', 'global');
       this.addMessage('', '• /pm username message - Send private message', 'system', 'global');
-	  this.addMessage('', '• /invite username difficulty - Invite user to play Pong (easy, medium, hard)', 'system', 'global');
+      this.addMessage('', '• /invite username difficulty - Invite user to play Pong (easy, medium, hard)', 'system', 'global');
       this.addMessage('', '• /accept - Accept invite', 'system', 'global');
       this.addMessage('', '• /decline - Decline invite', 'system', 'global');
       this.addMessage('', '• /profile username - Go to user profile page', 'system', 'global');
       this.addMessage('', '• /clear - Clear chat history', 'system', 'global');
+      this.addMessage('', '• /friend add/accept/remove username - Handle friend requests.', 'system', 'global');
+      this.addMessage('', '• /friends all/sent/received - List all friends, sent requests or received requests.', 'system', 'global');
     } else if (cmd === '/list') {
       this.requestOnlineUsers();
     } else if (cmd === '/clear') {
-		const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
-		if (messagesContainer) {
-		  messagesContainer.innerHTML = '';
-		  localStorage.removeItem('chatMessages');
-		  this.messageHistory = [];
+        const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
+        if (messagesContainer) {
+          messagesContainer.innerHTML = '';
+          localStorage.removeItem('chatMessages');
+          this.messageHistory = [];
 		}
     } else if (cmd.startsWith('/pm ')) {
       const [_, receiver, ...messageParts] = cmd.split(/\s+/);
@@ -1034,9 +1037,152 @@ export default class ChatPanel extends HTMLElement {
       } else {
         this.addMessage('', 'Usage: /profile username', 'system', 'global');
       }
+    } else if (cmd.startsWith('/friend ')) {
+      const [_, option, username] = cmd.split(/\s+/);
+
+      if (!option || !username) {
+        this.addMessage('', 'Usage: /friend add/accept/remove username', 'system', 'global');
+        return;
+      } else if (username === this.getCurrentUsername()) {
+          this.addMessage('', 'You cannot befriend/unfriend yourself! Try meeting other people!', 'system', 'global');
+          return;
+      } else {
+          switch (this.getOptions(option)) {
+            case 1:
+              this.addFriend(username);
+              break;
+            case 2:
+              this.acceptFriend(username);
+              break;
+            case 3:
+              this.removeFriend(username);
+              break;
+            case 4:
+              this.sentFriends();
+              break;
+            case 5:
+              this.receivedFriends();
+              break;
+            default:
+              this.addMessage('', 'Usage: /friend add/accept/remove username', 'system', 'global');
+              break;
+          }
+      }
+	} else if (cmd.startsWith('/friends ')) {
+      const [_, option] = cmd.split(/\s+/);
+
+      if (!option) {
+        return;
+      } else {
+          switch (this.getOptions(option)) {
+            case 4:
+              this.sentFriends();
+              break;
+            case 5:
+              this.receivedFriends();
+              break;
+            case 6:
+              this.currentFriends();
+              break;
+            default:
+              this.addMessage('', 'Usage: /friends <sent/received>', 'system', 'global');
+              break;
+          }
+      }
     } else {
       this.addMessage('', `Use /help for available commands.`, 'system', 'global');
     }
+  }
+
+  private async getUserId (username: string) {
+    const row = await getUserProfile(username);
+    return row.userId;
+  }
+
+  private async addFriend (username: string) {
+    try {
+      const friendId = await this.getUserId(username);
+      const currentId = await this.getUserId(this.getCurrentUsername());
+      const result = await postAddFriend(currentId, friendId);
+      this.addMessage('', `Friend request sent to ${username}`, 'system', 'global');
+    } catch (err) {
+        this.addMessage('', `Unable to send request`, 'system', 'global');
+    }
+  }
+
+  private async acceptFriend (username: string) {
+    try {
+      const friendId = await this.getUserId(username);
+      const currentId = await this.getUserId(this.getCurrentUsername());
+      const result = await patchAcceptFriend(currentId, friendId);
+      this.addMessage('', `You and ${username} are now friends!`, 'system', 'global');
+    } catch (err) {
+        this.addMessage('', `Unable to accept request`, 'system', 'global');
+    }
+  }
+
+  private async removeFriend (username: string) {
+    try {
+      const friendId = await this.getUserId(username);
+      const currentId = await this.getUserId(this.getCurrentUsername());
+      const result = await deleteFriend(currentId, friendId);
+      this.addMessage('', `Removed friend/request from ${username}`, 'system', 'global');
+    } catch (err) {
+        this.addMessage('', `Unable to remove friend/request`, 'system', 'global');
+    }
+  }
+
+  private async sentFriends () {
+    try {
+      const currentId = await this.getUserId(this.getCurrentUsername());
+      const reply = await getSentRequests(currentId);
+      for (const friend of reply.result) {
+        this.addMessage('', friend.username, 'system', 'global');
+      }
+    } catch (err) {
+        this.addMessage('', `Unable to retrieve sent requests`, 'system', 'global');
+    }
+  }
+
+  private async receivedFriends () {
+    try {
+      const currentId = await this.getUserId(this.getCurrentUsername());
+      const reply = await getReceivedRequests(currentId);
+      for (const friend of reply.result) {
+        this.addMessage('', friend.username, 'system', 'global');
+      }
+    } catch (err) {
+        this.addMessage('', `Unable to retrieve received requests`, 'system', 'global');
+    }
+  }
+
+  private async currentFriends () {
+    try {
+      const currentId = await this.getUserId(this.getCurrentUsername());
+      const reply = await getFriends(currentId);
+      for (const friend of reply.result) {
+          this.addMessage('', friend.username, 'system', 'global');
+      }
+    } catch (err) {
+        this.addMessage('', `Unable to retrieve friends`, 'system', 'global');
+    }
+  }
+
+  private getOptions (options: string) {
+    if (options === 'add') {
+        return 1;
+    } else if (options === 'accept') {
+        return 2;
+    } else if (options === 'remove') {
+        return 3;
+    } else if (options === 'sent') {
+        return 4;
+    } else if (options === 'received') {
+        return 5;
+    } else if (options === 'all') {
+        return 6;
+    } else
+        return 0;
   }
 
   // Request online users from backend

@@ -20,6 +20,72 @@ export async function getUserProfile(username: string): Promise<any> {
   }
 }
 
+export async function postAddFriend(userId: number, friendId: number) {
+  const res = await fetch(`${BASE_URL}/friends/add/${friendId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: userId }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`${res.status} - ${text}`);
+  }
+  return res.json();
+}
+
+export async function patchAcceptFriend(userId: number, friendId: number) {
+  const res = await fetch(`${BASE_URL}/friends/accept/${friendId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: userId }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Backend: ${res.status} - ${text}`);
+  }
+  return res.json();
+}
+
+export async function deleteFriend(userId: number, friendId: number) {
+  const res = await fetch(`${BASE_URL}/friends/remove/${friendId}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: userId }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Backend: ${res.status} - ${text}`);
+  }
+  return res.json();
+}
+
+export async function getSentRequests(userId: number) {
+  const res = await fetch(`${BASE_URL}/friends/${userId}/sent`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Backend: ${res.status} - ${text}`);
+  }
+  return res.json();
+}
+
+export async function getReceivedRequests(userId: number) {
+  const res = await fetch(`${BASE_URL}/friends/${userId}/received`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Backend: ${res.status} - ${text}`);
+  }
+  return res.json();
+}
+
+export async function getFriends(userId: number) {
+  const res = await fetch(`${BASE_URL}/friends/${userId}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Backend: ${res.status} - ${text}`);
+  }
+  return res.json();
+}
+
 // export async function getUserStats(userId: number): Promise<any> {
 //   try {
 //     const res = await fetch(`${BASE_URL}/users/stats/${userId}`, {

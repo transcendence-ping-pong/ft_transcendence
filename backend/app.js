@@ -18,6 +18,7 @@ fastify.register(require('@fastify/multipart'));
 // Register API routes
 fastify.register(require('./api/matches'), { prefix: '/api' });
 fastify.register(require('./api/users'), { prefix: '/api' });
+fastify.register(require('./api/friends'), { prefix: '/api' });
 
 const port = 4000;
 
@@ -37,7 +38,8 @@ fastify.register(fastifyStatic, {
 
 fastify.register(fastifyCors, {
     origin: true,
-    credentials: true
+    credentials: true,
+	methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS']
 });
 
 const wsServer = new websocketServer(4001);
