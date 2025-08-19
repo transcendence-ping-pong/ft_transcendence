@@ -52,16 +52,16 @@ export async function getTournamentFinal(tournId: number) {
   return res.json();
 }
 
-export async function createMatch(creatorId: number, remoteId: number, tournId: number | null, player1: string, player2: string) {
+export async function createMatch(creatorId: number, remoteId: number, tournId: number, player1: string, player2: string) {
   const res = await fetch(`${BASE_URL}/matches`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      creatorId: creatorId,
-      remoteId: remoteId, 
+      creatorUserId: creatorId,
+      remoteUserId: remoteId, 
       tournId: tournId,
-      player1: player1,
-      player2: player2
+      player1DisplayName: player1,
+      player2DisplayName: player2
     }),
   });
   if (!res.ok) {
@@ -95,10 +95,9 @@ export async function updateMatch(matchId: number, winner: string, score1: numbe
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      matchId,
-      winner,
-      score1,
-      score2
+      winnerDisplayName: winner,
+      scorePlayer1: score1,
+      scorePlayer2: score2
     }),
   });
   if (!res.ok) {
