@@ -28,9 +28,11 @@ class UserManager {
 		return this.connectedUsers.get(socketId);
 	}
 
-	// gets user by username
+	// gets user by username (case-insensitive)
 	getUserByUsername(username) {
-		return Array.from(this.connectedUsers.values()).find(user => user.username === username);
+		if (!username) return null;
+		const lower = String(username).toLowerCase();
+		return Array.from(this.connectedUsers.values()).find(user => String(user.username).toLowerCase() === lower) || null;
 	}
 
 	// removes user connection
