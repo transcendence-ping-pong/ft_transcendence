@@ -54,9 +54,9 @@ function initializeChatSystem() {
   const chatPanel = new ChatPanel();
 
   // add to body so it's always available
-  // document.body.appendChild(chatPanel);
+  document.body.appendChild(chatPanel);
 
-  // console.log('Chat system initialized');
+  console.log('Chat system initialized');
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
