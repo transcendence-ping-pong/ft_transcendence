@@ -1,4 +1,5 @@
 import { UserData } from '@/utils/playerUtils/types';
+import { Players } from '@/utils/playerUtils/types';
 /*
   State responsabilities:
   - persist state in localStorage
@@ -23,6 +24,7 @@ const initialState = savedState ? JSON.parse(savedState) : {
   soundEnabled: true,
   scaleFactor: {},
   userData: {} as UserData, // user data will be set after login
+  players: {} as Players,
   tournamentData: {} as TournamentData,
   // chat state
   chatOpen: false,
@@ -66,6 +68,7 @@ export interface TournamentData {
   players: string[];
   matches: Match[];
   currentMatchIndex: number;
+  stage: number;
   tournamentId: number | null;
 }
 

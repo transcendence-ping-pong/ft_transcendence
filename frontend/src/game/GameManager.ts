@@ -1,4 +1,6 @@
 import { GameLevel, GameScore } from '@/utils/gameUtils/GameConstants.js';
+// import { createMatch, updateMatch } from '@/services/matchService';
+import { state } from '@/state';
 
 /*
   Game Manager responsabilities:
@@ -17,17 +19,13 @@ export class GameManager {
   public isStarted = false;
   public isGameOver = false;
   public level: GameLevel;
+  public tempnumber: number;
   private scoreMax: number = Number(GameScore.SCORE_MAX); // max score to win the game
-  private matchId: number | null = null;
-
-
-  constructor(matchId?: number) {
-    this.matchId = matchId || null;
-  }
-
-  startGame(onFinish?: () => void) {
-    this.isStarted = true;
+  
+  async startGame(onFinish?: () => void) { 
+    this.isStarted = true; 
     this.isGameOver = false;
+	this.tempnumber = 0;
     this.reset();
     this._onFinish = onFinish;
   }
@@ -61,20 +59,18 @@ export class GameManager {
   }
 
   checkIsGameOver(player: GameScore): boolean {
-    Object.values(this.score).forEach((score) => {
-      if (this.checkTwoPointsRule()) this.scoreMax++;
-      if (score == this.scoreMax) this.endGame();
-    });
-    return this.isGameOver;
-  }
+      Object.values(this.score).forEach((score) => {
+        if (this.checkTwoPointsRule()) this.scoreMax++;
+        if (score == this.scoreMax) {
+          this.endGame();
+        }
+      });
+      return this.isGameOver;
+    } 
 
   addScore(player: GameScore): void {
     this.score[player] += 1;
     if (this.checkIsGameOver(player)) return;
-  }
-
-  setMatchId(id: number) {
-    this.matchId = id;
   }
 
   reset() {

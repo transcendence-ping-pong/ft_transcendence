@@ -1,3 +1,9 @@
+import { state } from '@/state.js';
+
+const BUTTON_HEIGHT_WITH_PADDING = 'calc(var(--toogle-height) + var(--component-padding))';
+const BUTTON_WIDTH_WITH_PADDING = 'calc(var(--toogle-width) + var(--component-padding))';
+const KNOB_SIZE_WITH_PADDING = 'calc(var(--toogle-knob-height) + var(--component-padding))';
+
 // TODO: check light-dark() https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/light-dark
 // Tailwind utility classes do not work inside Shadow DOM by default
 const template = document.createElement('template');
@@ -6,70 +12,45 @@ template.innerHTML = `
   <style>
     :host {
       display: inline-block;
-      width: var(--toogle-width);
-      height: var(--toogle-height);
+      width: ${BUTTON_WIDTH_WITH_PADDING};
+      height: ${BUTTON_HEIGHT_WITH_PADDING};
       vertical-align: middle;
+      box-shadow: var(--shadow-soft);
     }
     button {
       width: 100%;
       height: 100%;
-      border-width: 2px;
       display: flex;
       align-items: center;
+      justify-content: center;
       background: var(--body);
-      border-color: var(--border);
       cursor: pointer;
       transition: background 0.2s, border-color 0.2s;
-      padding: 0;
+      border: 2px solid var(--border);
+      padding: var(--component-padding);
       position: relative;
       outline: none;
     }
     .knob {
-      width: var(--toogle-knob-height);
-      height: var(--toogle-knob-height);
-      background: var(--accent);
+      width: ${KNOB_SIZE_WITH_PADDING};
+      height: ${KNOB_SIZE_WITH_PADDING};
+      background: var(--accent-secondary);
       position: absolute;
-      top: 2px;
-      left: 2px;
+      top: 50%;
+      left: 0.2rem;
+      transform: translateY(-50%);
       transition: left 0.2s, background 0.2s;
-      box-shadow: 0 1px 4px #0002;
     }
     :host([data-theme="secondary"]) .knob {
-      left: 30px;
+      left: calc(100% - ${KNOB_SIZE_WITH_PADDING} - 0.2rem);
       background: var(--border);
-    }
-    .track {
-      width: 100%;
-      height: 100%;
-      background: var(--accent);
-      opacity: 0.15;
-      position: absolute;
-      top: 0;
-      left: 0;
-      pointer-events: none;
-      transition: background 0.2s;
-    }
-
-    /* Responsive knob movement */
-    @media (max-width: 1400px) {
-      :host([data-theme="secondary"]) .knob {
-        left: 24px;
-      }
-    }
-    @media (min-width: 1920px) {
-      :host([data-theme="secondary"]) .knob {
-        left: 32px;
-      }
     }
   </style>
 
   <button id="toggle" aria-pressed="false" title="Toggle theme">
-    <span class="track"></span>
     <span class="knob"></span>
   </button>
 `;
-
-import { state } from '@/state.js';
 
 export class ThemeToggle extends HTMLElement {
   // JS will construct the element whenever an instance is created

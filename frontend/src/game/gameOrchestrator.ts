@@ -3,7 +3,8 @@ import { BabylonGUI } from '@/game/babylon/BabylonGUI.js';
 import { GameCanvas } from '@/game/GameCanvas.js';
 import { MultiplayerGameCanvas } from '@/multiplayer/MultiplayerGameCanvas.js';
 import { GameLevel, PlayerMode, GameMode, GameType, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, VIRTUAL_BORDER_X, VIRTUAL_BORDER_TOP, VIRTUAL_BORDER_BOTTOM } from '@/utils/gameUtils/GameConstants.js';
-import { state } from '@/state';
+import { state, TournamentData } from '@/state';
+import { createMatch, updateMatch, getTournamentSemi, getTournamentFinal } from '@/services/matchService';
 
 
 /*
@@ -30,6 +31,7 @@ export class gameOrchestrator {
   private gameMode: GameMode = GameMode.LOCAL;
   private gameType: GameType = GameType.ONE_MATCH;
   private gamePlayerMode: PlayerMode = PlayerMode.TWO_PLAYER;
+  private matchId: number | null = null;
 
   // private isTournament: boolean;
   // private gameManager: GameManager;
@@ -43,7 +45,7 @@ export class gameOrchestrator {
     // auto open remote UI on invite acceptance
     try { (this.gui as any).attachInviteAutoOpen(); } catch {}
 
-	this.setupMultiplayerEvents();
+    this.setupMultiplayerEvents();
     this.setupMenuFlow();
     this.babylonCanvas.startRenderLoop();
 
@@ -253,19 +255,73 @@ export class gameOrchestrator {
     });
   }
 
-  private setupGameOverTracking() {
-    this.gameCanvas.addEventListener('gameOver', (e: CustomEvent) => {
-      // TODO FIX: arguments are obsolete (player and score), review
-      this.gui.showGameOver('Player 1', { LEFT: 5, RIGHT: 3 });
+  private clearStateTournament() {
+      state.tournamentData = {
+            players: {},
+            matches: {},
+            currentMatchIndex: 0,
+            stage: 1,
+            tournamentId: 0
+    } as TournamentData;
+  };
 
-      // TODO: detail matches should be handled via state
-      if (this.gameType === GameType.TOURNAMENT) {
+  private async updateTournamentMatches(matchIndex: number) {
+    if (matchIndex == 4 && state.tournamentData.stage == 1) {
+
+        state.tournamentData.stage++;
+        state.tournamentData.currentMatchIndex = 0;
+
+        const result = await getTournamentSemi(state.tournamentData.tournamentId);
+        state.tournamentData.players = result.players;
+        
+    } else if (matchIndex == 2 && state.tournamentData.stage == 2) {
+
+        state.tournamentData.stage++;
+        state.tournamentData.currentMatchIndex = 0;
+
+        const result = await getTournamentFinal(state.tournamentData.tournamentId);
+        state.tournamentData.players = result.players;
+
+    } else if (state.tournamentData.stage == 3) {
+        state.tournamentData.stage++;
+    }
+    return ;
+}
+
+  private async handleTournamentEvents() {
+    await this.updateTournamentMatches(state.tournamentData.currentMatchIndex);
+    const matches = state.tournamentData.players;
+    if (state.tournamentData.stage < 4) {
         this.babylonCanvas.cleanupGame();
-        window.dispatchEvent(new CustomEvent('tournament-created', {
-          detail: { matches: [{ player1: "tchau", player2: "ola" }] },
+        window.dispatchEvent(new CustomEvent('tournament-stage', {
+          detail: { matches },
           bubbles: true,
           composed: true
         }));
+    } else {
+        this.clearStateTournament();
+        this.babylonCanvas.endingGame();
+        setTimeout(() => {
+            this.gui.clearGUI();
+        }, 2000);
+    }    
+  }
+
+  private setupGameOverTracking() {
+    this.gameCanvas.addEventListener('gameOver', async (e: CustomEvent) => {
+      let winner;
+      if (e.detail.winner == 'LEFT')
+            winner = state.players.p1;
+          else
+            winner = state.players.p2;
+      console.log("Final winner:", winner);
+      console.log("Final score Left: ", e.detail.score.LEFT, "Final score Right: ", e.detail.score.RIGHT);
+      await updateMatch(this.matchId, winner, e.detail.score.LEFT, e.detail.score.RIGHT);
+
+      // TODO FIX: arguments are obsolete (player and score), review
+      this.gui.showGameOver('Player 1', { LEFT: 5, RIGHT: 3 });
+      if (this.gameType === GameType.TOURNAMENT) {
+        this.handleTournamentEvents();
       } else {
         this.babylonCanvas.endingGame();
         setTimeout(() => {
@@ -275,12 +331,15 @@ export class gameOrchestrator {
     });
   }
 
-  public startGame() {
+  public async startGame() {
     // start game!!!!! countdown and then ball starts moving
+	// TODO: Change placeholder 0 for remoteUserId for the actual Id
+    const match = await createMatch(state.userData.userId, 0, state.tournamentData.tournamentId, state.players.p1, state.players.p2);
+	this.matchId = match.id;
     this.babylonCanvas.createGameCanvas(this.gameLevel, this.gamePlayerMode);
     this.gameCanvas = this.babylonCanvas.getGameCanvas();
 
-    this.gui.showCountdown(3, () => {
+    this.gui.showCountdown(1, () => {
       this.gameCanvas.startGame();
       this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => { });
     });
@@ -293,9 +352,9 @@ export class gameOrchestrator {
   }
 
   private setupMenuFlow() {
-	if (this.isMultiplayerMode) {
-		return;
-	}
+    if (this.isMultiplayerMode) {
+        return;
+    }
     // user starts the game from the main menu. Flow starting point
     this.gui.showStartButton(() => {
       // wants to play in which level? HARD, MEDIUM, EASY
@@ -308,13 +367,14 @@ export class gameOrchestrator {
           this.gameMode = selectedMode as GameMode;
 
           if (this.gameMode === GameMode.LOCAL) {
-
             // wants to play a single match or a tournament?
             // if one match, the flow is simpler. User can play with a bot or with another player
             // then, the game is ready to start
             this.gui.showGameTypeButton((gameType) => {
               this.gameType = gameType as GameType;
               if (gameType === GameType.ONE_MATCH) {
+                this.clearStateTournament();
+                state.players = { p1: "Player1", p2: "Player2" };
                 this.gui.showPlayerSelector((mode) => {
                   if (mode === PlayerMode.ONE_PLAYER) {
                     this.gameCanvas.enableBotForPlayer(1);

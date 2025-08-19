@@ -34,7 +34,7 @@ template.innerHTML = `
       border-color: var(--warning);
     }
     .auth-form__google-button,
-    .auth-form__primary-button {
+    .template__primary-button {
       padding: 1rem 0;
       border: none;
       background: var(--accent-secondary);
@@ -45,7 +45,7 @@ template.innerHTML = `
       cursor: pointer;
       transition: background 0.2s, color 0.2s;
     }
-    .auth-form__primary-button:hover, .auth-form__primary-button:focus {
+    .template__primary-button:hover, .template__primary-button:focus {
       background: var(--accent);
       color: var(--text);
     }
@@ -104,7 +104,7 @@ template.innerHTML = `
     </form>
     <div slot="error" id="error" class="auth-form__error"></div>
     <div slot="footer" class="auth-form__footer">
-      <button id="login" class="auth-form__primary-button" type="submit" form="loginForm">${t('auth.signin')}</button>
+      <button id="login" class="template__primary-button" type="submit" form="loginForm">${t('auth.signin')}</button>
       <button id="google" type="button" class="auth-form__google-button">
         <svg class="auth-form__google-button-icon" viewBox="0 0 48 48">
           <g>

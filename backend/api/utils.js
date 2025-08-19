@@ -14,7 +14,7 @@ function splitIntoRandomPairs(inputArray) {
 
 	const result = [];
 	for (let i = 0; i < 8; i += 2) {
-		result.push([copyArray[i], copyArray[i + 1]]);
+		result.push({player1: copyArray[i], player2: copyArray[i + 1]});
 	}
 
 	return result;
@@ -149,16 +149,6 @@ function authenticateToken(req, reply, done) {
         done();
     });
 }
-
-// function dbRun(db, sql, params) {
-// 	return new Promise((resolve, reject) => {
-// 		db.run(sql, params, function (err) {
-// 			if (err) return reject(err);
-// 			resolve({ lastID: this.lastID });
-// 		});
-// 	});
-// };
-// TO DO: DB MATCH RUN
 
 function getWinner(db, params) {
 	return new Promise((resolve, reject) => {

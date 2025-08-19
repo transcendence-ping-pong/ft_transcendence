@@ -148,7 +148,7 @@ async function matchRoutes(fastify, options) {
 
 			const result = [];
 			for (let i = 0; i < 4; i += 2) {
-				result.push([winners[i], winners[i + 1]]);
+				result.push({player1: winners[i], player2: winners[i + 1]});
 			}
 			reply.send({ message: 'Semifinals players retrieved', players: result});
 		});
@@ -170,7 +170,12 @@ async function matchRoutes(fastify, options) {
 
 			const winners = await Promise.all(semiIds.map(matchId => getWinner(db, matchId)));
 
-			reply.send({ message: 'Final players retrieved', players: winners});
+			const result = [ {
+				player1: winners[0],
+				player2: winners[1]
+			} ];
+
+			reply.send({ message: 'Final players retrieved', players: result});
 		});
 	});
 

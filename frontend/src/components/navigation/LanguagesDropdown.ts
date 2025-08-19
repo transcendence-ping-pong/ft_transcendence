@@ -6,17 +6,20 @@ template.innerHTML = `
   <style>
     .select-locale {
       width: 100%;
-      height: var(--select-height);
+      min-height: var(--select-height);
+      min-width: var(--button-min-width);
+      padding: var(--component-padding);
       cursor: pointer;
       background: var(--body);
-      border: 2px solid var(--border);
       box-shadow: 0 2px 12px #0002;
-      padding: var(--component-h-padding);
+      border: 0;
       border-radius: 0;
       font-size: var(--main-font-size);
       font-weight: bold;
       color: var(--text);
       text-align: center;
+      border: 2px solid var(--border);
+      box-shadow: var(--shadow-soft);
     }
     .select-locale:focus {
       background: var(--accent);
