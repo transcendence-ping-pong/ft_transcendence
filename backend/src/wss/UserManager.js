@@ -1,7 +1,8 @@
 class UserManager {
 	constructor() {
 		this.connectedUsers = new Map();
-		// removed in-memory block list; database is the single source of truth
+		// simple runtime block list (online-only)
+		this.userBlocks = new Map();
 		this.userRateLimits = new Map();
 	}
 
@@ -23,8 +24,11 @@ class UserManager {
 		return user;
 	}
 
-	// no-op: legacy API removed; blocks are read directly from DB when needed
-	setBlocks() { }
+	// optional hydration for compatibility (not required in simple mode)
+	setBlocks(blockerId, blockedIdList) {
+		const set = new Set(blockedIdList || []);
+		this.userBlocks.set(blockerId, set);
+	}
 
 	// gets user by socket id
 	getUser(socketId) {
@@ -69,13 +73,23 @@ class UserManager {
 		return Array.from(this.connectedUsers.values()).some(user => user.username === username);
 	}
 
-	// block operations are handled in WebSocketServer via DB; keep signature for compatibility if called
-	blockUser() {
-		return { success: false, error: 'Not implemented' };
+	// blocks target username for a given blocker id (online-only resolution)
+	blockUser(blockerId, targetUsername) {
+		const targetUser = this.getUserByUsername(targetUsername);
+		if (!targetUser) {
+			return { success: false, error: 'User not found or offline' };
+		}
+		if (!this.userBlocks.has(blockerId)) {
+			this.userBlocks.set(blockerId, new Set());
+		}
+		this.userBlocks.get(blockerId).add(targetUser.userId);
+		return { success: true, blockedUsername: targetUsername };
 	}
 
-	// block checks are done against DB in WebSocketServer
-	isUserBlocked() { return false; }
+	// checks if recipient blocked sender (recipientId has senderId in their set)
+	isUserBlocked(recipientId, senderId) {
+		return this.userBlocks.has(recipientId) && this.userBlocks.get(recipientId).has(senderId);
+	}
 
 	// checks rate limiting for user
 	checkRateLimit(socketId) {
@@ -113,7 +127,7 @@ class UserManager {
 	getUserStats() {
 		return {
 			totalConnected: this.connectedUsers.size,
-			totalBlocked: 0,
+			totalBlocked: Array.from(this.userBlocks.values()).reduce((acc, set) => acc + set.size, 0),
 			totalRateLimited: this.userRateLimits.size
 		};
 	}

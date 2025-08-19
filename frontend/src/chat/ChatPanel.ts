@@ -126,8 +126,8 @@ export default class ChatPanel extends HTMLElement {
         if (!usernameFromState || usernameFromState === 'Anonymous') {
           return;
         }
-        // Send authentication event with real username
-        websocketService.emit('authenticate', { username: usernameFromState });
+        // authenticate with helper so numeric userId is included from localStorage
+        websocketService.authenticate(usernameFromState);
         
         // Listen for authentication response
         window.addEventListener('websocketAuthenticated', (event: CustomEvent) => {

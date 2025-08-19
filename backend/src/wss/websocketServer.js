@@ -7,8 +7,48 @@ const ChatManager = require('./ChatManager.js');
 const InviteManager = require('./InviteManager.js');
 const Validator = require('./Validator.js');
 const Logger = require('./Logger.js');
-// simple fetch resolver to avoid external dependency; requires Node 18+
+// simple fetch resolver to avoid external dependency; uses native fetch if available, otherwise falls back to Node http/https
 const getFetch = () => (typeof fetch !== 'undefined' ? fetch : null);
+const http = require('http');
+const https = require('https');
+
+async function requestJson(urlString, options) {
+	const fetchFn = getFetch();
+	if (fetchFn) {
+		const res = await fetchFn(urlString, options);
+		const text = await res.text();
+		let json;
+		try { json = text ? JSON.parse(text) : undefined; } catch { json = undefined; }
+		return { ok: res.ok, status: res.status, json, text };
+	}
+
+	return new Promise((resolve) => {
+		try {
+			const urlObj = new URL(urlString);
+			const lib = urlObj.protocol === 'https:' ? https : http;
+			const req = lib.request({
+				hostname: urlObj.hostname,
+				port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
+				path: urlObj.pathname + (urlObj.search || ''),
+				method: options?.method || 'GET',
+				headers: options?.headers || {}
+			}, (res) => {
+				let data = '';
+				res.on('data', (chunk) => { data += chunk; });
+				res.on('end', () => {
+					let json;
+					try { json = data ? JSON.parse(data) : undefined; } catch { json = undefined; }
+					resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode, json, text: data });
+				});
+			});
+			req.on('error', () => resolve({ ok: false, status: 0, json: undefined, text: 'network error' }));
+			if (options?.body) req.write(options.body);
+			req.end();
+		} catch {
+			resolve({ ok: false, status: 0, json: undefined, text: 'request error' });
+		}
+	});
+}
 
 class WebSocketServer {
 	constructor(port) {
@@ -35,21 +75,9 @@ class WebSocketServer {
 		Logger.info(`WebSocket server running at ws://localhost:${this.port}`);
 	}
 
-	// DB-backed block check helper
-	async isBlocked(blockerId, blockedId) {
-		try {
-			if (!blockerId || !blockedId) return false;
-			const fetchFn = getFetch();
-			if (!fetchFn) return false;
-			const base = process.env.API_BASE_URL || 'http://localhost:4000/api';
-			const res = await fetchFn(`${base}/blocked/${blockerId}`);
-			if (!res.ok) return false;
-			const body = await res.json();
-			const list = Array.isArray(body?.result) ? body.result.map(x => x.blockedId) : Array.isArray(body) ? body : [];
-			return list.includes(blockedId);
-		} catch {
-			return false;
-		}
+	// simple runtime block check via UserManager (online-only)
+	isBlocked(blockerId, blockedId) {
+		return this.userManager.isUserBlocked(blockerId, blockedId);
 	}
 
 	setupEventHandlers() {
@@ -160,7 +188,20 @@ class WebSocketServer {
 			// Only send online users to the newly connected user, not broadcast to all
 			socket.emit('onlineUsers', allUsers);
 
-			// no runtime hydration; DB is queried on demand
+			// hydrate runtime blocks for this user from DB
+			if (typeof user.userId === 'number' && user.userId > 0) {
+				try {
+					const base = process.env.API_BASE_URL || 'http://localhost:4000/api';
+					requestJson(`${base}/blocked/${user.userId}`, { method: 'GET' })
+						.then(res => {
+							if (!res.ok) return;
+							const body = res.json;
+							const list = Array.isArray(body?.result) ? body.result.map(x => x.blockedId) : [];
+							this.userManager.setBlocks(user.userId, list);
+						})
+						.catch(() => { });
+				} catch { }
+			}
 
 			Logger.logUserEvent('authenticated', username);
 		} catch (error) {
@@ -677,36 +718,21 @@ class WebSocketServer {
 			return;
 		}
 
-		// resolve target profile from online users only (username -> userId)
-		const targetUser = this.userManager.getUserByUsername(targetUsername);
-		if (!targetUser) {
-			socket.emit('chatError', { message: 'User not found or offline' });
-			return;
-		}
 
-		// persist block to DB
-		try {
-			const fetchFn = getFetch();
-			if (!fetchFn) throw new Error('fetch not available');
-			const base = process.env.API_BASE_URL || 'http://localhost:4000/api';
-			const res = await fetchFn(`${base}/block/${targetUser.userId}`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json', 'x-user-id': String(user.userId) },
-				body: JSON.stringify({ userId: user.userId })
-			});
-			if (!res.ok) {
-				const txt = await res.text();
-				throw new Error(txt || 'Failed to block');
-			}
-			// confirm to blocker only
-			socket.emit('userBlocked', {
-				blockedUsername: targetUsername,
-				message: `You blocked ${targetUsername}`
-			});
-		} catch (e) {
-			socket.emit('chatError', { message: 'Failed to persist block' });
-			return;
-		}
+
+		// resolve online target only
+		const targetUser = this.userManager.getUserByUsername(targetUsername);
+		if (!targetUser) { socket.emit('chatError', { message: 'User not found or offline' }); return; }
+
+		// simple runtime block (in-memory)
+		const result = this.userManager.blockUser(user.userId, targetUsername);
+		if (!result.success) { socket.emit('chatError', { message: result.error || 'Failed to block' }); return; }
+
+		// confirm to blocker only
+		socket.emit('userBlocked', {
+			blockedUsername: targetUsername,
+			message: `You blocked ${targetUsername}`
+		});
 
 		Logger.logChatEvent('userBlocked', user.username, { blockedUsername: targetUsername });
 	}
@@ -718,33 +744,18 @@ class WebSocketServer {
 		const { targetUsername } = data;
 		if (!targetUsername) return;
 
-		const target = this.userManager.getUserByUsername(targetUsername);
-		if (!target) {
-			socket.emit('chatError', { message: 'User not found or offline' });
-			return;
-		}
 
-		try {
-			const fetchFn = getFetch();
-			if (!fetchFn) throw new Error('fetch not available');
-			const base = process.env.API_BASE_URL || 'http://localhost:4000/api';
-			const res = await fetchFn(`${base}/unblock/${target.userId}`, {
-				method: 'DELETE',
-				headers: { 'Content-Type': 'application/json', 'x-user-id': String(user.userId) },
-				body: JSON.stringify({ userId: user.userId })
-			});
-			if (!res.ok) {
-				const txt = await res.text();
-				throw new Error(txt || 'Failed to unblock');
-			}
-			socket.emit('userBlocked', {
-				blockedUsername: targetUsername,
-				message: `You unblocked ${targetUsername}`
-			});
-		} catch (e) {
-			socket.emit('chatError', { message: 'Failed to persist unblock' });
-			return;
-		}
+		// resolve online target only
+		const target = this.userManager.getUserByUsername(targetUsername);
+		if (!target) { socket.emit('chatError', { message: 'User not found or offline' }); return; }
+
+		// simple runtime unblock (in-memory)
+		const set = this.userManager.userBlocks.get(user.userId);
+		if (set) set.delete(target.userId);
+		socket.emit('userBlocked', {
+			blockedUsername: targetUsername,
+			message: `You unblocked ${targetUsername}`
+		});
 	}
 
 	handleSlashCommand(socket, user, message) {
