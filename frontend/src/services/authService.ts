@@ -82,7 +82,6 @@ export async function logout(refreshToken: string): Promise<AuthResponse> {
     return { error: 'Logout completed locally' };
   }
 }
-
 export async function check2FAStatus(email: string): Promise<AuthResponse> {
   const res = await fetch(`${BASE_URL}/check-2fa?email=${encodeURIComponent(email)}`);
   return await res.json();
@@ -96,7 +95,16 @@ export async function fetchUsers(accessToken: string): Promise<any[]> {
   });
   return await res.json();
 }
-
+export async function deleteAccount(accessToken: string) {
+  const res = await fetch(`${BASE_URL}/delete-account`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  return await res.json();
+}
 export async function verifyToken(email: string, token: string, secret?: string): Promise<AuthResponse> {
   const res = await fetch(`${BASE_URL}/verify-token`, {
     method: 'POST',

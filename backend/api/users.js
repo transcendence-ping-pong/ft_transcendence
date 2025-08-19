@@ -254,6 +254,18 @@ async function userRoutes(fastify, options) {
         res.send({ message: MSG.LOGOUT_SUCCESSFUL });
     });
 
+    fastify.post('/delete-account', { preHandler: authenticateToken }, (request, reply) => {
+        const userId = request.user.userId;
+        if (!userId) {
+            return reply.status(400).send({ error: 'User ID required' });
+        }
+        db.run(`DELETE FROM users WHERE userId = ?`, [userId], function (err) {
+            if (err) {
+                return reply.status(500).send({ error: 'Database error' });
+            }
+            reply.send({ message: 'Account deleted successfully' });
+        });
+    });
     fastify.get('/current-user', { preHandler: authenticateToken }, async (request, reply) => {
         try {
             const userId = request.user.userId;
