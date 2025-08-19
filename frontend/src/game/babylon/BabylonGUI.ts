@@ -276,7 +276,7 @@ export class BabylonGUI {
         this.countdownText.scaleY = 1.5;
         this.countdownText.alpha = 1;
       }, 80);
-    } catch {}
+    } catch { }
   }
 
   public endCountdownOverlay() {

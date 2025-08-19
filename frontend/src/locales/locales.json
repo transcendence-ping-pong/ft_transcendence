@@ -92,7 +92,11 @@
       "mode1": "LOCAL",
       "mode2": "REMOTE",
       "game1": "ONE MATCH",
-      "game2": "TOURNAMENT"
+      "game2": "TOURNAMENT",
+      "listGames": "LIST GAMES",
+      "newGame": "CREATE NEW GAME",
+      "ready": "READY",
+      "waiting": "WAITING FOR PLAYERS..."
     },
     "notification": {
       "title": {
@@ -257,7 +261,11 @@
       "mode1": "LOCAL",
       "mode2": "DISTANT",
       "game1": "UN MATCH",
-      "game2": "TOURNOI"
+      "game2": "TOURNOI",
+      "listGames": "LISTE DES JEUX",
+      "newGame": "CRÉER UN NOUVEAU JEU",
+      "ready": "PRÊT",
+      "waiting": "EN ATTENTE DE JOUEURS..."
     },
     "notification": {
       "title": {
@@ -422,7 +430,11 @@
       "mode1": "LOCAL",
       "mode2": "REMOTO",
       "game1": "UMA PARTIDA",
-      "game2": "TORNEIO"
+      "game2": "TORNEIO",
+      "listGames": "LISTAR JOGOS",
+      "newGame": "CRIAR NOVO JOGO",
+      "ready": "PRONTO",
+      "waiting": "AGUARDANDO JOGADORES..."
     },
     "notification": {
       "title": {
@@ -587,7 +599,11 @@
       "mode1": "ローカル",
       "mode2": "リモート",
       "game1": "１試合",
-      "game2": "トーナメント"
+      "game2": "トーナメント",
+      "listGames": "ゲーム一覧",
+      "newGame": "新しいゲームを作成",
+      "ready": "準備完了",
+      "waiting": "プレイヤーを待っています..."
     },
     "notification": {
       "title": {
