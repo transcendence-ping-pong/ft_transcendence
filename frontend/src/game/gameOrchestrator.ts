@@ -171,8 +171,6 @@ export class gameOrchestrator {
     }
   }
 
-
-
   // keep track of score changes and update the GUI accordingly
   // reminder: the score is a Babylon.js GUI element
   private setupScoreTracking() {

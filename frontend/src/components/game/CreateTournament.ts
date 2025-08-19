@@ -17,7 +17,8 @@ template.innerHTML = `
   <style>
     .tournament__description {
       color: var(--border);
-      font-size: var(--secondary-font-size);
+      font-size: var(--main-font-size);
+      text-align: center;
     }
     .tournament__content {
       display: flex;
