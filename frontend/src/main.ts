@@ -250,7 +250,6 @@ async function loadUserProfile() {
     if (!token) return;
 
     console.log('Loading user profile data...');
-
     let response = await fetch(`${BASE_URL}/current-user`, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -286,7 +285,6 @@ async function loadUserProfile() {
           if (refreshData.refreshToken) {
             localStorage.setItem('refreshToken', refreshData.refreshToken);
           }
-
           response = await fetch(`${BASE_URL}/current-user`, {
             headers: {
               'Authorization': `Bearer ${refreshData.accessToken}`
@@ -412,7 +410,6 @@ function logoutUser() {
 async function refreshAccessToken(refreshToken: string): Promise<any> {
   try {
     console.log('Attempting to refresh access token...');
-
     const res = await fetch(`${BASE_URL}/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

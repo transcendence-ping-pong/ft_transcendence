@@ -16,7 +16,53 @@ export async function createTournament(userId: number, players: string[]) {
   const res = await fetch(`${BASE_URL}/tournament`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ creatorId: userId, players }),
+    body: JSON.stringify({ userId, players }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Erro do backend: ${res.status} - ${text}`);
+  }
+  return res.json();
+}
+
+export async function getTournament(tournId: number) {
+  const res = await fetch(`${BASE_URL}/tournament/${tournId}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Erro do backend: ${res.status} - ${text}`);
+  }
+  return res.json();
+}
+
+export async function getTournamentSemi(tournId: number) {
+  const res = await fetch(`${BASE_URL}/tournament/${tournId}/semi`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Erro do backend: ${res.status} - ${text}`);
+  }
+  return res.json();
+}
+
+export async function getTournamentFinal(tournId: number) {
+  const res = await fetch(`${BASE_URL}/tournament/${tournId}/final`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Erro do backend: ${res.status} - ${text}`);
+  }
+  return res.json();
+}
+
+export async function createMatch(creatorId: number, remoteId: number, tournId: number, player1: string, player2: string) {
+  const res = await fetch(`${BASE_URL}/matches`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      creatorUserId: creatorId,
+      remoteUserId: remoteId, 
+      tournId: tournId,
+      player1DisplayName: player1,
+      player2DisplayName: player2
+    }),
   });
   if (!res.ok) {
     const text = await res.text();
@@ -34,9 +80,19 @@ export async function getMatch(matchId: number) {
   return res.json();
 }
 
+// TODO: Check if request is in the right file
+export async function getMatchHistory(userId: number) {
+  const res = await fetch(`${BASE_URL}/matches/history/${userId}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Erro do backend: ${res.status} - ${text}`);
+  }
+  return res.json();
+}
+
 export async function updateMatch(matchId: number, winner: string, score1: number, score2: number) {
   const res = await fetch(`${BASE_URL}/matches/${matchId}`, {
-    method: 'PATCH',
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       winnerDisplayName: winner,

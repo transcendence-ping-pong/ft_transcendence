@@ -1,4 +1,5 @@
 import { UserData } from '@/utils/playerUtils/types';
+import { Players } from '@/utils/playerUtils/types';
 /*
   State responsabilities:
   - persist state in localStorage
@@ -23,6 +24,7 @@ const initialState = savedState ? JSON.parse(savedState) : {
   soundEnabled: true,
   scaleFactor: {},
   userData: {} as UserData, // user data will be set after login
+  players: {} as Players,
   tournamentData: {} as TournamentData,
   // chat state
   chatOpen: false,
@@ -66,17 +68,23 @@ export interface TournamentData {
   players: string[];
   matches: Match[];
   currentMatchIndex: number;
+  stage: number;
   tournamentId: number | null;
 }
 
 export interface Match {
-  matchId: number;
-  player1DisplayName: string;
-  player2DisplayName: string;
-  winnerDisplayName: string | null;
-  scorePlayer1: number | null;
-  scorePlayer2: number | null;
+  day: string;
+  time: string;
+  scorePlayer1: string,
+  scorePlayer2: string,
+  matchId: string;
+  tournId: string;
+  player1: string;
+  player2: string;
+  winLoss: string;
+  mode: string;
 }
+
 
 // chat types
 export interface ChatMessage {

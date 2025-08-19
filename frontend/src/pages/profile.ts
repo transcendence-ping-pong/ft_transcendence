@@ -70,7 +70,7 @@ export async function renderProfile(containerId: string, params: Record<string, 
       </section>
       <section class="screen-2 h-screen w-screen">
         <div class="page-container">
-          <matches-history></matches-history>
+          <matches-history userdata='${JSON.stringify(userData)}'></matches-history>
         </div>
       </section>
     `;

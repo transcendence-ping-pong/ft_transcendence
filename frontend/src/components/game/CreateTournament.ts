@@ -1,5 +1,8 @@
 import { t } from "@/locales/Translations";
+import { state, TournamentData } from "@/state";
 import { actionIcons } from '@/utils/Constants';
+import { createTournament } from '@/services/matchService';
+
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -171,6 +174,7 @@ template.innerHTML = `
 
 export class CreateTournament extends HTMLElement {
   private players: string[] = [];
+  private creatorId: number;
   private createBtn: HTMLButtonElement;
   #MAX_PLAYERS = 8;
 
@@ -215,29 +219,26 @@ export class CreateTournament extends HTMLElement {
       }
     });
 
-    // TODO: Implement backend communication to create tournament sending this.players
     // If create is successful, reset players list, show loading, and then show next matches
-    // THIS IS A MOCK, REPLACE IT WITH ACTUAL BACKEND LOGIC
-    this.createBtn.addEventListener('click', (e) => {
+    this.createBtn.addEventListener('click', async (e) => {
       e.preventDefault();
 
-      // START MOCK
-      // shuffle and pair players
-      const players = [...this.players];
-      for (let i = players.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [players[i], players[j]] = [players[j], players[i]];
-      }
-      const matches = [
-        { player1: players[0], player2: players[1] },
-        { player1: players[2], player2: players[3] },
-        { player1: players[4], player2: players[5] },
-        { player1: players[6], player2: players[7] },
-      ];
-      // END MOCK
+      this.creatorId = state.userData.userId;
+      
+      const result = await createTournament(this.creatorId, this.players);
+      
+      state.tournamentData = {
+        players: result.players,
+        matches: {},
+        currentMatchIndex: 0,
+        stage: 1,
+        tournamentId: result.id
+      } as TournamentData;
 
       // emit custom event with matches data
-      this.dispatchEvent(new CustomEvent('tournament-created', {
+      const matches = state.tournamentData.players;
+
+      this.dispatchEvent(new CustomEvent('tournament-stage', {
         detail: { matches },
         bubbles: true,
         composed: true
