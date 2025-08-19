@@ -20,6 +20,9 @@
 
   --logo-size: 40px;
   --avatar-size: 40px;
+  --avatar-badge-size: 110px;
+  --avatar-badge-gap: 0.85rem;
+  --avatar-badge-username-size: 2.1rem;
   --qr-size: 200px;
   --icon-size: 20px;
 
@@ -37,6 +40,7 @@
   --modal-large-height: 60vh;
   --modal-large-width: 50vw;
   --button-height: 2.5rem;
+  --button-rounded-height: 2.15rem;
   --button-min-width: 150px;
 
   --auth-form-max-width: 400px;
@@ -62,6 +66,9 @@
 
     --logo-size: 32px;
     --avatar-size: 32px;
+    --avatar-badge-size: 90px;
+    --avatar-badge-gap: 0.75rem;
+    --avatar-badge-username-size: 1.85rem;
     --qr-size: 180px;
     --icon-size: 16px;
 
@@ -76,6 +83,7 @@
     --modal-large-height: 60vh;
     --modal-large-width: 50vw;
     --button-height: 2rem;
+    --button-rounded-height: 1.85rem;
     --button-min-width: 120px;
 
     --auth-form-max-width: 340px;
@@ -102,6 +110,9 @@
 
     --logo-size: 48px;
     --avatar-size: 48px;
+    --avatar-badge-gap: 1rem;
+    --avatar-badge-size: 130px;
+    --avatar-badge-username-size: 2.5rem;
     --qr-size: 250px;
     --icon-size: 24px;
 
@@ -116,6 +127,7 @@
     --modal-large-height: 60vh;
     --modal-large-width: 50vw;
     --button-height: 3rem;
+    --button-rounded-height: 2.5rem;
     --button-min-width: 180px;
 
     --auth-form-max-width: 500px;
@@ -214,6 +226,7 @@
   --game-gradient-end: #b8a77a;
   --game-transition-bg: rgb(255, 255, 255);
   --video-transition-bg: rgba(0, 0, 0, 0.1);
+  --placeholder-bg: rgba(0, 0, 0, 0.05);
 }
 
 .theme-secondary {
@@ -247,4 +260,5 @@
   --game-gradient-end: #1a2233;
   --game-transition-bg: rgb(0, 0, 0);
   --video-transition-bg: rgba(255, 255, 255, 0.1);
+  --placeholder-bg: rgba(255, 255, 255, 0.05);
 }
