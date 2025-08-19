@@ -10,7 +10,7 @@ require('dotenv').config({ path: '.env' });
 let db_path = path.join(__dirname, '/database/database.db');
 
 const db = new sqlite3.Database(db_path, sqlite3.OPEN_READWRITE);
-db.run('PRAGMA foreign_keys = ON;');
+// db.run('PRAGMA foreign_keys = ON;');
 fastify.decorate('db', db);
 
 fastify.register(require('@fastify/multipart'));
@@ -19,6 +19,7 @@ fastify.register(require('@fastify/multipart'));
 fastify.register(require('./api/matches'), { prefix: '/api' });
 fastify.register(require('./api/users'), { prefix: '/api' });
 fastify.register(require('./api/friends'), { prefix: '/api' });
+fastify.register(require('./api/block'), { prefix: '/api' });
 
 const port = 4000;
 
