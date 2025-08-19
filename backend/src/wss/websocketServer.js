@@ -141,6 +141,22 @@ class WebSocketServer {
 			// Only send online users to the newly connected user, not broadcast to all
 			socket.emit('onlineUsers', allUsers);
 
+			// hydrate runtime block list from DB for this user if we have ids
+			if (typeof user.userId === 'number' && user.userId > 0) {
+				try {
+					// expect GET /blocked/:userId -> { result: [ { blockedId: number } ] } or array
+					const fetch = require('node-fetch');
+					const base = process.env.API_BASE_URL || 'http://backend:3001/api';
+					fetch(`${base}/blocked/${user.userId}`)
+						.then(res => res.json())
+						.then(body => {
+							const list = Array.isArray(body?.result) ? body.result.map(x => x.blockedId) : Array.isArray(body) ? body : [];
+							this.userManager.setBlocks(user.userId, list);
+						})
+						.catch(() => { });
+				} catch { }
+			}
+
 			Logger.logUserEvent('authenticated', username);
 		} catch (error) {
 			Logger.error('Authentication failed', { username: data.username, error: error.message });

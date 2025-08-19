@@ -1,7 +1,7 @@
 class UserManager {
 	constructor() {
 		this.connectedUsers = new Map();
-		this.userBlocks = new Map();
+		this.userBlocks = new Map(); // runtime cache only; source of truth should be DB
 		this.userRateLimits = new Map();
 	}
 
@@ -21,6 +21,12 @@ class UserManager {
 
 		this.connectedUsers.set(socketId, user);
 		return user;
+	}
+
+	// hydrate runtime blocks from DB list (array of numeric ids)
+	setBlocks(blockerId, blockedIdList) {
+		const set = new Set(blockedIdList || []);
+		this.userBlocks.set(blockerId, set);
 	}
 
 	// gets user by socket id
