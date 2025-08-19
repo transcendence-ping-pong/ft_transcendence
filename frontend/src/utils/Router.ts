@@ -6,6 +6,8 @@ export function initRouter(
   routes: Record<string, RouteRenderFn>,
   renderTargetId: string
 ): (path: string) => void {
+  // track current path to run leave hooks (e.g., leaving /game)
+  let currentPath = window.location.pathname;
   function matchRoute(path: string) {
     for (const route in routes) {
       // match dynamic segment like /profile/:username
@@ -33,6 +35,15 @@ export function initRouter(
   }
 
   function renderRoute(path: string) {
+    // if navigating away from game page, leave multiplayer room cleanly
+    try {
+      if (currentPath === '/game' && path !== '/game') {
+        const mgr = (window as any).remoteMultiplayerManager;
+        if (mgr && typeof mgr.isInRoom === 'function' && mgr.isInRoom()) {
+          if (typeof mgr.leaveRoom === 'function') mgr.leaveRoom();
+        }
+      }
+    } catch {}
     // protect all routes except login
     // TODO: in the future, we might want to leave home unprotected
     if (!isAuthenticated() && path !== '/login') {
@@ -58,6 +69,17 @@ export function initRouter(
     } else if (contentDiv) {
       contentDiv.innerHTML = `<h1>404 Not Found</h1>`;
     }
+
+    // notify backend of current page for presence-aware features
+    try {
+      const wss = (window as any).websocketService;
+      if (wss && typeof wss.emit === 'function') {
+        wss.emit('updatePresence', { path });
+      }
+    } catch {}
+
+    // update current path after successful navigation
+    currentPath = path;
   }
 
   window.addEventListener('popstate', () => {

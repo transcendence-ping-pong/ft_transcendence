@@ -25,7 +25,8 @@ class WebSocketService {
   private currentRoomId: string | null = null;
   private authToken: string | null = null;
   private pendingEventListeners: Array<{ event: string; callback: (data: any) => void }> = [];
-
+  private isAuthenticatedFlag: boolean = false;
+  
   // reconnection settings
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 5;
@@ -64,9 +65,11 @@ class WebSocketService {
         this.reconnectAttempts = 0;
         this.reconnectDelay = 1000;
         this.isReconnecting = false;
-
+        this.isAuthenticatedFlag = true;
+        
         window.dispatchEvent(new CustomEvent('websocketAuthenticated', { detail: { success: true, username: data.username } }));
       } else {
+        this.isAuthenticatedFlag = false;
         window.dispatchEvent(new CustomEvent('websocketAuthenticated', { detail: { success: false, error: data.error } }));
       }
     });
@@ -182,11 +185,17 @@ class WebSocketService {
     });
 
     this.socket.on('gameInvite', (data: any) => {
+      try { localStorage.setItem('lastInvite', JSON.stringify(data)); } catch {}
       window.dispatchEvent(new CustomEvent('gameInvite', { detail: data }));
     });
 
     this.socket.on('inviteAccepted', (data: any) => {
       window.dispatchEvent(new CustomEvent('inviteAccepted', { detail: data }));
+    });
+
+    // navigate both clients to game with room info
+    this.socket.on('navigateToGame', (data: any) => {
+      window.dispatchEvent(new CustomEvent('navigateToGame', { detail: data }));
     });
 
     this.socket.on('inviteDeclined', (data: any) => {
@@ -246,8 +255,15 @@ class WebSocketService {
   joinRoom(roomId: string) {
     // joins existing room and sets current room id
     if (this.socket) {
-      this.currentRoomId = roomId; // set immediately
-      this.socket.emit('joinRoom', { roomId });
+      // set immediately to avoid race with UI emitting ready/leave before server echoes
+      this.currentRoomId = roomId;
+      if (this.isAuthenticatedFlag) {
+        this.socket.emit('joinRoom', { roomId });
+      } else {
+        window.addEventListener('websocketAuthenticated', () => {
+          if (this.socket) this.socket.emit('joinRoom', { roomId });
+        }, { once: true });
+      }
     }
   }
 
@@ -319,12 +335,28 @@ class WebSocketService {
 
   sendReady(roomId: string) {
     // sends ready status to room
-    this.emit('playerReady', { roomId });
+    if (this.socket) {
+      if (this.isAuthenticatedFlag) {
+        this.socket.emit('playerReady', { roomId });
+      } else {
+        window.addEventListener('websocketAuthenticated', () => {
+          if (this.socket) this.socket.emit('playerReady', { roomId });
+        }, { once: true });
+      }
+    }
   }
 
   leaveRoom(roomId: string) {
     // leaves current room
-    this.emit('leaveRoom', { roomId });
+    if (this.socket) {
+      if (this.isAuthenticatedFlag) {
+        this.socket.emit('leaveRoom', { roomId });
+      } else {
+        window.addEventListener('websocketAuthenticated', () => {
+          if (this.socket) this.socket.emit('leaveRoom', { roomId });
+        }, { once: true });
+      }
+    }
   }
 
   // on message todo: later

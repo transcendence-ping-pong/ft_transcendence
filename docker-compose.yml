@@ -21,8 +21,8 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
-      - db_data:/app/database
-      - uploads_data:/app/uploads  # Add this line
+      - ./backend/database:/app/database
+      - uploads_data:/app/uploads # Add this line
 
   nginx:
     image: nginx:alpine
@@ -30,7 +30,7 @@ services:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - uploads_data:/var/www/uploads  # Add this line
+      - uploads_data:/var/www/uploads # Add this line
     depends_on:
       - frontend
       - backend
@@ -38,5 +38,5 @@ services:
 volumes:
   db_data:
     driver: local
-  uploads_data:  # Add this volume
+  uploads_data: # Add this volume
     driver: local
