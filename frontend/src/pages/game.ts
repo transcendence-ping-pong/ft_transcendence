@@ -2,8 +2,8 @@ import { gameOrchestrator } from '@/game/gameOrchestrator.js';
 import '@/components/navigation/TopBar.js';
 import '@/components/navigation/Logo.js';
 import '@/components/_templates/GenericModal.js';
-import '@/components/CreateTournament.js';
-import '@/components/ViewTournament.js';
+import '@/components/game/CreateTournament.js';
+import '@/components/game/ViewTournament.js';
 import { state } from '@/state';
 
 // TODO: THIS IS A MOCK, pass player names and avatars dynamically
@@ -87,7 +87,7 @@ export function renderGame(containerId: string) {
         container.querySelector('top-bar').outerHTML = renderTopBar();
         // ...finally, start the game
         // this is an exception, as the game start is usually triggered by the gameOrchestrator
-		state.players = { p1: e.detail.player1, p2: e.detail.player2 }
+        state.players = { p1: e.detail.player1, p2: e.detail.player2 }
         orchestrator.startGame();
       });
     }
@@ -127,13 +127,13 @@ export function renderGame(containerId: string) {
         </div>
       </generic-modal>
     `);
-    
+
     // add refresh button functionality
     const refreshBtn = container.querySelector('#refresh-games-btn');
     if (refreshBtn) {
       refreshBtn.addEventListener('click', () => {
         // dispatch refresh event that RemoteMultiplayerUI can listen to
-                          window.dispatchEvent(new CustomEvent('refreshRemoteGames'));
+        window.dispatchEvent(new CustomEvent('refreshRemoteGames'));
       });
     }
   });
@@ -159,14 +159,14 @@ export function renderGame(containerId: string) {
       // Update the manager's state to match the invite room
       remoteMultiplayerManager.setInviteRoom(room, isHost);
     }
-    
+
     // Set player names for the game
     PLAYER_1.name = room.hostUsername;
     PLAYER_2.name = room.guestUsername;
-    
+
     // Re-render top bar with player info
     container.querySelector('top-bar').outerHTML = renderTopBar();
-    
+
     // DON'T trigger game start directly - let the normal multiplayer flow handle it
     // The room will be set up and users will see the waiting room
   }

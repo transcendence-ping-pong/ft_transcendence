@@ -1,3 +1,5 @@
+import { state } from '@/state';
+
 export interface AuthResponse {
   error?: string;
   message?: string;
@@ -80,7 +82,6 @@ export async function logout(refreshToken: string): Promise<AuthResponse> {
     return { error: 'Logout completed locally' };
   }
 }
-
 export async function check2FAStatus(email: string): Promise<AuthResponse> {
   const res = await fetch(`${BASE_URL}/check-2fa?email=${encodeURIComponent(email)}`);
   return await res.json();
@@ -94,7 +95,16 @@ export async function fetchUsers(accessToken: string): Promise<any[]> {
   });
   return await res.json();
 }
-
+export async function deleteAccount(accessToken: string) {
+  const res = await fetch(`${BASE_URL}/delete-account`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  return await res.json();
+}
 export async function verifyToken(email: string, token: string, secret?: string): Promise<AuthResponse> {
   const res = await fetch(`${BASE_URL}/verify-token`, {
     method: 'POST',
@@ -116,7 +126,7 @@ export async function generateSecret(email: string, accessToken: string): Promis
   return await res.json();
 }
 
-export async function changeUsername(newUsername: string, accessToken: string): Promise<AuthResponse> {
+export async function updateUsername(newUsername: string, accessToken: string): Promise<AuthResponse> {
   const res = await fetch(`${BASE_URL}/change-username`, {
     method: 'POST',
     headers: {
@@ -128,7 +138,7 @@ export async function changeUsername(newUsername: string, accessToken: string): 
   return await res.json();
 }
 
-export async function changePassword(newPassword: string, accessToken: string): Promise<AuthResponse> {
+export async function updatePassword(newPassword: string, accessToken: string): Promise<AuthResponse> {
   const res = await fetch(`${BASE_URL}/change-password`, {
     method: 'POST',
     headers: {
@@ -155,4 +165,43 @@ export async function checkServerLoginStatus(): Promise<AuthResponse> {
   } catch (error: any) {
     return { error: error.message || 'Network error' };
   }
+}
+
+export async function uploadAvatar(file: File, accessToken: string): Promise<AuthResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${BASE_URL}/upload-avatar`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`
+    },
+    body: formData
+  });
+  return await res.json();
+}
+
+export async function uploadAvatarAndUpdateState(file: File, accessToken: string): Promise<string | null> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${BASE_URL}/upload-avatar`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`
+    },
+    body: formData
+  });
+
+  const result = await res.json();
+  if (result.avatar) {
+    state.userData.avatar = result.avatar;
+    window.dispatchEvent(new CustomEvent('avatar-updated', {
+      bubbles: true,
+      composed: true,
+      detail: { avatar: result.avatar }
+    }));
+    return result.avatar;
+  }
+  return null;
 }
