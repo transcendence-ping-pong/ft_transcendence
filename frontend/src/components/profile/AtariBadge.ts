@@ -1,6 +1,6 @@
 import { t } from '@/locales/Translations';
 import { UserData } from '@/utils/playerUtils/types';
-
+import { state } from '@/state';
 const VIRTUAL_WIDTH = 500;
 const VIRTUAL_HEIGHT = 500;
 const VIRTUAL_MARGIN_Y = 220;
@@ -249,6 +249,24 @@ export class AtariBadge extends HTMLElement {
     }));
   }
 
+  private setVisitorMode(isVisitor: boolean) {
+    const avatarOverlay = this.shadowRoot!.querySelector('.avatar-upload-overlay') as HTMLElement;
+    if (avatarOverlay) avatarOverlay.style.display = isVisitor ? 'none' : 'flex';
+
+    if (this.avatar) {
+      this.avatar.style.pointerEvents = isVisitor ? 'none' : 'auto';
+      this.avatar.style.cursor = isVisitor ? 'default' : 'pointer';
+      if (isVisitor) {
+        this.avatar.removeEventListener('click', this.boundAvatarClick);
+      } else {
+        this.avatar.addEventListener('click', this.boundAvatarClick);
+      }
+    }
+    if (this.fileInput) {
+      this.fileInput.disabled = isVisitor;
+    }
+  }
+
   render() {
     const user = this.userData || { username: '', userId: 0, avatar: '' };
     const username = user.username || '';
@@ -270,6 +288,10 @@ export class AtariBadge extends HTMLElement {
       this.avatar.src = avatarUrl;
       this.avatar.alt = "Avatar";
     }
+
+    const mainUsername = state?.userData?.username;
+    const isVisitor = !(this.userData && this.userData.username === mainUsername);
+    this.setVisitorMode(isVisitor);
   }
 
   disconnectedCallback() {
