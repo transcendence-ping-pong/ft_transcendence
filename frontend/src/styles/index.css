@@ -25,6 +25,7 @@
 
   --component-padding: 0.5rem;
   --sidebar-width: 30vw;
+  --friends-height: 25vh;
 
   --button-circle-size: 2.5rem;
   --button-default-height: 2.5rem;
@@ -66,6 +67,7 @@
 
     --component-padding: 0.5rem;
     --sidebar-width: 30vw;
+    --friends-height: 30vh;
 
     --modal-height: 50vh;
     --modal-width: 40vw;
@@ -105,6 +107,7 @@
 
     --component-padding: 0.75rem;
     --sidebar-width: 30vw;
+    --friends-height: 20vh;
 
     --modal-height: 50vh;
     --modal-width: 35vw;

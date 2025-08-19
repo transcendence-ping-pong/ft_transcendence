@@ -16,7 +16,6 @@ template.innerHTML = `
       box-shadow: 0 2px 12px #0002;
       box-sizing: border-box;
       position: relative;
-      transition: background 0.2s, color 0.2s;
     }
     :host(:hover) {
       background: var(--hover);
@@ -37,22 +36,15 @@ template.innerHTML = `
       display: flex;
       align-items: center;
       justify-content: center;
-      min-width: 2.5rem;
     }
     .notif-action-btn {
       background: none;
       border: none;
       cursor: pointer;
-      font-size: 1.3em;
-      color: #b8a77a;
-      padding: 0.1em 0.3em;
-      transition: color 0.2s;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-    .notif-action-btn:hover {
-      color: #7a6a2f;
     }
     .icon-circle {
       display: inline-flex;
@@ -60,9 +52,8 @@ template.innerHTML = `
       justify-content: center;
       background: var(--accent);
       border-radius: 50%;
-      width: 2.25rem;
-      height: 2.25rem;
-      box-shadow: 0 1px 2px #0002;
+      width: var(--button-circle-size);
+      height: var(--button-circle-size);
     }
     .icon-circle img {
       width: 1.5rem;
@@ -70,6 +61,12 @@ template.innerHTML = `
       display: block;
       filter: invert(var(--invert));
     }
+    .icon-circle:hover {
+      border-color: 2px solid var(--border);
+      background: var(--accent-secondary);
+      box-shadow: var(--shadow-soft);
+    }
+
     .notif-text {
       flex: 1 1 0;
       min-width: 0;

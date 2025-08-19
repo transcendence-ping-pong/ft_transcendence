@@ -82,9 +82,27 @@ class DeleteProfile extends HTMLElement {
       this.dispatchEvent(new CustomEvent('modal-dismiss', { bubbles: true }));
     });
 
-    this.confirmBtn.addEventListener('click', () => {
-      // TODO: add connection to BE here
-      alert('DELETE PROFILE');
+    this.confirmBtn.addEventListener('click', async () => {
+      const accessToken = localStorage.getItem('accessToken');
+      try {
+        const res = await fetch('/api/delete-account', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({})
+        });
+        const result = await res.json();
+        if (res.ok) {
+          localStorage.clear();
+          window.location.href = '/';
+        } else {
+          alert(result.error || 'Failed to delete account.');
+        }
+      } catch (err) {
+        alert('Error deleting account.');
+      }
     });
   }
 }

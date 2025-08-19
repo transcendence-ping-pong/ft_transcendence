@@ -90,7 +90,7 @@ function isSafePassword(str) {
 }
 
 function isValidUsername(username) {
-    if (!username || username.length < 3 || username.length > 20) {
+    if (!username || username.length < 3 || username.length > 10) {
         return false;
     }
     // Allow letters, numbers, spaces, and some common characters

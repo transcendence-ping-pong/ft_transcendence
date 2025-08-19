@@ -35,7 +35,8 @@
     "AUTHENTICATION_FAILED": "Authentication failed. Please try again.",
     "ERROR_FETCHING_USERS": "Error fetching users from database.",
     "LOGOUT_SUCCESS": "Logout successful.",
-    "LOGOUT_ALL_SUCCESS": "Logged out from all devices."
+    "LOGOUT_ALL_SUCCESS": "Logged out from all devices.",
+    "INVALID_USERNAME": "Invalid username. Must be 3-20 characters and contain only letters and numbers."
   },
   "PT": {
     "ACCESS_TOKEN_REQUIRED": "Token de acesso obrigatório.",

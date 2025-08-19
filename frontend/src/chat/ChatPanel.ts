@@ -7,12 +7,12 @@ export default class ChatPanel extends HTMLElement {
   private header: HTMLDivElement;
   private closeButton: HTMLButtonElement;
   private content: HTMLDivElement;
-  
+
   private isVisible: boolean = false;
   private requestedOnlineUsers: boolean = false;
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 5;
-  private messageHistory: Array<{sender: string, message: string, type: 'user' | 'system' | 'other', category: 'global' | 'direct', timestamp: number}> = [];
+  private messageHistory: Array<{ sender: string, message: string, type: 'user' | 'system' | 'other', category: 'global' | 'direct', timestamp: number }> = [];
   private isLoadingMessages: boolean = false;
 
   constructor() {
@@ -21,10 +21,10 @@ export default class ChatPanel extends HTMLElement {
     this.setupStyles();
     this.createPanel();
     this.setupEventListeners();
-    
+
     // Initialize WebSocket connection
     this.initializeWebSocket();
-    
+
     // Load messages when chat becomes visible
     this.observeVisibility();
   }
@@ -41,7 +41,7 @@ export default class ChatPanel extends HTMLElement {
         }
       });
     });
-    
+
     observer.observe(this, { attributes: true });
   }
 
@@ -50,7 +50,7 @@ export default class ChatPanel extends HTMLElement {
     try {
       // Get WebSocket service from window
       const websocketService = (window as any).websocketService;
-      
+
       if (websocketService) {
         // Check if already connected
         if (websocketService.isConnected()) {
@@ -66,18 +66,18 @@ export default class ChatPanel extends HTMLElement {
             this.authenticateUser();
           });
         }
-        
+
         // Listen for connection state changes
         window.addEventListener('websocketConnected', () => {
           this.updateConnectionStatus('Connected', 'rgba(0,255,0,0.7)');
         });
-        
+
         window.addEventListener('websocketDisconnected', () => {
           this.updateConnectionStatus('Disconnected', 'rgba(255,255,0,0.7)');
           this.addMessage('', '⚠️ WebSocket disconnected. Trying to reconnect...', 'system', 'global');
           this.attemptReconnection();
         });
-        
+
         window.addEventListener('websocketError', () => {
           this.updateConnectionStatus('Error', 'rgba(255,0,0,0.7)');
           this.addMessage('', '⚠️ WebSocket connection error. Check your connection.', 'system', 'global');
@@ -100,10 +100,10 @@ export default class ChatPanel extends HTMLElement {
       const websocketService = (window as any).websocketService;
       if (websocketService && websocketService.isConnected()) {
         const username = state.userData?.username || localStorage.getItem('loggedInUser') || 'Anonymous';
-        
+
         // Send authentication event
         websocketService.emit('authenticate', { username });
-        
+
         // Listen for authentication response
         window.addEventListener('websocketAuthenticated', (event: CustomEvent) => {
           const { success, error } = event.detail;
@@ -125,7 +125,7 @@ export default class ChatPanel extends HTMLElement {
     if (!websocketService || !websocketService.socket) {
       return;
     }
-    
+
     // Simple event handling - let backend do the categorization
     websocketService.socket.on('chatMessage', (data: any) => {
       // ONLY show messages that are explicitly marked as global
@@ -133,7 +133,7 @@ export default class ChatPanel extends HTMLElement {
         this.addMessage(data.senderUsername, data.message, 'other', 'global');
       }
     });
-    
+
     websocketService.socket.on('directMessage', (data: any) => {
       // ONLY show messages that are explicitly marked as direct
       if (data && data.type === 'direct' && data.senderUsername && data.message) {
@@ -141,14 +141,14 @@ export default class ChatPanel extends HTMLElement {
         this.addMessage(data.senderUsername, data.message, 'other', 'direct', data.receiverUsername);
       }
     });
-    
+
     websocketService.socket.on('onlineUsers', (data: any) => {
       this.handleOnlineUsersUpdate(data);
     });
-    
+
     websocketService.socket.on('chatError', (data: any) => {
       const errorMessage = data.message || 'Unknown error';
-      
+
       // Check if it's a timeout/spam error
       if (errorMessage.includes('timed out') || errorMessage.includes('spam')) {
         this.handleTimeoutError(errorMessage);
@@ -185,7 +185,7 @@ export default class ChatPanel extends HTMLElement {
     // Handle room creation for invite flow
     websocketService.socket.on('roomCreated', (data: any) => {
       this.addMessage('', '🎮 Game room created! You are the host.', 'system', 'global');
-      
+
       // Dispatch event for RemoteMultiplayerManager to handle
       window.dispatchEvent(new CustomEvent('roomCreated', { detail: data }));
     });
@@ -193,7 +193,7 @@ export default class ChatPanel extends HTMLElement {
     // Handle player joined for invite flow
     websocketService.socket.on('playerJoined', (data: any) => {
       this.addMessage('', '🎮 Guest joined the game room!', 'system', 'global');
-      
+
       // Dispatch event for RemoteMultiplayerManager to handle
       window.dispatchEvent(new CustomEvent('playerJoined', { detail: data }));
     });
@@ -206,7 +206,7 @@ export default class ChatPanel extends HTMLElement {
       if (data && Array.isArray(data)) {
         const currentUsername = this.getCurrentUsername();
         const otherUsers = data.filter((user: any) => user.username !== currentUsername);
-        
+
         if (otherUsers.length === 0) {
           this.addMessage('', 'No other users online', 'system', 'global');
         } else {
@@ -215,13 +215,13 @@ export default class ChatPanel extends HTMLElement {
             const isCurrentUser = user.username === currentUsername;
             return isCurrentUser ? `${user.username} (You)` : user.username;
           }).join(', ');
-          
+
           this.addMessage('', `Online: ${userList}`, 'system', 'global');
         }
       } else {
         this.addMessage('', 'Failed to get online users', 'system', 'global');
       }
-      
+
       // Reset the flag
       this.requestedOnlineUsers = false;
     }
@@ -240,16 +240,16 @@ export default class ChatPanel extends HTMLElement {
   private handleTimeoutError(errorMessage: string) {
     // Add error message
     this.addMessage('', `⚠️ ${errorMessage}`, 'system', 'global');
-    
+
     // Disable chat input temporarily
     const input = this.shadowRoot?.querySelector('.chat-input') as HTMLInputElement;
     const sendButton = this.shadowRoot?.querySelector('.send-button') as HTMLButtonElement;
-    
+
     if (input && sendButton) {
       input.disabled = true;
       sendButton.disabled = true;
       input.placeholder = 'Chat temporarily disabled due to spam...';
-      
+
       // Re-enable after 2 minutes
       setTimeout(() => {
         input.disabled = false;
@@ -269,12 +269,12 @@ export default class ChatPanel extends HTMLElement {
 
     this.reconnectAttempts++;
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000); // Exponential backoff, max 10s
-    
+
     // Only show reconnection message once
     if (this.reconnectAttempts === 1) {
       this.addMessage('', `⚠️ WebSocket disconnected. Attempting to reconnect...`, 'system', 'global');
     }
-    
+
     setTimeout(() => {
       const websocketService = (window as any).websocketService;
       if (websocketService && websocketService.isConnected()) {
@@ -332,17 +332,17 @@ export default class ChatPanel extends HTMLElement {
       if (savedMessages) {
         const messages = JSON.parse(savedMessages);
         console.log('Loading saved messages:', messages);
-        
+
         // Validate message structure before loading
         if (!Array.isArray(messages)) {
           console.warn('Invalid message format in localStorage, clearing...');
           localStorage.removeItem('chatMessages');
           return;
         }
-        
+
         // Restore message history from localStorage
         this.messageHistory = messages;
-        
+
         // Load saved messages WITHOUT triggering save (to prevent loop)
         this.loadSavedMessagesToUI(messages);
       }
@@ -383,7 +383,7 @@ export default class ChatPanel extends HTMLElement {
     if (messagesContainer) {
       const messageDiv = document.createElement('div');
       messageDiv.className = `message ${type} ${category}`;
-      
+
       if (type === 'system') {
         // System messages - clean, minimal style
         messageDiv.style.cssText = `
@@ -396,14 +396,14 @@ export default class ChatPanel extends HTMLElement {
           color: rgba(255,255,255,0.7);
           font-style: italic;
         `;
-        
+
         const messageSpan = document.createElement('span');
         messageSpan.textContent = message;
         messageDiv.appendChild(messageSpan);
       } else {
         // User messages - ultra slim, minimal style with different colors
         const isOwnMessage = sender === this.getCurrentUsername();
-        
+
         messageDiv.style.cssText = `
           margin: 0.2rem 0;
           padding: 0.3rem 0.5rem;
@@ -411,11 +411,11 @@ export default class ChatPanel extends HTMLElement {
           border-radius: 4px;
           border: 1px solid ${isOwnMessage ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.2)'};
         `;
-        
+
         // Show sender and message with different styles for global vs direct
         const senderDiv = document.createElement('div');
         senderDiv.style.cssText = 'color: rgba(255,255,255,0.8); font-size: 0.7rem; margin-bottom: 0.15rem; font-weight: 500;';
-        
+
         if (category === 'direct') {
           // Direct message: show "sender -> receiver"
           const displayReceiver = receiverUsername || this.getCurrentUsername();
@@ -427,15 +427,15 @@ export default class ChatPanel extends HTMLElement {
           // Global message: show "sender -> global"
           senderDiv.textContent = `${sender} -> global`;
         }
-        
+
         const messageDiv2 = document.createElement('div');
         messageDiv2.style.cssText = 'color: rgba(255,255,255,0.9); font-size: 0.8rem; line-height: 1.2;';
         messageDiv2.textContent = message;
-        
+
         const timestampDiv = document.createElement('div');
         timestampDiv.style.cssText = 'color: rgba(255,255,255,0.5); font-size: 0.6rem; margin-top: 0.15rem; text-align: right;';
         timestampDiv.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        
+
         // Add invite info if this is an invite message
         if (inviteData && inviteData.type === 'invite') {
           // Store real invite data in the message DOM for later extraction
@@ -444,25 +444,25 @@ export default class ChatPanel extends HTMLElement {
           messageDiv.setAttribute('data-receiver', inviteData.receiverUsername || '');
           messageDiv.setAttribute('data-difficulty', inviteData.difficulty || 'MEDIUM');
           messageDiv.setAttribute('data-invite-type', 'true');
-          
+
           const inviteInfoDiv = document.createElement('div');
           inviteInfoDiv.style.cssText = 'text-align: center; margin-top: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 4px;';
-          
+
           const inviteText = document.createElement('div');
           inviteText.style.cssText = 'color: rgba(255,255,255,0.7); font-size: 0.7rem; margin-bottom: 0.3rem;';
           inviteText.textContent = 'Type /accept or /decline to respond';
-          
+
           inviteInfoDiv.appendChild(inviteText);
           messageDiv.appendChild(inviteInfoDiv);
         }
-        
+
         messageDiv.appendChild(senderDiv);
         messageDiv.appendChild(messageDiv2);
         messageDiv.appendChild(timestampDiv);
       }
-      
+
       messagesContainer.appendChild(messageDiv);
-      
+
       // Scroll to bottom
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
@@ -730,7 +730,7 @@ export default class ChatPanel extends HTMLElement {
     const messagesContainer = document.createElement('div');
     messagesContainer.className = 'messages-container';
     messagesContainer.style.cssText = 'height: 100%; overflow-y: auto;';
-    
+
     messagesArea.appendChild(messagesContainer);
 
     // simple input area
@@ -780,7 +780,7 @@ export default class ChatPanel extends HTMLElement {
           this.addMessage('', 'Message too long. Maximum 500 characters allowed.', 'system', 'global');
           return;
         }
-        
+
         // Handle all commands and messages in single chat
         if (message.startsWith('/')) {
           this.handleSlashCommand(message);
@@ -804,7 +804,7 @@ export default class ChatPanel extends HTMLElement {
       sendButton.style.background = 'rgba(255,255,255,0.3)';
       sendButton.style.borderColor = 'rgba(255,255,255,0.5)';
     });
-    
+
     sendButton.addEventListener('mouseleave', () => {
       sendButton.style.background = 'rgba(255,255,255,0.2)';
       sendButton.style.borderColor = 'rgba(255,255,255,0.3)';
@@ -856,7 +856,7 @@ export default class ChatPanel extends HTMLElement {
     if (messagesContainer) {
       const messageDiv = document.createElement('div');
       messageDiv.className = `message ${type} ${category}`;
-      
+
       if (type === 'system') {
         // System messages - clean, minimal style
         messageDiv.style.cssText = `
@@ -869,14 +869,14 @@ export default class ChatPanel extends HTMLElement {
           color: rgba(255,255,255,0.7);
           font-style: italic;
         `;
-        
+
         const messageSpan = document.createElement('span');
         messageSpan.textContent = message;
         messageDiv.appendChild(messageSpan);
       } else {
         // User messages - ultra slim, minimal style with different colors
         const isOwnMessage = sender === this.getCurrentUsername();
-        
+
         messageDiv.style.cssText = `
           margin: 0.2rem 0;
           padding: 0.3rem 0.5rem;
@@ -884,11 +884,11 @@ export default class ChatPanel extends HTMLElement {
           border-radius: 4px;
           border: 1px solid ${isOwnMessage ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.2)'};
         `;
-        
+
         // Show sender and message with different styles for global vs direct
         const senderDiv = document.createElement('div');
         senderDiv.style.cssText = 'color: rgba(255,255,255,0.8); font-size: 0.7rem; margin-bottom: 0.15rem; font-weight: 500;';
-        
+
         if (category === 'direct') {
           // Direct message: show "sender -> receiver"
           const displayReceiver = receiverUsername || this.getCurrentUsername();
@@ -900,24 +900,24 @@ export default class ChatPanel extends HTMLElement {
           // Global message: show "sender -> global"
           senderDiv.textContent = `${sender} -> global`;
         }
-        
+
         const messageDiv2 = document.createElement('div');
         messageDiv2.style.cssText = 'color: rgba(255,255,255,0.9); font-size: 0.8rem; line-height: 1.2;';
         messageDiv2.textContent = message;
-        
+
         const timestampDiv = document.createElement('div');
         timestampDiv.style.cssText = 'color: rgba(255,255,255,0.5); font-size: 0.6rem; margin-top: 0.15rem; text-align: right;';
         timestampDiv.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        
 
-        
+
+
         messageDiv.appendChild(senderDiv);
         messageDiv.appendChild(messageDiv2);
         messageDiv.appendChild(timestampDiv);
       }
-      
+
       messagesContainer.appendChild(messageDiv);
-      
+
       // Store message in history for localStorage (except system messages)
       if (type !== 'system') {
         this.messageHistory.push({
@@ -927,16 +927,16 @@ export default class ChatPanel extends HTMLElement {
           category: category,
           timestamp: Date.now()
         });
-        
+
         // Limit history to prevent memory issues
         if (this.messageHistory.length > 100) {
           this.messageHistory.shift();
         }
-        
+
         // Save to localStorage
         this.saveMessages();
       }
-      
+
       // Scroll to bottom
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
@@ -948,7 +948,7 @@ export default class ChatPanel extends HTMLElement {
   private findInviteMessage(inviteId?: number): HTMLElement | null {
     const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
     if (!messagesContainer) return null;
-    
+
     const inviteMessages = messagesContainer.querySelectorAll('.message');
     for (let i = inviteMessages.length - 1; i >= 0; i--) {
       const msg = inviteMessages[i] as HTMLElement;
@@ -987,42 +987,42 @@ export default class ChatPanel extends HTMLElement {
     } else if (cmd === '/list') {
       this.requestOnlineUsers();
     } else if (cmd === '/clear') {
-        const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
-        if (messagesContainer) {
-          messagesContainer.innerHTML = '';
-          localStorage.removeItem('chatMessages');
-          this.messageHistory = [];
-		}
+      const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
+      if (messagesContainer) {
+        messagesContainer.innerHTML = '';
+        localStorage.removeItem('chatMessages');
+        this.messageHistory = [];
+      }
     } else if (cmd.startsWith('/pm ')) {
       const [_, receiver, ...messageParts] = cmd.split(/\s+/);
       let message = messageParts.join(' ');
-      
+
       if (receiver && message) {
         if (receiver === this.getCurrentUsername()) {
           this.addMessage('', 'You cannot send a private message to yourself!', 'system', 'global');
           return;
         }
         wss.emit('directMessage', {
-			type: 'direct',
-			senderUsername: this.getCurrentUsername(),
-			receiverUsername: receiver,
-			message: message,
-			timestamp: Date.now()
-		  });
+          type: 'direct',
+          senderUsername: this.getCurrentUsername(),
+          receiverUsername: receiver,
+          message: message,
+          timestamp: Date.now()
+        });
       } else {
         this.addMessage('', 'Usage: /pm username message', 'system', 'global');
       }
     } else if (cmd.startsWith('/invite ')) {
       const [_, receiver, difficulty] = cmd.split(/\s+/);
-      
+
       if (!receiver || !difficulty) {
         this.addMessage('', 'Usage: /invite username [difficulty]', 'system', 'global');
         return;
       }
       wss.emit('chatMessage', {
-		message: `/invite ${receiver} ${difficulty}`,
-		username: this.getCurrentUsername()
-	  });
+        message: `/invite ${receiver} ${difficulty}`,
+        username: this.getCurrentUsername()
+      });
     } else if (cmd === '/accept') {
       // Accept the most recent game invite
       this.handleInviteCommand('accept');
@@ -1031,7 +1031,7 @@ export default class ChatPanel extends HTMLElement {
       this.handleInviteCommand('decline');
     } else if (cmd.startsWith('/profile ')) {
       const [_, username] = cmd.split(/\s+/);
-      
+
       if (username) {
         window.location.href = `/profile/${username}`;
       } else {
@@ -1208,7 +1208,7 @@ export default class ChatPanel extends HTMLElement {
       if (websocketService && websocketService.isConnected()) {
         // Get user data from state
         let username = 'Anonymous';
-        
+
         // Try to get from state first
         if (state.userData?.username) {
           username = state.userData.username;
@@ -1217,13 +1217,13 @@ export default class ChatPanel extends HTMLElement {
         else if (localStorage.getItem('loggedInUser')) {
           username = localStorage.getItem('loggedInUser') || 'Anonymous';
         }
-        
+
         // Send message via WebSocket - use the exact format backend expects
         websocketService.emit('chatMessage', {
           message: message,
           username: username
         });
-        
+
         // ABSOLUTELY NO local message addition - UI only renders what backend sends back
       } else {
         console.error('WebSocket service not available or not connected');
@@ -1244,20 +1244,20 @@ export default class ChatPanel extends HTMLElement {
         this.addMessage('', '⚠️ No game invite found to respond to', 'system', 'global');
         return;
       }
-      
+
       // Check if this invite has already been processed
       if (inviteMessage.getAttribute('data-invite-processed') === 'true') {
         this.addMessage('', '⚠️ This invite has already been processed', 'system', 'global');
         return;
       }
-      
+
       // Get invite data from the message
       const inviteData = this.extractInviteDataFromMessage(inviteMessage);
       if (!inviteData) {
         this.addMessage('', '⚠️ Invalid invite data', 'system', 'global');
         return;
       }
-      
+
       // Send response to backend with REAL data
       const websocketService = (window as any).websocketService;
       if (websocketService && websocketService.socket) {
@@ -1268,10 +1268,10 @@ export default class ChatPanel extends HTMLElement {
           receiverUsername: inviteData.receiverUsername,
           difficulty: inviteData.difficulty
         });
-        
+
         // Mark as processed immediately
         inviteMessage.setAttribute('data-invite-processed', 'true');
-        
+
         if (action === 'accept') {
           this.addMessage('', '🎮 Processing invite acceptance...', 'system', 'global');
         } else {
@@ -1291,19 +1291,19 @@ export default class ChatPanel extends HTMLElement {
       if (messageElement.getAttribute('data-invite-type') !== 'true') {
         return null;
       }
-      
+
       // Extract real invite data from DOM attributes
       const inviteId = messageElement.getAttribute('data-invite-id');
       const senderUsername = messageElement.getAttribute('data-sender');
       const receiverUsername = messageElement.getAttribute('data-receiver');
       const difficulty = messageElement.getAttribute('data-difficulty');
-      
+
       // Validate that we have all required data
       if (!inviteId || !senderUsername || !receiverUsername || !difficulty) {
         console.error('Missing invite data attributes:', { inviteId, senderUsername, receiverUsername, difficulty });
         return null;
       }
-      
+
       return {
         id: parseInt(inviteId),
         senderUsername: senderUsername,
@@ -1322,13 +1322,13 @@ export default class ChatPanel extends HTMLElement {
       const websocketService = (window as any).websocketService;
       if (websocketService && websocketService.isConnected()) {
         const currentUsername = state.userData?.username || localStorage.getItem('loggedInUser') || 'Anonymous';
-        
+
         // Send invite via WebSocket - let backend handle all validation
         websocketService.emit('chatMessage', {
           message: `/invite ${username} ${difficulty}`,
           username: currentUsername
         });
-        
+
         // No confirmation message - let backend response determine what to show
       } else {
         console.error('WebSocket service not available or not connected');
