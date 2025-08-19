@@ -245,6 +245,44 @@ export class BabylonGUI {
     }, 1000);
   }
 
+  // multiplayer: countdown driven by server events
+  public beginCountdownOverlay() {
+    this.clearGUI();
+    this.fadeBackground(0.5);
+    this.showTVEffectOverlay(this.advancedTexture);
+
+    if (!this.countdownText) {
+      this.countdownText = new TextBlock();
+      this.countdownText.color = this.GUIConstants.COUNTDOWN_FONT_COLOR;
+      this.countdownText.fontSize = this.GUIConstants.COUNTDOWN_FONT_SIZE * state.scaleFactor.scaleY + 'px';
+      this.countdownText.fontWeight = this.GUIConstants.COUNTDOWN_FONT_WEIGHT;
+      this.countdownText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+      this.countdownText.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+      this.advancedTexture.addControl(this.countdownText);
+    }
+  }
+
+  public setCountdownNumber(value: number) {
+    if (!this.countdownText) return;
+    this.countdownText.text = value > 0 ? String(value) : 'PONG!';
+    // light blink animation (guard against nulls)
+    try {
+      this.countdownText.scaleX = 1;
+      this.countdownText.scaleY = 1;
+      this.countdownText.alpha = 0.1;
+      setTimeout(() => {
+        if (!this.countdownText) return;
+        this.countdownText.scaleX = 1.5;
+        this.countdownText.scaleY = 1.5;
+        this.countdownText.alpha = 1;
+      }, 80);
+    } catch {}
+  }
+
+  public endCountdownOverlay() {
+    this.hideCountdown();
+  }
+
   private hideCountdown() {
     if (this.countdownText) {
       this.advancedTexture.removeControl(this.countdownText);

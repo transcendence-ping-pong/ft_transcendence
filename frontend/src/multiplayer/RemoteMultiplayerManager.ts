@@ -127,14 +127,7 @@ export class RemoteMultiplayerManager {
         }));
       }
 
-      // if the joining player is us, auto-ready once joined
-      try {
-        const joiningUsername = e.detail.player?.username;
-        if (!this.hasAutoReadied && joiningUsername && joiningUsername === this.currentUsername) {
-          this.hasAutoReadied = true;
-          this.setReady();
-        }
-      } catch {}
+      // no auto-ready in normal flow
     });
 
     // Player ready - Someone clicked ready
@@ -213,6 +206,8 @@ export class RemoteMultiplayerManager {
       
       if (this.state.currentRoom) {
         this.state.currentRoom.status = 'playing';
+        // once playing, freeze lobby UI state so it doesn't re-render on late events
+        window.dispatchEvent(new CustomEvent('hideMultiplayerUI'));
         // Don't dispatch gameStarting here - let the UI handle the transition directly
         // The gameStart event will be handled by the game orchestrator
       }
@@ -274,15 +269,17 @@ export class RemoteMultiplayerManager {
 
   // PRIVATE - Helper methods
   private mapToRemoteRoom(room: any): RemoteGameRoom {
-    // Find guest player (non-host player)
+    // Find host/guest players explicitly
+    const hostPlayer = room.players?.find((p: any) => p.isHost);
     const guestPlayer = room.players?.find((p: any) => !p.isHost);
+    const hostUsername = room.hostUsername || hostPlayer?.username || room.host?.username || 'Unknown';
     const guestUsername = guestPlayer?.username;
     
 
     
     return {
       id: room.id || room.roomId,
-      hostUsername: room.hostUsername || room.host?.username || 'Unknown',
+      hostUsername,
       guestUsername: guestUsername,
       difficulty: room.difficulty || 'MEDIUM',
       gameType: room.gameType || 'ONE MATCH',

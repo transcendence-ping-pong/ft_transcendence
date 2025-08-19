@@ -15,6 +15,7 @@ export default class ChatPanel extends HTMLElement {
   private isLoadingMessages: boolean = false;
   private currentUsername: string = '';
   private lastInvite: any = null;
+  private hasRenderedHistory: boolean = false;
 
   constructor() {
     super();
@@ -36,8 +37,11 @@ export default class ChatPanel extends HTMLElement {
       mutations.forEach((mutation) => {
         if (mutation.type === 'attributes' && mutation.attributeName === 'visible') {
           if (this.hasAttribute('visible')) {
-            // Chat opened - load messages
-            this.loadMessages();
+            // Chat opened - render history once without duplicating
+            if (!this.hasRenderedHistory) {
+              this.renderHistoryOnce();
+              this.hasRenderedHistory = true;
+            }
           }
         }
       });
@@ -56,6 +60,7 @@ export default class ChatPanel extends HTMLElement {
         // Check if already connected
         if (websocketService.isConnected()) {
           this.updateConnectionStatus('Connected', 'rgba(0,255,0,0.7)');
+          // ensure listeners are attached only once
           this.setupWebSocketListeners();
           this.authenticateUser();
         } else {
@@ -63,6 +68,7 @@ export default class ChatPanel extends HTMLElement {
           this.updateConnectionStatus('Connecting...', 'rgba(255,255,0,0.7)');
           window.addEventListener('websocketConnected', () => {
             this.updateConnectionStatus('Connected', 'rgba(0,255,0,0.7)');
+            // attach listeners only once
             this.setupWebSocketListeners();
             this.authenticateUser();
           });
@@ -71,18 +77,18 @@ export default class ChatPanel extends HTMLElement {
         // Listen for connection state changes
         window.addEventListener('websocketConnected', () => {
           this.updateConnectionStatus('Connected', 'rgba(0,255,0,0.7)');
-        });
+        }, { once: true });
         
         window.addEventListener('websocketDisconnected', () => {
           this.updateConnectionStatus('Disconnected', 'rgba(255,255,0,0.7)');
           this.addMessage('', '⚠️ WebSocket disconnected. Trying to reconnect...', 'system', 'global');
           this.attemptReconnection();
-        });
+        }, { once: true });
         
         window.addEventListener('websocketError', () => {
           this.updateConnectionStatus('Error', 'rgba(255,0,0,0.7)');
           this.addMessage('', '⚠️ WebSocket connection error. Check your connection.', 'system', 'global');
-        });
+        }, { once: true });
       } else {
         console.error('WebSocket service not available');
         this.updateConnectionStatus('Service not found', 'rgba(255,0,0,0.7)');
@@ -150,9 +156,11 @@ export default class ChatPanel extends HTMLElement {
   // Setup WebSocket event listeners - SIMPLIFIED
   private setupWebSocketListeners() {
     const websocketService = (window as any).websocketService;
-    if (!websocketService || !websocketService.socket) {
+    if (!websocketService || !websocketService.socket || (this as any)._wsHandlersAttached) {
       return;
     }
+    // prevent duplicate handler registration across open/close cycles
+    (this as any)._wsHandlersAttached = true;
     
     // Simple event handling - let backend do the categorization
     websocketService.socket.on('chatMessage', (data: any) => {
@@ -230,6 +238,13 @@ export default class ChatPanel extends HTMLElement {
       try { localStorage.setItem('inviteRoom', JSON.stringify({ room: data.room, isHost: data.role === 'host' })); } catch {}
       try { localStorage.setItem('inviteRoomId', data.room?.id || data.roomId || ''); } catch {}
       try { localStorage.setItem('openRemoteUI', '1'); } catch {}
+      // close chat if open
+      try {
+        const panel = document.querySelector('chat-panel');
+        if (panel && panel.hasAttribute('visible')) {
+          panel.removeAttribute('visible');
+        }
+      } catch {}
       // client-side navigate to preserve websocket connection
       try {
         window.history.pushState({}, '', '/game');
@@ -380,36 +395,31 @@ export default class ChatPanel extends HTMLElement {
     }
   }
 
-  // Load saved messages from localStorage
-  private loadMessages() {
+  // Render message history once when chat is first opened
+  private renderHistoryOnce() {
     try {
-      const savedMessages = localStorage.getItem('chatMessages');
-      if (savedMessages) {
-        const messages = JSON.parse(savedMessages);
-        console.log('Loading saved messages:', messages);
-        
-        // Validate message structure before loading
-        if (!Array.isArray(messages)) {
-          console.warn('Invalid message format in localStorage, clearing...');
-          localStorage.removeItem('chatMessages');
-          return;
+      // decide source: in-memory history if present, otherwise localStorage
+      let messages: any[] = [];
+      if (this.messageHistory && this.messageHistory.length > 0) {
+        messages = this.messageHistory;
+      } else {
+        const saved = localStorage.getItem('chatMessages');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            messages = parsed;
+            this.messageHistory = parsed;
+          }
         }
-        
-        // Restore message history from localStorage
-        this.messageHistory = messages;
-        
-        // Load saved messages WITHOUT triggering save (to prevent loop)
+      }
+      // clear UI then render once
+      const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
+      if (messagesContainer) messagesContainer.innerHTML = '';
+      if (messages && messages.length) {
         this.loadSavedMessagesToUI(messages);
       }
     } catch (error) {
-      console.error('Failed to load chat messages:', error);
-      // Clear corrupted localStorage
-      try {
-        localStorage.removeItem('chatMessages');
-        console.log('Cleared corrupted localStorage');
-      } catch (clearError) {
-        console.error('Failed to clear localStorage:', clearError);
-      }
+      console.error('Failed to render chat history:', error);
     }
   }
 
@@ -421,10 +431,10 @@ export default class ChatPanel extends HTMLElement {
     messages.forEach((msg: any) => {
       try {
         if (msg.type === 'system' && msg.message !== 'Welcome to Pong Live Chat!' && msg.message !== 'Use /help to see available commands') {
-          this.renderMessageToUI('', msg.message, 'system', msg.category || 'global');
+          this.renderMessageToUI('', msg.message, 'system', msg.category || 'global', undefined, undefined, msg.timestamp);
         } else if ((msg.type === 'user' || msg.type === 'other') && msg.sender && msg.message) {
           const messageType = msg.sender === this.getCurrentUsername() ? 'user' : 'other';
-          this.renderMessageToUI(msg.sender, msg.message, messageType, msg.category || 'global');
+          this.renderMessageToUI(msg.sender, msg.message, messageType, msg.category || 'global', undefined, undefined, msg.timestamp);
         }
       } catch (msgError) {
         console.warn('Failed to load individual message:', msgError, msg);
@@ -433,7 +443,7 @@ export default class ChatPanel extends HTMLElement {
   }
 
   // Render message to UI without saving (for loading from localStorage)
-  private renderMessageToUI(sender: string, message: string, type: 'user' | 'system' | 'other', category: 'global' | 'direct' = 'global', receiverUsername?: string, inviteData?: any) {
+  private renderMessageToUI(sender: string, message: string, type: 'user' | 'system' | 'other', category: 'global' | 'direct' = 'global', receiverUsername?: string, inviteData?: any, timestampOverride?: number) {
     const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
     if (messagesContainer) {
       const messageDiv = document.createElement('div');
@@ -489,7 +499,8 @@ export default class ChatPanel extends HTMLElement {
         
         const timestampDiv = document.createElement('div');
         timestampDiv.style.cssText = 'color: rgba(255,255,255,0.5); font-size: 0.6rem; margin-top: 0.15rem; text-align: right;';
-        timestampDiv.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const ts = timestampOverride || Date.now();
+        timestampDiv.textContent = new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         
         // store invite metadata on the DOM node so /accept and /decline can find it
         if (inviteData && inviteData.type === 'invite' && inviteData.id) {
@@ -914,7 +925,7 @@ export default class ChatPanel extends HTMLElement {
   // No more tab switching - all messages in one chat
 
   // Add message to chat
-  private addMessage(sender: string, message: string, type: 'user' | 'system' | 'other', category: 'global' | 'direct' = 'global', receiverUsername?: string, inviteData?: any) {
+  private addMessage(sender: string, message: string, type: 'user' | 'system' | 'other', category: 'global' | 'direct' = 'global', receiverUsername?: string, inviteData?: any, timestampOverride?: number) {
     const messagesContainer = this.shadowRoot?.querySelector('.messages-container');
     if (messagesContainer) {
       const messageDiv = document.createElement('div');
@@ -970,7 +981,8 @@ export default class ChatPanel extends HTMLElement {
         
         const timestampDiv = document.createElement('div');
         timestampDiv.style.cssText = 'color: rgba(255,255,255,0.5); font-size: 0.6rem; margin-top: 0.15rem; text-align: right;';
-        timestampDiv.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const ts = timestampOverride || Date.now();
+        timestampDiv.textContent = new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         
 
         
@@ -988,7 +1000,7 @@ export default class ChatPanel extends HTMLElement {
           message: message,
           type: type,
           category: category,
-          timestamp: Date.now()
+          timestamp: timestampOverride || Date.now()
         });
         
         // Limit history to prevent memory issues

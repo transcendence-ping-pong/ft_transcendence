@@ -22,6 +22,7 @@ export class MultiplayerGameCanvas extends GameCanvas {
 		// Game started event
 		    window.addEventListener('gameStarted', (e: CustomEvent) => {
 			if (this.isMultiplayerMode && e.detail.gameState) {
+				// sync state but avoid emitting score change during countdown overlay
 				this.updateFromServerState(e.detail.gameState);
 			}
 		});
@@ -69,6 +70,14 @@ export class MultiplayerGameCanvas extends GameCanvas {
 		if (gameState.paddles) {
 			this.gameManager.score.LEFT = gameState.paddles.left?.score || 0;
 			this.gameManager.score.RIGHT = gameState.paddles.right?.score || 0;
+
+			// notify GUI about score change to mirror single-player HUD
+			this.dispatchEvent(new CustomEvent('scoreChanged', { 
+				detail: { 
+					LEFT: this.gameManager.score.LEFT, 
+					RIGHT: this.gameManager.score.RIGHT 
+				} 
+			}));
 		}
 
 		// Update ball position

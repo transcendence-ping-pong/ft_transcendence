@@ -29,13 +29,47 @@ class GameManager {
 	}
 
 	// creates initial game state
-	createGameState() {
+	createGameState(difficulty = 'MEDIUM') {
+		// difficulty-based speed configuration (kept simple and predictable)
+		const speedConfig = (() => {
+			const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+			const configs = {
+				EASY: {
+					BALL_MIN: BALL_SPEED_MIN * 0.85,
+					BALL_MAX: BALL_SPEED_MAX * 0.9,
+					PADDLE: PADDLE_SPEED * 0.9
+				},
+				MEDIUM: {
+					BALL_MIN: BALL_SPEED_MIN,
+					BALL_MAX: BALL_SPEED_MAX,
+					PADDLE: PADDLE_SPEED
+				},
+				HARD: {
+					BALL_MIN: BALL_SPEED_MIN * 1.15,
+					BALL_MAX: BALL_SPEED_MAX * 1.25,
+					PADDLE: PADDLE_SPEED * 1.2
+				}
+			};
+			const base = configs[difficulty] || configs.MEDIUM;
+			return {
+				BALL_MIN: clamp(base.BALL_MIN, BALL_SPEED_MIN * 0.5, BALL_SPEED_MAX),
+				BALL_MAX: clamp(base.BALL_MAX, BALL_SPEED_MIN, BALL_SPEED_MAX * 1.5),
+				PADDLE: clamp(base.PADDLE, PADDLE_SPEED * 0.5, PADDLE_SPEED * 2)
+			};
+		})();
+
 		return {
+			config: {
+				difficulty,
+				speedMin: speedConfig.BALL_MIN,
+				speedMax: speedConfig.BALL_MAX,
+				paddleSpeed: speedConfig.PADDLE
+			},
 			ball: {
 				x: VIRTUAL_WIDTH / 2,
 				y: VIRTUAL_HEIGHT / 2,
-				velocityX: (Math.random() > 0.5 ? 1 : -1) * BALL_SPEED_MIN,
-				velocityY: (Math.random() - 0.5) * BALL_SPEED_MIN,
+				velocityX: (Math.random() > 0.5 ? 1 : -1) * speedConfig.BALL_MIN,
+				velocityY: (Math.random() - 0.5) * speedConfig.BALL_MIN,
 				size: BALL_SIZE
 			},
 			paddles: {
@@ -47,7 +81,7 @@ class GameManager {
 					direction: 0,
 					height: PADDLE_HEIGHT,
 					width: PADDLE_WIDTH,
-					speed: PADDLE_SPEED
+					speed: speedConfig.PADDLE
 				},
 				right: {
 					x: RIGHT_PADDLE_X,
@@ -57,7 +91,7 @@ class GameManager {
 					direction: 0,
 					height: PADDLE_HEIGHT,
 					width: PADDLE_WIDTH,
-					speed: PADDLE_SPEED
+					speed: speedConfig.PADDLE
 				}
 			},
 			gamePhase: 'countdown',
@@ -161,14 +195,14 @@ class GameManager {
 		// left paddle collision
 		if (ball.velocityX < 0) {
 			if (this.checkPaddleCollision(ball, leftPaddle)) {
-				this.bounceOffPaddle(ball, leftPaddle, 'left');
+				this.bounceOffPaddle(gameState, ball, leftPaddle, 'left');
 			}
 		}
 
 		// right paddle collision
 		if (ball.velocityX > 0) {
 			if (this.checkPaddleCollision(ball, rightPaddle)) {
-				this.bounceOffPaddle(ball, rightPaddle, 'right');
+				this.bounceOffPaddle(gameState, ball, rightPaddle, 'right');
 			}
 		}
 
@@ -177,11 +211,19 @@ class GameManager {
 			gameState.paddles.right.score++;
 			gameState.lastScorer = 'right';
 			this.resetBall(gameState);
+			if (this.checkGameEnd(gameState)) {
+				gameState.gameStarted = false;
+				return 'end';
+			}
 			return 'right';
 		} else if (ball.x >= VIRTUAL_WIDTH - VIRTUAL_BORDER_X) {
 			gameState.paddles.left.score++;
 			gameState.lastScorer = 'left';
 			this.resetBall(gameState);
+			if (this.checkGameEnd(gameState)) {
+				gameState.gameStarted = false;
+				return 'end';
+			}
 			return 'left';
 		}
 
@@ -201,7 +243,7 @@ class GameManager {
 	}
 
 	// handles ball bouncing off paddles
-	bounceOffPaddle(ball, paddle, paddleSide) {
+	bounceOffPaddle(gameState, ball, paddle, paddleSide) {
 		// prevent sticking to paddle
 		if (paddleSide === 'left') {
 			ball.x = paddle.x + paddle.width + ball.size / 2 + 1;
@@ -217,7 +259,7 @@ class GameManager {
 
 		// calculate speed
 		let speed = Math.sqrt(ball.velocityX * ball.velocityX + ball.velocityY * ball.velocityY);
-		speed = Math.max(Math.min(speed * 1.25, BALL_SPEED_MAX), BALL_SPEED_MIN);
+		speed = Math.max(Math.min(speed * 1.25, gameState.config.speedMax), gameState.config.speedMin);
 
 		// update velocity
 		ball.velocityX = (paddleSide === 'left' ? Math.abs(speed * Math.cos(bounceAngle)) : -Math.abs(speed * Math.cos(bounceAngle)));
@@ -233,19 +275,24 @@ class GameManager {
 		// serve toward the player who just scored
 		const direction = gameState.lastScorer === 'left' ? 1 : -1;
 		const angle = (Math.random() - 0.5) * Math.PI / 4;
-		ball.velocityX = direction * BALL_SPEED_MIN * Math.cos(angle);
-		ball.velocityY = BALL_SPEED_MIN * Math.sin(angle);
+		ball.velocityX = direction * gameState.config.speedMin * Math.cos(angle);
+		ball.velocityY = gameState.config.speedMin * Math.sin(angle);
+		// reset clock to avoid a big first delta immediately causing a score
+		gameState.lastUpdate = Date.now();
 	}
 
-	// checks if game should end
+	// checks if game should end (ping pong rule: to 11 and win by 2)
 	checkGameEnd(gameState) {
 		const leftScore = gameState.paddles.left.score;
 		const rightScore = gameState.paddles.right.score;
+		const TARGET = 11; // base target; must win by 2
 
-		if (leftScore >= SCORE_MAX || rightScore >= SCORE_MAX) {
-			gameState.gamePhase = 'finished';
-			gameState.winner = leftScore >= SCORE_MAX ? 'left' : 'right';
-			return true;
+		if (leftScore >= TARGET || rightScore >= TARGET) {
+			if (Math.abs(leftScore - rightScore) >= 2) {
+				gameState.gamePhase = 'finished';
+				gameState.winner = leftScore > rightScore ? 'left' : 'right';
+				return true;
+			}
 		}
 		return false;
 	}

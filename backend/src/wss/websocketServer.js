@@ -184,6 +184,17 @@ class WebSocketServer {
 		// check if already in a room
 		const roomCheck = this.roomManager.isPlayerInRoom(socket.id);
 		if (roomCheck.inRoom) {
+			if (roomCheck.roomId === data.roomId) {
+				// already in this room; ensure socket is in the room and echo current state
+				socket.join(data.roomId);
+				socket.emit('playerJoined', {
+					player: user,
+					players: roomCheck.room.players,
+					roomId: data.roomId,
+					room: roomCheck.room
+				});
+				return;
+			}
 			socket.emit('error', { message: 'You are already in a room' });
 			return;
 		}
@@ -353,8 +364,8 @@ class WebSocketServer {
 		// update room status
 		this.roomManager.updateRoomStatus(roomId, 'playing');
 
-		// create game state using game manager
-		const gameState = this.gameManager.createGameState();
+		// create game state using game manager (difficulty-aware)
+		const gameState = this.gameManager.createGameState(room.difficulty || 'MEDIUM');
 		this.roomManager.setGameState(roomId, gameState);
 
 		this.io.to(roomId).emit('gameStart', {
@@ -378,12 +389,18 @@ class WebSocketServer {
 				updatedRoom.gameState.gamePhase = 'playing';
 				updatedRoom.gameState.gameStarted = true;
 				updatedRoom.gameState.countdown = 0;
+				// important: reset lastUpdate to avoid large first delta moving ball to a score
+				updatedRoom.gameState.lastUpdate = Date.now();
 
 				// reset paddle states
 				updatedRoom.gameState.paddles.left.moving = false;
 				updatedRoom.gameState.paddles.left.direction = 0;
 				updatedRoom.gameState.paddles.right.moving = false;
 				updatedRoom.gameState.paddles.right.direction = 0;
+
+				// ensure scores start at 0-0
+				updatedRoom.gameState.paddles.left.score = 0;
+				updatedRoom.gameState.paddles.right.score = 0;
 
 				this.io.to(roomId).emit('gameStarted', { gameState: updatedRoom.gameState });
 				this.startGameLoop(roomId);
@@ -397,6 +414,12 @@ class WebSocketServer {
 
 		// use game manager for game loop
 		this.gameManager.startGameLoop(roomId, this.io, room.gameState, (gameState) => {
+			// if game ended by rule, emit gameEnd and stop updates
+			if (gameState.gamePhase === 'finished') {
+				this.io.to(roomId).emit('gameEnd', { winner: gameState.winner, gameState });
+				this.gameManager.stopGameLoop(roomId);
+				return;
+			}
 			this.io.to(roomId).emit('gameUpdate', {
 				gameState: gameState,
 				timestamp: Date.now()
