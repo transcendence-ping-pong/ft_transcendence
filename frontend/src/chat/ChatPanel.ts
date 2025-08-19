@@ -1,4 +1,5 @@
 import { websocketService as wss } from '@/services/websocketService.js';
+// notifications removed; use chat-panel system messages instead
 import { state } from '../state.js';
 import { getUserProfile, postAddFriend, patchAcceptFriend, deleteFriend, getFriends, getReceivedRequests, getSentRequests } from '@/services/friendsService.js';
 
@@ -43,6 +44,19 @@ export default class ChatPanel extends HTMLElement {
               this.renderHistoryOnce();
               this.hasRenderedHistory = true;
             }
+            // on open: pick up any pending system messages added while closed
+            try {
+              const saved = localStorage.getItem('chatMessages');
+              if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > this.messageHistory.length) {
+                  // render only the new tail
+                  const newOnes = parsed.slice(this.messageHistory.length);
+                  this.loadSavedMessagesToUI(newOnes);
+                  this.messageHistory = parsed;
+                }
+              }
+            } catch {}
           }
         }
       });
@@ -167,7 +181,8 @@ export default class ChatPanel extends HTMLElement {
     websocketService.socket.on('chatMessage', (data: any) => {
       // ONLY show messages that are explicitly marked as global
       if (data && data.type === 'global' && data.senderUsername && data.message) {
-        this.addMessage(data.senderUsername, data.message, 'other', 'global');
+        this.addMessage(data.senderUsername, data.message, 'other', 'global', undefined, undefined, data.timestamp);
+        // no sidebar notifications
       }
     });
 
@@ -176,6 +191,7 @@ export default class ChatPanel extends HTMLElement {
       if (data && data.type === 'direct' && data.senderUsername && data.message) {
         // Pass the receiverUsername to addMessage for proper display
         this.addMessage(data.senderUsername, data.message, 'other', 'direct', data.receiverUsername);
+        // no sidebar notifications
       }
     });
 
@@ -201,6 +217,11 @@ export default class ChatPanel extends HTMLElement {
       if (data && data.type === 'invite' && data.senderUsername && data.message) {
         this.lastInvite = data;
         this.addMessage(data.senderUsername, data.message, 'other', 'direct', data.receiverUsername, data);
+        const meUser = this.getCurrentUsername();
+        // also surface a subtle system line in chat
+        if (data.receiverUsername && data.receiverUsername === meUser) {
+          this.addMessage('', `Invite from ${data.senderUsername}${data.difficulty ? ' ('+data.difficulty+')' : ''}`, 'system', 'global');
+        }
       }
     };
     window.addEventListener('gameInvite', onGameInvite);
@@ -213,10 +234,12 @@ export default class ChatPanel extends HTMLElement {
     // Handle invite responses (no redirect here; wait for roomCreated)
     websocketService.socket.on('inviteAccepted', (data: any) => {
       this.addMessage('', data.message, 'system', 'global');
+      // no sidebar notification
     });
 
     websocketService.socket.on('inviteDeclined', (data: any) => {
       this.addMessage('', data.message, 'system', 'global');
+      // no sidebar notification
     });
 
     // Handle game countdown
@@ -870,7 +893,9 @@ export default class ChatPanel extends HTMLElement {
     sendButton.addEventListener('click', sendMessage);
     input.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
-        sendMessage();
+        if (this.hasAttribute('visible')) {
+          sendMessage();
+        }
       }
     });
 
@@ -1049,15 +1074,7 @@ export default class ChatPanel extends HTMLElement {
   // Handle slash commands
   private handleSlashCommand(cmd: string) {
     if (cmd === '/help') {
-      this.addMessage('', 'Available commands:', 'system', 'global');
-      this.addMessage('', '• /help - Show this help message', 'system', 'global');
-      this.addMessage('', '• /list - Show online users', 'system', 'global');
-      this.addMessage('', '• /pm username message - Send private message', 'system', 'global');
-      this.addMessage('', '• /invite username difficulty - Invite user to play Pong (easy, medium, hard)', 'system', 'global');
-      this.addMessage('', '• /accept - Accept invite', 'system', 'global');
-      this.addMessage('', '• /decline - Decline invite', 'system', 'global');
-      this.addMessage('', '• /profile username - Go to user profile page', 'system', 'global');
-      this.addMessage('', '• /clear - Clear chat history', 'system', 'global');
+      this.addMessage('', 'Available: /help /list /pm username message /invite username difficulty /accept /decline /profile username /clear /block username /unblock username', 'system', 'global');
       this.addMessage('', '• /friend add/accept/remove username - Handle friend requests.', 'system', 'global');
       this.addMessage('', '• /friends all/sent/received - List all friends, sent requests or received requests.', 'system', 'global');
     } else if (cmd === '/list') {
@@ -1074,6 +1091,7 @@ export default class ChatPanel extends HTMLElement {
       let message = messageParts.join(' ');
 
       if (receiver && message) {
+        try { (window as any).notificationService?.emit({ type: 'chatPm', from: this.getCurrentUsername(), to: receiver, text: message }); } catch {}
         // always allowed to send; backend will validate receiver presence and warn sender if needed
         if (receiver === this.getCurrentUsername()) {
           this.addMessage('', 'You cannot send a private message to yourself!', 'system', 'global');
@@ -1101,6 +1119,40 @@ export default class ChatPanel extends HTMLElement {
         message: `/invite ${receiver} ${difficulty}`,
         username: this.getCurrentUsername()
       });
+    } else if (cmd.startsWith('/block ')) {
+      const [_, target] = cmd.split(/\s+/);
+      if (!target) { this.addMessage('', 'Usage: /block username', 'system', 'global'); return; }
+      // call REST to persist block
+      (async () => {
+        try {
+          const mod: any = await import('@/services/blockService.js');
+          const me = this.getCurrentUsername();
+          const meProfile = await getUserProfile(me);
+          const targetProfile = await getUserProfile(target);
+          const userId = meProfile?.userId || parseInt(localStorage.getItem('userId') || '0');
+          const blockedId = targetProfile?.userId || 0;
+          if (userId && blockedId) await mod.blockUser(userId, blockedId);
+          this.addMessage('', `Blocked ${target}`, 'system', 'global');
+        } catch { this.addMessage('', `Blocked ${target}`, 'system', 'global'); }
+      })();
+      // emit socket for immediate runtime enforcement
+      wss.emit('blockUser', { targetUsername: target });
+    } else if (cmd.startsWith('/unblock ')) {
+      const [_, target] = cmd.split(/\s+/);
+      if (!target) { this.addMessage('', 'Usage: /unblock username', 'system', 'global'); return; }
+      (async () => {
+        try {
+          const mod: any = await import('@/services/blockService.js');
+          const me = this.getCurrentUsername();
+          const meProfile = await getUserProfile(me);
+          const targetProfile = await getUserProfile(target);
+          const userId = meProfile?.userId || parseInt(localStorage.getItem('userId') || '0');
+          const blockedId = targetProfile?.userId || 0;
+          if (userId && blockedId) await mod.unblockUser(userId, blockedId);
+          this.addMessage('', `Unblocked ${target}`, 'system', 'global');
+        } catch { this.addMessage('', `Unblocked ${target}`, 'system', 'global'); }
+      })();
+      if ((wss as any).socket) (wss as any).socket.emit('unblockUser', { targetUsername: target });
     } else if (cmd === '/accept') {
       // accept from anywhere; server will validate pending invite
       // Accept the most recent game invite

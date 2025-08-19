@@ -1,3 +1,4 @@
+// notifications removed for delivery scope
 import { t } from "@/locales/Translations.js";
 import { actionIcons } from "@/utils/Constants.js";
 import { navigate } from "@/main.js";
@@ -11,11 +12,8 @@ export function mapNotification(payload) {
         message: t("notification.msg.newMessage", { name: payload.name }),
         time: payload.time,
         type: payload.type,
-        action: {
-          icon: actionIcons.message,
-          label: t("notification.action.newMessage"),
-        },
-        actionFn: () => alert("Viewing message!"),
+        action: { icon: actionIcons.message, label: t("notification.action.newMessage") },
+        actionFn: () => {},
       };
     }
     case "matchFound":
@@ -45,16 +43,31 @@ export function mapNotification(payload) {
     case "gameInvite":
       return {
         title: t("notification.title.gameInvite"),
-        message: t("notification.msg.gameInvite", { name: payload.name }),
+        message: payload.difficulty
+          ? `${payload.name} invited you to play (${payload.difficulty})`
+          : t("notification.msg.gameInvite", { name: payload.name }),
         time: payload.time,
         type: payload.type,
-        action: {
-          icon: actionIcons.accept,
-          label: t("notification.action.acceptInvite"),
-          actionKey: "joinMatch",
-        },
-        actionFn: () => alert("Game invite accepted!"),
+        action: { icon: actionIcons.accept, label: t("notification.action.acceptInvite"), actionKey: "joinMatch" },
+        actionFn: () => {},
       };
+    case "chatPm":
+      return {
+        title: "Private message",
+        message: `${payload.from} → ${payload.to}: ${payload.text}`,
+        time: payload.time,
+        type: payload.type,
+        action: { icon: actionIcons.message, label: "Open chat" },
+        actionFn: () => {},
+      };
+    case "chatInviteAccepted":
+      return { title: "Invite accepted", message: `${payload.name} accepted your invite`, time: payload.time, type: payload.type };
+    case "chatInviteDeclined":
+      return { title: "Invite declined", message: `${payload.name} declined your invite`, time: payload.time, type: payload.type };
+    case "autoWin":
+      return { title: "Opponent left", message: `Auto win awarded`, time: payload.time, type: payload.type };
+    case "matchEnded":
+      return { title: "Match ended", message: `${payload.winner} won (${payload.reason})`, time: payload.time, type: payload.type };
     case "newPlayerOnline":
       return {
         title: t("notification.title.newPlayerOnline"),
