@@ -1130,40 +1130,18 @@ export default class ChatPanel extends HTMLElement {
       }
       // runtime enforcement via socket; server will emit userBlocked to blocker
       wss.emit('blockUser', { targetUsername: target });
-      // best-effort REST persistence only
-      (async () => {
-        try {
-          const mod: any = await import('@/services/blockService.js');
-          const meProfile = await getUserProfile(me);
-          const targetProfile = await getUserProfile(target);
-          const userId = meProfile?.userId || parseInt(localStorage.getItem('userId') || '0');
-          const blockedId = targetProfile?.userId || 0;
-          if (userId && blockedId) await mod.blockUser(userId, blockedId);
-        } catch {}
-      })();
     } else if (cmd.startsWith('/unblock ')) {
       const [_, raw] = cmd.split(/\s+/);
       const target = raw?.trim();
       if (!target) { this.addMessage('', 'Usage: /unblock username', 'system', 'global'); return; }
-      if ((wss as any).socket) (wss as any).socket.emit('unblockUser', { targetUsername: target });
-      // best-effort REST persistence only
-      (async () => {
-        try {
-          const mod: any = await import('@/services/blockService.js');
-          const me = this.getCurrentUsername();
-          const meProfile = await getUserProfile(me);
-          const targetProfile = await getUserProfile(target);
-          const userId = meProfile?.userId || parseInt(localStorage.getItem('userId') || '0');
-          const blockedId = targetProfile?.userId || 0;
-          if (userId && blockedId) await mod.unblockUser(userId, blockedId);
-        } catch {}
-      })();
+      wss.emit('unblockUser', { targetUsername: target });
     } else if (cmd === '/accept') {
       // accept from anywhere; server will validate pending invite
       // Accept the most recent game invite
       this.handleInviteCommand('accept');
     } else if (cmd === '/decline') {
       // decline from anywhere
+	  // a
       // Decline the most recent game invite
       this.handleInviteCommand('decline');
     } else if (cmd.startsWith('/profile ')) {

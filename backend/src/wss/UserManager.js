@@ -1,7 +1,7 @@
 class UserManager {
 	constructor() {
 		this.connectedUsers = new Map();
-		this.userBlocks = new Map(); // runtime cache only; source of truth should be DB
+		// removed in-memory block list; database is the single source of truth
 		this.userRateLimits = new Map();
 	}
 
@@ -23,11 +23,8 @@ class UserManager {
 		return user;
 	}
 
-	// hydrate runtime blocks from DB list (array of numeric ids)
-	setBlocks(blockerId, blockedIdList) {
-		const set = new Set(blockedIdList || []);
-		this.userBlocks.set(blockerId, set);
-	}
+	// no-op: legacy API removed; blocks are read directly from DB when needed
+	setBlocks() { }
 
 	// gets user by socket id
 	getUser(socketId) {
@@ -72,26 +69,13 @@ class UserManager {
 		return Array.from(this.connectedUsers.values()).some(user => user.username === username);
 	}
 
-	// blocks user
-	blockUser(blockerId, targetUsername) {
-		const targetUser = this.getUserByUsername(targetUsername);
-		if (!targetUser) {
-			return { success: false, error: 'User not found' };
-		}
-
-		if (!this.userBlocks.has(blockerId)) {
-			this.userBlocks.set(blockerId, new Set());
-		}
-		this.userBlocks.get(blockerId).add(targetUser.userId);
-
-		return { success: true, blockedUsername: targetUsername };
+	// block operations are handled in WebSocketServer via DB; keep signature for compatibility if called
+	blockUser() {
+		return { success: false, error: 'Not implemented' };
 	}
 
-	// checks if user is blocked
-	isUserBlocked(blockerId, blockedId) {
-		return this.userBlocks.has(blockerId) &&
-			this.userBlocks.get(blockerId).has(blockedId);
-	}
+	// block checks are done against DB in WebSocketServer
+	isUserBlocked() { return false; }
 
 	// checks rate limiting for user
 	checkRateLimit(socketId) {
@@ -129,7 +113,7 @@ class UserManager {
 	getUserStats() {
 		return {
 			totalConnected: this.connectedUsers.size,
-			totalBlocked: Array.from(this.userBlocks.values()).reduce((total, blockedSet) => total + blockedSet.size, 0),
+			totalBlocked: 0,
 			totalRateLimited: this.userRateLimits.size
 		};
 	}
