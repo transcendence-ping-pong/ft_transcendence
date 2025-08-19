@@ -1137,9 +1137,10 @@ export default class ChatPanel extends HTMLElement {
           const targetProfile = await getUserProfile(target);
           const userId = meProfile?.userId || parseInt(localStorage.getItem('userId') || '0');
           const blockedId = targetProfile?.userId || 0;
+          console.log("BACKEND: ", userId, blockedId);
           if (userId && blockedId) await mod.blockUser(userId, blockedId);
           this.addMessage('', `Blocked ${target}`, 'system', 'global');
-        } catch { this.addMessage('', `Blocked ${target}`, 'system', 'global'); }
+        } catch { this.addMessage('', `Blocked failed`, 'system', 'global'); }
       })();
       // emit socket for immediate runtime enforcement
       wss.emit('blockUser', { targetUsername: target });
