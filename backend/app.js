@@ -39,7 +39,8 @@ fastify.register(fastifyStatic, {
 
 fastify.register(fastifyCors, {
     origin: true,
-    credentials: true
+    credentials: true,
+	methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS']
 });
 
 const wsServer = new websocketServer(4001);
