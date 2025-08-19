@@ -254,6 +254,18 @@ async function userRoutes(fastify, options) {
         res.send({ message: MSG.LOGOUT_SUCCESSFUL });
     });
 
+    fastify.post('/delete-account', { preHandler: authenticateToken }, (request, reply) => {
+        const userId = request.user.userId;
+        if (!userId) {
+            return reply.status(400).send({ error: 'User ID required' });
+        }
+        db.run(`DELETE FROM users WHERE userId = ?`, [userId], function (err) {
+            if (err) {
+                return reply.status(500).send({ error: 'Database error' });
+            }
+            reply.send({ message: 'Account deleted successfully' });
+        });
+    });
     fastify.get('/current-user', { preHandler: authenticateToken }, async (request, reply) => {
         try {
             const userId = request.user.userId;
@@ -430,7 +442,7 @@ async function userRoutes(fastify, options) {
                     }
                     return reply.status(500).send({ error: MSG.DATABASE_ERROR });
                 }
-                reply.send({ message: MSG.USERNAME_UPDATED_SUCCESSFULLY });
+                reply.send({ message: MSG.USERNAME_UPDATED_SUCCESSFULLY, username: newUsername });
             }
         );
     });
@@ -544,17 +556,17 @@ async function userRoutes(fastify, options) {
             // Save file
             await pump(data.file, fs.createWriteStream(filepath));
 
-            const avatarUrl = `/uploads/avatars/${filename}`;
+            const avatar = `/uploads/avatars/${filename}`;
             
             // Update user's avatar in database
             await dbRun(db, 
                 `UPDATE users SET avatar = ? WHERE userId = ?`,
-                [avatarUrl, req.user.userId]
+                [avatar, req.user.userId]
             );
 
             reply.send({
                 message: 'Avatar uploaded successfully',
-                avatarUrl
+                avatar
             });
         } catch (error) {
             console.error('Avatar upload error:', error);

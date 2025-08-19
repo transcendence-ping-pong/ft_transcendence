@@ -144,6 +144,7 @@ template.innerHTML = `
 
     .profile-form__footer {
       display: flex;
+      gap: 2rem;
       justify-content: space-between;
       align-items: center;
       margin-top: 2rem;
@@ -198,15 +199,14 @@ template.innerHTML = `
     </button>
   </section>
   <hr/>
-
   <form id="profileForm" class="profile-form__edit" autocomplete="off">
     <input id="username" class="profile-form__input" name="username" type="text" required autocomplete="username" placeholder="${t('auth.username')}" />
     <input id="email" name="email" class="profile-form__input" type="email" required autocomplete="email" placeholder="${t('auth.email')}" />
     <div class="profile-form__input-wrapper">
-      <input id="password" name="password" class="profile-form__input" type="password" minlength="7" required autocomplete="current-password" placeholder="${t('profile.currentPassword')}" />
+      <input id="password" name="password" class="profile-form__input" type="password" minlength="7" required autocomplete="current-password" placeholder="${t('profile.newPassword')}" />
       <span id="viewBtn" class="profile-form__input--icon">${actionIcons.eye}</span>
     </div>
-    <input id="confirm-password" name="password" class="profile-form__input confirm-password" type="password" minlength="7" required autocomplete="current-password" placeholder="${t('profile.changePassword')}" />
+    <input id="confirm-password" name="password" class="profile-form__input confirm-password" type="password" minlength="7" required autocomplete="current-password" placeholder="${t('profile.rewriteNewPassword')}" />
 
     <p class="profile-form__error" id="error"></p>
 
@@ -442,108 +442,52 @@ export class UserProfileForm extends HTMLElement {
     if (this.saveBtn) this.saveBtn.disabled = !editable;
   }
 
-  /**************************CHECK FROM HERE********************************/
   // TODO: services should be in another folder
-
-  private async updateUsername(newUsername: string): Promise<void> {
-    const response = await makeAuthenticatedRequest('/api/change-username', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ newUsername })
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update username');
-    }
-
-    // Update state with new username
-    if (this.userData) {
-      this.userData.username = newUsername;
-    }
-    localStorage.setItem('loggedInUser', newUsername);
-  }
-
-  private async updatePassword(newPassword: string): Promise<void> {
-    const response = await makeAuthenticatedRequest('/api/change-password', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ newPassword })
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update password');
-    }
-  }
-
-  // Add this method to your UserProfileForm class:
-
-  private updateAvatarDisplay(avatarUrl: string): void {
-    // Update the state with new avatar
-    if (this.userData) {
-      this.userData.avatar = avatarUrl;
-    }
-
-    // Dispatch an event to update other components that might display the avatar
-    window.dispatchEvent(new CustomEvent('avatar-updated', {
-      bubbles: true,
-      composed: true,
-      detail: { avatarUrl }
-    }));
-
-    console.log('Avatar display updated with URL:', avatarUrl);
-  }
-
-  // Also modify your saveChanges method to handle avatar upload:
   private async saveChanges() {
     try {
-      const isGoogleAccount = this.isGoogleAccount();
+      const accessToken = state.userData?.accessToken;
       let hasChanges = false;
 
-      // Upload avatar if there's a pending file
       if (this.pendingAvatarFile) {
-        await this.uploadAvatar(this.pendingAvatarFile);
+        const avatarUrl = await authService.uploadAvatarAndUpdateState(this.pendingAvatarFile, accessToken);
+        if (avatarUrl) {
+          this.userData.avatar = avatarUrl;
+        }
         this.pendingAvatarFile = null;
         hasChanges = true;
       }
 
+      const newUsername = this.usernameInput.value.trim();
+      const newPassword = this.passwordInput.value;
+      const confirmPassword = this.confirmPasswordInput.value;
+      if (newUsername && newUsername !== this.userData.username) {
+        await authService.updateUsername(newUsername, accessToken);
+        this.userData.username = newUsername;
+        state.userData.username = newUsername;
+        localStorage.setItem('loggedInUser', newUsername);
+        hasChanges = true;
+        window.location.href = `/profile/${newUsername}`;
+      }
 
-      // For regular accounts, check and update other profile data
-      if (!isGoogleAccount) {
-        const newUsername = this.usernameInput.value.trim();
-        const newPassword = this.passwordInput.value;
-        const confirmPassword = this.confirmPasswordInput.value;
-
-        // Update username if changed
-        if (newUsername && newUsername !== this.userData.username) {
-          await this.updateUsername(newUsername);
-          hasChanges = true;
-        }
-
-        // Update password if provided
+      //Only regular accounts can change password
+      if (!this.isGoogleAccount()) {
         if (newPassword && newPassword.length > 6) {
           if (newPassword !== confirmPassword) {
             throw new Error('Passwords do not match');
           }
-          await this.updatePassword(newPassword);
+          await authService.updatePassword(newPassword, accessToken);
           hasChanges = true;
         }
       }
 
       if (hasChanges) {
-        // Dispatch events to update other components
         window.dispatchEvent(new CustomEvent('username-updated'));
-        window.dispatchEvent(new CustomEvent('profile-loaded')); // Add this to refresh profile display
-
+        window.dispatchEvent(new CustomEvent('profile-loaded'));
         alert("Profile updated successfully!");
         this.passwordInput.value = '';
         this.confirmPasswordInput.value = '';
         this.isEditMode = false;
+        this.viewBtn.style.display = 'none';// TODO disable it or hide it // not working 
         this.editButton.style.backgroundColor = 'var(--accent)';
         this.toggleEditMode();
       } else {
@@ -553,27 +497,6 @@ export class UserProfileForm extends HTMLElement {
     } catch (error) {
       console.error('Error saving profile:', error);
       alert(`Error updating profile: ${error.message}`);
-    }
-  }
-
-  // Replace your uploadAvatar method:
-  private async uploadAvatar(file: File): Promise<void> {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await makeAuthenticatedRequest('/api/upload-avatar', {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Upload failed');
-    }
-
-    const result = await response.json();
-    if (result.avatarUrl) {
-      this.updateAvatarDisplay(result.avatarUrl);
     }
   }
 };

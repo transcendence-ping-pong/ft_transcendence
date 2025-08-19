@@ -1,3 +1,4 @@
+// filepath: /home/ubuntu/ft_transcendence/frontend/src/components/NotificationsBar.ts
 import { NotificationPayload, NotificationAction, notificationService } from "@/services/notificationService";
 import { mapNotification, getWelcomeNotification } from "@/utils/Notifications.js";
 import { t } from "@/locales/Translations.js";
@@ -79,13 +80,34 @@ template.innerHTML = `
     .details-close:hover {
       color: #222;
     }
+    .details-content {
+      flex: 1 1 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
     .details-list {
-      flex: 1;
+      flex: 1 1 0;
       overflow-y: auto;
       padding: 1rem 1.2rem;
       display: block;
       flex-direction: column;
       gap: 1rem;
+      min-height: 0;
+    }
+    .details-slot-container {
+      flex: 0 0 auto;
+      min-height: 180px;
+      max-height: 40%;
+      overflow: visible;
+      border-top: 1px solid var(--border, #ddd);
+      background: var(--body, #fff);
+      box-shadow: 0 -2px 8px #0001;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
     }
     .notif-tags {
       display: flex;
@@ -146,7 +168,12 @@ template.innerHTML = `
       <span class="details-title"></span>
       <button class="details-close" title="Close">&times;</button>
     </div>
-    <div class="details-list"></div>
+    <div class="details-content">
+      <div class="details-list"></div>
+      <div class="details-slot-container">
+        <slot name="friends-list"></slot>
+      </div>
+    </div>
   </div>
 `;
 
