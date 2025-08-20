@@ -28,53 +28,53 @@ export class BotPlayer {
 
   update() {
     const now = Date.now();
-    if (now - this.lastDecisionTime < 1000) return;
+    if (now - this.lastDecisionTime < 1000) return; // refresh 1s
     this.lastDecisionTime = now;
 
-    const threshold = this.getReactionThreshold();
-    const paddleCenter = this.getPaddleCenter();
-
     if (this.isBallApproaching()) {
-      const predictedY = this.predictBallY();
+      const predictedY = this.predictBallY(1); // 1s à frente
       this.targetY = this.targetY === null
         ? predictedY
         : this.smoothTarget(this.targetY, predictedY);
+    } else {
+      this.targetY = null;
+      this.gameCanvas.setPaddleDirection(this.playerIndex, null);
+    }
+
+    const paddleCenter = this.getPaddleCenter();
+    const threshold = this.getReactionThreshold();
+
+    if (this.targetY !== null) {
       this.moveTowards(this.targetY, paddleCenter, threshold);
     } else {
-      if (this.level === 'HARD' || this.level === 'MEDIUM') {
-        if (this.targetY !== null)
-          //this.centerPaddle(threshold);
-          this.gameCanvas.setPaddleDirection(this.playerIndex, null);
-        // } else {
-        //   this.centerPaddle(threshold);
-        // }
-      } else {
-        this.targetY = null;
+      if (this.level === 'EASY') {
         this.centerPaddle(threshold);
+      } else {
+        this.gameCanvas.setPaddleDirection(this.playerIndex, null);
       }
     }
   }
 
-  private predictBallY(): number {
+  private predictBallY(secondsAhead: number = 0): number {
     let ballY = this.ball.getY();
     let ballX = this.ball.getX();
     let ballVY = this.ball.getVelocityY();
     let ballVX = this.ball.getVelocityX();
-    let paddleX = this.paddle.getX();
+    const paddleX = this.paddle.getX();
     const { top, bottom } = this.gameCanvas.getCourtBounds().specs;
 
+    // prever apenas se a bola está indo em direção ao paddle
     if ((this.playerIndex === 1 && ballVX > 0) || (this.playerIndex === 0 && ballVX < 0)) {
+      // tempo até chegar na posição do paddle
       const distance = Math.abs(paddleX - ballX);
-      const time = distance / Math.abs(ballVX);
+      const time = distance / Math.abs(ballVX) + secondsAhead; // antecipa
 
       let predictedY = ballY;
       let vy = ballVY;
       let t = time;
 
       while (t > 0) {
-        const timeToWall = vy > 0
-          ? (bottom - predictedY) / vy
-          : (top - predictedY) / vy;
+        const timeToWall = vy > 0 ? (bottom - predictedY) / vy : (top - predictedY) / vy;
 
         if (timeToWall > t) {
           predictedY += vy * t;
@@ -86,8 +86,16 @@ export class BotPlayer {
           predictedY = Math.max(top, Math.min(bottom, predictedY));
         }
       }
+
+      // para Medium, adiciona leve imperfeição humana
+      if (this.level === 'MEDIUM') {
+        const offset = (Math.random() - 0.5) * this.paddle.getHeight() * 0.2;
+        predictedY += offset;
+      }
+
       return predictedY;
     }
+
     return (top + bottom) / 2;
   }
 
@@ -95,14 +103,16 @@ export class BotPlayer {
     const ballVX = this.ball.getVelocityX();
     const ballX = this.ball.getX();
     const paddleX = this.paddle.getX();
-    let range;
+    const fieldWidth = this.gameCanvas.getWidth();
 
+    let range;
     switch (this.level) {
-      case 'EASY': range = 500; break;
-      case 'MEDIUM': range = 450; break;
-      case 'HARD': range = 400; break;
-      default: range = 400;
-    }  
+      case 'EASY': range = fieldWidth * 0.2; break;
+      case 'MEDIUM': range = fieldWidth * 0.6; break;
+      case 'HARD': range = fieldWidth * 0.95; break;
+      default: range = fieldWidth * 0.5;
+    }
+
     return (
       ((this.playerIndex === 1 && ballVX > 0 && ballX < paddleX) ||
         (this.playerIndex === 0 && ballVX < 0 && ballX > paddleX)) &&
@@ -111,34 +121,21 @@ export class BotPlayer {
   }
 
   private moveTowards(targetY: number, paddleCenter: number, threshold: number) {
-  const deadZone = 2;
-  const diff = Math.abs(targetY - paddleCenter);
-  if (diff > threshold) {
-    if (targetY < paddleCenter) {
-      this.gameCanvas.setPaddleDirection(this.playerIndex, 'up');
+    const deadZone = this.level === 'HARD' ? 1 : (this.level === 'MEDIUM' ? 1.5 : 2);
+    const diff = targetY - paddleCenter;
+
+    if (Math.abs(diff) > threshold || Math.abs(diff) > deadZone) {
+      this.gameCanvas.setPaddleDirection(this.playerIndex, diff < 0 ? 'up' : 'down');
     } else {
-      this.gameCanvas.setPaddleDirection(this.playerIndex, 'down');
+      this.gameCanvas.setPaddleDirection(this.playerIndex, null);
     }
-  } else if (diff > deadZone && this.level === 'HARD') {
-    if (targetY < paddleCenter) {
-      this.gameCanvas.setPaddleDirection(this.playerIndex, 'up');
-    } else {
-      this.gameCanvas.setPaddleDirection(this.playerIndex, 'down');
-    }
-  } else {
-    this.gameCanvas.setPaddleDirection(this.playerIndex, null);
   }
-}
 
   private centerPaddle(threshold: number) {
     const { top, bottom } = this.gameCanvas.getCourtBounds().specs;
     const centerY = (top + bottom) / 2 - this.paddle.getHeight() / 2;
     if (Math.abs(this.paddle.getY() - centerY) > threshold) {
-      if (this.paddle.getY() < centerY) {
-        this.gameCanvas.setPaddleDirection(this.playerIndex, 'down');
-      } else {
-        this.gameCanvas.setPaddleDirection(this.playerIndex, 'up');
-      }
+      this.gameCanvas.setPaddleDirection(this.playerIndex, this.paddle.getY() < centerY ? 'down' : 'up');
     } else {
       this.gameCanvas.setPaddleDirection(this.playerIndex, null);
     }
@@ -146,9 +143,9 @@ export class BotPlayer {
 
   private smoothTarget(oldY: number, newY: number): number {
     switch (this.level) {
-      case 'EASY': return 0.6 * oldY + 0.3 * newY;;
-      case 'MEDIUM': return newY;
-      case 'HARD': return newY;
+      case 'EASY': return 0.3 * oldY + 0.7 * newY;
+      case 'MEDIUM': return 0.7 * oldY + 0.3 * newY; // mais humano, mas preciso
+      case 'HARD': return newY; // quase perfeito
       default: return newY;
     }
   }
@@ -158,11 +155,12 @@ export class BotPlayer {
   }
 
   private getReactionThreshold(): number {
+    const fieldHeight = this.gameCanvas.getHeight();
     switch (this.level) {
-      case 'EASY': return 6;
-      case 'MEDIUM': return 6;
-      case 'HARD': return 3;
-      default: return 6;
+      case 'EASY': return fieldHeight * 0.04;
+      case 'MEDIUM': return fieldHeight * 0.02;
+      case 'HARD': return fieldHeight * 0.001;
+      default: return fieldHeight * 0.03;
     }
   }
 }

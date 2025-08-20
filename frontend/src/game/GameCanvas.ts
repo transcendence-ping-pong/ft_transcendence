@@ -206,6 +206,14 @@ export class GameCanvas extends EventTarget {
     return this.courtBounds;
   }
 
+  public getHeight(): number {
+    return this.canvas.height;
+  }
+
+  public getWidth(): number {
+    return this.canvas.width;
+  }
+
   public startGame() {
     this.gameManager.startGame();
     // reset ball and paddles here?????
