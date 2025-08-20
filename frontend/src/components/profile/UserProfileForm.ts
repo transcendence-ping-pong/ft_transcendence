@@ -245,7 +245,7 @@ export class UserProfileForm extends HTMLElement {
   private avatarOverlay: HTMLElement;
   private isEditMode = false;
   private pendingAvatarFile: File | null = null;
-  private disable2fa : HTMLButtonElement;
+  private disable2fa: HTMLButtonElement;
   private userData: UserData = { email: '', username: '', userId: 0, avatar: '' };
 
   private boundHandleModalDismiss = this.handleModalDismiss.bind(this);
@@ -322,6 +322,10 @@ export class UserProfileForm extends HTMLElement {
     window.removeEventListener('modal-dismiss', this.boundHandleModalDismiss);
   }
 
+  private setError(msg: string) {
+    this.errorText.textContent = msg;
+  }
+
   // event handlers - track user interactions
   // removed from connectedCallback to keep it clean
   private handleViewBtnClick() {
@@ -329,24 +333,24 @@ export class UserProfileForm extends HTMLElement {
     this.passwordInput.type = isPasswordVisible ? 'password' : 'text';
     this.viewBtn.innerHTML = isPasswordVisible ? actionIcons.eyeClosed : actionIcons.eye;
   }
-private async handleDisable2fa() {
-  try {
-    const accessToken = state.userData?.accessToken;
-    if (!accessToken) {
-      alert('No access token found.');//
-      return;
+  private async handleDisable2fa() {
+    try {
+      const accessToken = state.userData?.accessToken;
+      if (!accessToken) {
+        alert('No access token found.');//
+        return;
+      }
+      const response = await authService.disable2FA(accessToken);
+      if (response.error) {
+        alert(`Failed to disable 2FA: ${response.error}`);
+      } else {
+        alert('2FA disabled successfully!');
+        window.dispatchEvent(new CustomEvent('profile-loaded'));
+      }
+    } catch (error: any) {
+      alert(`Error disabling 2FA: ${error.message}`);
     }
-    const response = await authService.disable2FA(accessToken);
-    if (response.error) {
-      alert(`Failed to disable 2FA: ${response.error}`);
-    } else {
-      alert('2FA disabled successfully!');
-      window.dispatchEvent(new CustomEvent('profile-loaded'));
-    }
-  } catch (error: any) {
-    alert(`Error disabling 2FA: ${error.message}`);
   }
-}
   private handleEditBtnClick() {
     this.isEditMode = !this.isEditMode;
     this.editButton.style.backgroundColor = this.isEditMode ? 'var(--accent-secondary)' : 'var(--accent)';
@@ -439,7 +443,7 @@ private async handleDisable2fa() {
       this.enable2fa.disabled = false;
       this.enable2fa.textContent = t('profile.enable2FA');
       this.enable2fa.classList.remove('profile-form__auth-btn--success');
-      this.disable2fa.style.display = 'none'; 
+      this.disable2fa.style.display = 'none';
       this.disable2fa.disabled = true;
     });
   }
@@ -506,8 +510,8 @@ private async handleDisable2fa() {
       if (!this.isGoogleAccount()) {
         if (newPassword && newPassword.length > 6) {
           if (newPassword !== confirmPassword) {
-              this.errorText.textContent=t("error.passwordsDoNotMatch");
-              return;
+            this.setError(t("error.passwordsDoNotMatch"));
+            return;
           }
           await authService.updatePassword(newPassword, accessToken);
           hasChanges = true;
