@@ -456,7 +456,7 @@ export class gameOrchestrator {
     this.babylonCanvas.createGameCanvas(this.gameLevel, this.gamePlayerMode);
     this.gameCanvas = this.babylonCanvas.getGameCanvas();
 
-    this.gui.showCountdown(1, () => {
+    this.gui.showCountdown(3, () => {
       this.gameCanvas.startGame();
       this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => { });
     });
