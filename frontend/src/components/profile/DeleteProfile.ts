@@ -1,4 +1,4 @@
-import { t } from '@/locales/Translations';
+import { t,err } from '@/locales/Translations';
 import '@/components/_templates/AuthFormLayout.js';
 
 const template = document.createElement('template');
@@ -68,13 +68,14 @@ template.innerHTML = `
 class DeleteProfile extends HTMLElement {
   private cancelBtn: HTMLButtonElement;
   private confirmBtn: HTMLButtonElement;
-
+  private layout: HTMLElement;
   constructor() {
     super();
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
   }
 
   connectedCallback() {
+    this.layout = this.shadowRoot.querySelector('auth-form-layout');
     this.cancelBtn = this.shadowRoot.querySelector('#cancelBtn') as HTMLButtonElement;
     this.confirmBtn = this.shadowRoot.querySelector('#confirmBtn') as HTMLButtonElement;
 
@@ -98,13 +99,19 @@ class DeleteProfile extends HTMLElement {
           localStorage.clear();
           window.location.href = '/';
         } else {
-          alert(result.error || 'Failed to delete account.');
+          this._setError(result.error || 'Failed to delete account.');
         }
       } catch (err) {
-        alert('Error deleting account.');
+        this._setError('Error deleting account.');
       }
     });
   }
+  _setError(msg: string) {
+    (this.layout as any).setError(msg);
+  }
+
+  
 }
+
 
 customElements.define('delete-profile', DeleteProfile);

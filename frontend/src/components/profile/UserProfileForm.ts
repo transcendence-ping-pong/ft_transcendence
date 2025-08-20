@@ -337,18 +337,18 @@ export class UserProfileForm extends HTMLElement {
     try {
       const accessToken = state.userData?.accessToken;
       if (!accessToken) {
-        alert('No access token found.');//
+        this.setError('No access token found.');//
         return;
       }
       const response = await authService.disable2FA(accessToken);
       if (response.error) {
-        alert(`Failed to disable 2FA: ${response.error}`);
+        this.setError(`Failed to disable 2FA: ${response.error}`);
       } else {
-        alert('2FA disabled successfully!');
+        this.setError('2FA disabled successfully!');
         window.dispatchEvent(new CustomEvent('profile-loaded'));
       }
     } catch (error: any) {
-      alert(`Error disabling 2FA: ${error.message}`);
+      this.setError(`Error disabling 2FA: ${error.message}`);
     }
   }
   private handleEditBtnClick() {
@@ -528,6 +528,8 @@ export class UserProfileForm extends HTMLElement {
         this.editButton.style.backgroundColor = 'var(--accent)';
         this.toggleEditMode();
       }
+      this.setError('');
+
 
     } catch (error) {
       console.error('Error saving profile:', error);
