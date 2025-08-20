@@ -548,8 +548,8 @@ customElements.define('user-profile-form', UserProfileForm);
 export { makeAuthenticatedRequest };
 
 function isValidUsername(username: string): boolean {
-  return !!username && username.length >= 3 && username.length <= 10 &&
-    /^[a-zA-Z0-9\s._-]+$/.test(username);
+  return !!username && username.length >= 3 && username.length <= 20 &&
+    /^[a-zA-Z0-9._-]+$/.test(username);
 }
 
 function isValidPassword(password: string): boolean {
