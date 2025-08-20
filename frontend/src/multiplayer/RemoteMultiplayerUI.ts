@@ -183,7 +183,6 @@ export class RemoteMultiplayerUI {
       playerMode: 'TWO PLAYERS'
     };
 
-    websocketService.sendBrowserLog('info', 'Creating remote game with settings', settings);
     remoteMultiplayerManager.createRoom(settings);
   }
 
@@ -335,12 +334,10 @@ export class RemoteMultiplayerUI {
     this.addElement(joiningText);
 
     // join the room
-    websocketService.sendBrowserLog('info', 'Joining room', { roomId });
     remoteMultiplayerManager.joinRoom(roomId);
   }
 
   private renderGameRoom(room: RemoteGameRoom) {
-    console.log('UI: renderGameRoom called with room:', room);
     // completely clear everything and render game room
     this.clearAllElements();
 
@@ -386,19 +383,10 @@ export class RemoteMultiplayerUI {
   }
 
   private setReady() {
-    websocketService.sendBrowserLog('info', 'Setting player ready', {
-      username: this.currentUsername,
-      roomId: remoteMultiplayerManager.getCurrentRoom()?.id
-    });
     remoteMultiplayerManager.setReady();
   }
 
   private leaveRoom() {
-    websocketService.sendBrowserLog('info', 'Leaving room', {
-      username: this.currentUsername,
-      roomId: remoteMultiplayerManager.getCurrentRoom()?.id
-    });
-
     remoteMultiplayerManager.leaveRoom();
     try {
       localStorage.removeItem('inviteRoom');

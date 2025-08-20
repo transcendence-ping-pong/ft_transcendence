@@ -106,8 +106,6 @@ export class RemoteMultiplayerManager {
     });
 
     window.addEventListener('playerReady', (e: CustomEvent) => {
-      console.log('RemoteMultiplayerManager: Player ready', e.detail);
-      
       if (this.state.currentRoom) {
         const readyPlayer = e.detail.player;
         const isHostReady = readyPlayer.username === this.state.currentRoom.hostUsername;
@@ -135,8 +133,6 @@ export class RemoteMultiplayerManager {
     });
 
     window.addEventListener('playerLeft', (e: CustomEvent) => {
-      console.log('RemoteMultiplayerManager: Player left', e.detail);
-      
       if (this.state.currentRoom) {
         this.state.currentRoom.currentPlayers = Math.max(1, this.state.currentRoom.currentPlayers - 1);
         

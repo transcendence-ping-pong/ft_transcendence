@@ -124,9 +124,6 @@ export class gameOrchestrator {
   setupMultiplayerEvents() {
     window.addEventListener('gameStart', (e: CustomEvent) => {
       try {
-        console.log('GameOrchestrator: gameStart event received', e.detail);
-        console.log('GameOrchestrator: Creating multiplayer game...');
-
         // reset one-shot guards for a fresh session
         this.handledGameOver = false;
         this.handledOpponentLeft = false;
@@ -137,7 +134,6 @@ export class gameOrchestrator {
         this.gameCanvas = this.babylonCanvas.getGameCanvas();
 
         if (this.gameCanvas instanceof MultiplayerGameCanvas) {
-          console.log('GameOrchestrator: MultiplayerGameCanvas created successfully');
           (this.gameCanvas as any).isMultiplayerMode = true;
           (this.gameCanvas as any).currentRoomId = e.detail.room?.id || null;
           (this.gameCanvas as any).playerIndex = (this.gameCanvas as any).getPlayerIndex();
@@ -152,16 +148,12 @@ export class gameOrchestrator {
             });
           } catch {}
         }
-
-        console.log('GameOrchestrator: Hiding GUI and setting up multiplayer input...');
         this.gui.hideAllGUI();
         // start server-driven countdown overlay
         try { (this.gui as any).beginCountdownOverlay(); } catch {}
         window.dispatchEvent(new CustomEvent('hideMultiplayerUI'));
         this.setupMultiplayerInput();
-
-        console.log('GameOrchestrator: Multiplayer game setup complete');
-
+      
         // host-only: create match record for remote games
         (async () => {
           try {
@@ -188,13 +180,11 @@ export class gameOrchestrator {
                 if (panel && typeof panel.addMessage === 'function') {
                   panel.addMessage('', `match created (#${this.matchId}): ${hostUsername} vs ${guest.username}`, 'system', 'global');
                 }
-              } catch { /* ignore: best-effort debug message */ }
+              } catch {}
             }
-          } catch { /* ignore: match create failure should not block game */ }
+          } catch {}
         })();
       } catch (error) {
-        console.error('GameOrchestrator: Error setting up multiplayer game:', error);
-        // Don't let errors crash the game
         this.isMultiplayerMode = false;
       }
     });
@@ -343,7 +333,6 @@ export class gameOrchestrator {
   // reminder: the score is a Babylon.js GUI element
   private setupScoreTracking() {
     this.gameCanvas.addEventListener('scoreChanged', (e: CustomEvent) => {
-      console.log('Received scoreChanged', e.detail);
       this.gui.clearGUI();
       this.gui.showScoreBoard(e.detail, () => { });
     });

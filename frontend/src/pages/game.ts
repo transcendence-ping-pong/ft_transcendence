@@ -18,25 +18,6 @@ export function renderGame(containerId: string) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  //  ${renderTopBar()} -- TODO: render player names and avatars dynamically
-  // function renderTopBar() {
-  //   return (PLAYER_1.name && PLAYER_2.name)
-  //     ? `
-  //       <top-bar mode="game">
-  //         <img slot="player1-avatar" src="${PLAYER_1.avatar}" alt="${PLAYER_1.name}" />
-  //         <p slot="player1-username">${PLAYER_1.name}</p>
-  //         <pong-logo slot="logo-center"></logo>
-  //         <p slot="player2-username">${PLAYER_2.name}</p>
-  //         <img slot="player2-avatar" src="${PLAYER_2.avatar}" alt="${PLAYER_2.name}" />
-  //       </top-bar>
-  //     `
-  //     : `
-  //       <top-bar mode="game">
-  //         <pong-logo slot="logo-center"></logo>
-  //       </top-bar>
-  //     `;
-  // }
-
   container.innerHTML = `
     <top-bar mode="game">
       <pong-logo slot="logo-center"></logo>
@@ -145,34 +126,22 @@ export function renderGame(containerId: string) {
     }
   });
 
-  // Listen for remote multiplayer events from invite system
-  // keep page listener minimal; don't override the manager's flow to avoid duplicate state churn
   window.addEventListener('roomCreated', (e: CustomEvent) => {
-    console.log('Game page: Room created event received', e.detail);
     setupInviteGame(e.detail.room, true);
   });
 
   window.addEventListener('playerJoined', (e: CustomEvent) => {
-    console.log('Game page: Player joined event received', e.detail);
-    // only set names/top bar; do not call setInviteRoom again
     const room = e.detail.room;
     PLAYER_1.name = room.hostUsername;
     PLAYER_2.name = room.guestUsername;
-    container.querySelector('top-bar').outerHTML = renderTopBar();
   });
 
-  // Set up invite game - just set up the room, let multiplayer flow handle the rest
   function setupInviteGame(room: any, isHost: boolean) {
-    // Set the room in the existing RemoteMultiplayerManager ONCE
     const remoteMultiplayerManager = (window as any).remoteMultiplayerManager;
     if (remoteMultiplayerManager && !remoteMultiplayerManager.isInRoom()) {
       remoteMultiplayerManager.setInviteRoom(room, isHost);
     }
-    // Set player names for the game
     PLAYER_1.name = room.hostUsername;
     PLAYER_2.name = room.guestUsername;
-
-    // Re-render top bar with player info
-    container.querySelector('top-bar').outerHTML = renderTopBar();
   }
 }

@@ -377,14 +377,12 @@ export default class ChatPanel extends HTMLElement {
     try {
       if (this.messageHistory.length > 0) {
         localStorage.setItem('chatMessages', JSON.stringify(this.messageHistory));
-        console.log('Saved messages to localStorage:', this.messageHistory.length, 'messages');
       }
     } catch (error) {
       console.error('Failed to save chat messages:', error);
       // try to clear localStorage if it's full
       try {
         localStorage.removeItem('chatMessages');
-        console.log('Cleared localStorage due to error');
       } catch (clearError) {
         console.error('Failed to clear localStorage:', clearError);
       }
@@ -904,12 +902,10 @@ export default class ChatPanel extends HTMLElement {
     this.panel.appendChild(this.content);
 
     this.shadowRoot!.appendChild(this.panel);
-    console.log('ChatPanel DOM created');
   }
 
   private setupEventListeners() {
     this.closeButton.addEventListener('click', () => {
-      console.log('Close button clicked');
       this.removeAttribute('visible');
       this.saveMessages(); // Save messages when closing
     });
