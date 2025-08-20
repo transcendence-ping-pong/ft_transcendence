@@ -48,15 +48,15 @@ notificationService.listen((notif) => {
 // TODO SOCKET: REMOVE MOCK
 // startMockNotifications();
 
-// initialize chat system
+// // initialize chat system
 function initializeChatSystem() {
   // create only the chat panel (button is now in TopBar)
   const chatPanel = new ChatPanel();
 
   // add to body so it's always available
-  // document.body.appendChild(chatPanel);
+  document.body.appendChild(chatPanel);
 
-  // console.log('Chat system initialized');
+  console.log('Chat system initialized');
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // set style theme according to toggle state
   document.body.classList.toggle('theme-primary', state.theme === 'primary');
   document.body.classList.toggle('theme-secondary', state.theme === 'secondary');
-  
+
   // connects to websocket server
   websocketService.connect(`ws://${window.location.hostname}:4001`);
 

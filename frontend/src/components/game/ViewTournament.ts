@@ -1,9 +1,12 @@
 import { t } from "@/locales/Translations";
-import { actionIcons } from '@/utils/Constants';
-import { currentMatches, state } from '@/state.js';
-import { gameOrchestrator } from "@/game/gameOrchestrator";
+import { state } from '@/state.js';
+import '@/components/_templates/AuthFormLayout.js';
 
-const banana = "banana";
+/*
+  * ViewTournament is a custom element for viewing a tournament's matches.
+  * It uses AuthFormLayout for consistent modal layout and styling.
+  * Displays the current and upcoming matches, and emits an event to start the next match.
+*/
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -15,14 +18,10 @@ template.innerHTML = `
       margin: 0 auto;
       box-sizing: border-box;
     }
-    .tournament__title {
-      color: var(--text);
-      font-size: var(--header-font-size);
-    }
     .tournament__description {
       color: var(--border);
-      font-size: var(--secondary-font-size);
-      margin-bottom: 2rem;
+      font-size: var(--main-font-size);
+      text-align: center;
     }
 
     .tournament__view {
@@ -68,57 +67,66 @@ template.innerHTML = `
       font-size: var(--main-font-size);
     }
 
-    .tournament__footer {
-      position: absolute;
-      bottom: 2rem;
-      right: 2rem;
-    }
-    .tournament__footer-btn {
+    .template__primary-button {
       padding: 1rem 0;
       border: none;
       background: var(--accent-secondary);
       color: var(--body);
-      font-size: var(--main-font-size);
+      font-size: calc(var(--main-font-size) * 1.25);
       font-weight: bold;
-      min-height: var(--button-height);
-      min-width: var(--button-min-width);
+      min-height: var(--button-height, 59px);
+      width: 100%;
       cursor: pointer;
       transition: background 0.2s, color 0.2s;
     }
-    .tournament__footer-btn:hover, .tournament__footer-btn:focus {
+    .template__primary-button:hover, .template__primary-button:focus {
       background: var(--accent);
       color: var(--text);
     }
-    .tournament__footer-btn:disabled {
-      background: var(--accent-secondary);
-      color: var(--body);
-      cursor: not-allowed;
-      opacity: 0.35;
-    }
   </style>
 
-  <h1 class="tournament__title">${t('game.tournamentCreated')}</h1>
-  <p id="players" class="tournament__description"></p>
-  <div class="tournament__view"></div>
-  <div class="tournament__footer">
-    <button id="startBtn" class="tournament__footer-btn" type="button">${t('game.start')}</button>
+  <auth-form-layout>
+    <h3 slot="header" id="title" class="tournament__title"></h3>
+
+  <div slot="content">
+    <p id="players" class="tournament__description"></p>
+    <div class="tournament__view"></div>
+  </div>
+
+  <div slot="footer" class="tournament__footer">
+    <button id="startBtn" class="template__primary-button" type="button">${t('game.start')}</button>
   </div>
 `;
-
 
 export class ViewTournament extends HTMLElement {
   private _matches: Array<{ player1: string, player2: string }> = [];
   private _currentMatchIndex: number = state.tournamentData.currentMatchIndex;
+  private stageTitle: HTMLHeadingElement;
 
   constructor() {
     super();
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
   }
 
+  private setStageTitle(idx: number) {
+    switch (idx) {
+      case 2:
+        return t("game.semifinal");
+      case 3:
+        return t("game.final");
+      default:
+        return t("game.quarterfinal");
+    }
+  }
+
   connectedCallback() {
     this.renderMatches();
-	this.setPlayersDescription();
+    this.setPlayersDescription();
     const startBtn = this.shadowRoot.querySelector('#startBtn') as HTMLButtonElement;
+    this.stageTitle = this.shadowRoot.querySelector<HTMLHeadingElement>('#title');
+
+    this.stageTitle.textContent = '';
+    this.stageTitle.textContent = this.setStageTitle(state.tournamentData.stage);
 
     startBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -161,7 +169,7 @@ export class ViewTournament extends HTMLElement {
   }
 
   private setPlayersDescription() {
-	this.shadowRoot.getElementById("players").textContent = t('game.nextMatch', { players: `${this._matches[this._currentMatchIndex].player1} ${t('game.and')} ${this._matches[this._currentMatchIndex].player2}` })
+    this.shadowRoot.getElementById("players").textContent = t('game.nextMatch', { players: `${this._matches[this._currentMatchIndex].player1} and ${this._matches[this._currentMatchIndex].player2}` })
   }
 }
 

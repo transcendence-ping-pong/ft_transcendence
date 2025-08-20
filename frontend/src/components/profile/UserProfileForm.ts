@@ -13,7 +13,6 @@ template.innerHTML = `
     :host {
       display: block;
       width: 100%;
-      height: 100%;
       margin: 0 auto;
       box-sizing: border-box;
     }
@@ -42,13 +41,13 @@ template.innerHTML = `
       background: var(--accent);
       border-radius: 50%;
       border: var(--border);
-      width: 3.5rem;   /* increased */
-      height: 3.5rem;  /* increased */
+      width: var(--button-rounded-size);
+      height: var(--button-rounded-size);
       box-shadow: 0 1px 2px #0002;
     }
     .profile-form__edit-btn span img {
-      width: 2.5rem;   /* increased */
-      height: 2.5rem;  /* increased */
+      width: 2rem;
+      height: 2rem;
       display: block;
       filter: invert(var(--invert));
     }
@@ -236,6 +235,7 @@ export class UserProfileForm extends HTMLElement {
   private viewBtn: HTMLSpanElement;
   private saveBtn: HTMLButtonElement;
   private deleteBtn: HTMLButtonElement;
+  private avatarOverlay: HTMLElement;
   private isEditMode = false;
   private pendingAvatarFile: File | null = null;
 
@@ -287,6 +287,7 @@ export class UserProfileForm extends HTMLElement {
     this.viewBtn = shadowRoot.getElementById('viewBtn') as HTMLSpanElement;
     this.saveBtn = shadowRoot.getElementById('saveBtn') as HTMLButtonElement;
     this.deleteBtn = shadowRoot.getElementById('deleteBtn') as HTMLButtonElement;
+    this.avatarOverlay = shadowRoot.querySelector('.avatar-upload-overlay') as HTMLElement;
   }
 
   private addEventListeners() {
@@ -420,7 +421,7 @@ export class UserProfileForm extends HTMLElement {
 
     // hide, show simplified profile form for visitors, i.e. no password fields, no delete profile
     // if more elements are needed to be hidden, add their id to the hiddenElements array
-    const hiddenElements = ["passwordInput", "confirmPasswordInput", "viewBtn", "authSection", "editButton"];
+    const hiddenElements = ["passwordInput", "confirmPasswordInput", "viewBtn", "authSection", "editButton", "avatarOverlay", "deleteBtn","saveBtn"];
     for (const element of hiddenElements) {
       if (this[element]) {
         this[element].style.display = 'none';

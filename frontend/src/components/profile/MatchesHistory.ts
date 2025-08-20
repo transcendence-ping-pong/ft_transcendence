@@ -4,6 +4,7 @@ import '@/components/_templates/CustomTag.js';
 import { state, Match } from '@/state';
 import { getMatchHistory, getMatch, getTournament, getMatchStats } from '@/services/matchService';
 import { UserData } from '@/utils/playerUtils/types';
+import '@/components/navigation/StartGameButton.js';
 
 
 const template = document.createElement('template');
@@ -160,6 +161,21 @@ template.innerHTML = `
       color: var(--accent-secondary, #888);
     }
 
+    .no-matches__wrapper--visible {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      background: var(--placeholder-bg);
+    }
+    .no-matches__button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     @media (max-width: 700px) {
       .timeline {
         max-width: 100%;
@@ -177,6 +193,10 @@ template.innerHTML = `
     <div class="matches-title">${t('profile.matchesHistory')}</div>
     <div class="timeline-outer">
       <div class="timeline" id="timeline"></div>
+      <div class="no-matches__wrapper" id="no-matches">
+        <h3 class="no-matches__description">${t('profile.noMatches')}</h3>
+        <start-game-button class="no-matches__button"></start-game-button>
+      </div>
     </div>
   </section>
 `;
@@ -184,7 +204,9 @@ template.innerHTML = `
 export class MatchesHistory extends HTMLElement {
   public matchObject: Match[] = [];
   private userData: UserData = { email: '', username: '', userId: 2000, avatar: '' };
- 
+  private timeline: HTMLElement | null = null;
+  private noMatchesWrapper: HTMLElement | null = null;
+
   static get observedAttributes() {
     return ['userdata'];
   }
@@ -205,14 +227,24 @@ export class MatchesHistory extends HTMLElement {
   }
 
   async connectedCallback() {
-	await this.getMatches();
+    this.timeline = this.shadowRoot?.getElementById('timeline');
+    this.noMatchesWrapper = this.shadowRoot?.getElementById('no-matches');
+
+    if (!this.timeline) return;
+
+    await this.getMatches();
+    if (this.matchObject.length === 0) {
+      this.noMatchesWrapper!.classList.add('no-matches__wrapper--visible');
+      return;
+    }
+
+    this.noMatchesWrapper!.classList.remove('no-matches__wrapper--visible');
+    this.noMatchesWrapper!.style.display = 'none';
     this.renderTimeline(this.matchObject);
   }
 
   renderTimeline(matches: Match[]) {
-    const timeline = this.shadowRoot?.getElementById('timeline');
-    if (!timeline) return;
-    timeline.innerHTML = matches.map(m => `
+    this.timeline.innerHTML = matches.map(m => `
       <div class="timeline-event">
         <div class="timeline-dot"></div>
         <div class="timeline-content">
@@ -231,36 +263,33 @@ export class MatchesHistory extends HTMLElement {
   }
 
   private async getMatches() {
-	const rows = await getMatchHistory(this.userData.userId);
-	const result = await getMatchStats(this.userData.userId);
-	console.log('Wins: ', result.wins);
-	console.log('Losses: ', result.losses);
-	for (const row of rows) {
+    const rows = await getMatchHistory(this.userData.userId);
+    for (const row of rows) {
 
-		const match = await getMatch(row.matchId);
+      const match = await getMatch(row.matchId);
 
-		let mode;
-		if (match.tournId) {
-			const tourn =  await getTournament(match.tournId);
-			switch (row.matchId) {
-				case tourn.semiId1:
-					mode = `${t('profile.semifinal').toUpperCase()}`;
-					break;
-				case tourn.semiId2:
-					mode = `${t('profile.semifinal').toUpperCase()}`;
-					break;
-				case tourn.finalId:
-					mode = `${t('profile.final').toUpperCase()}`;
-					break;
-				default:
-					mode = `${t('profile.quarterfinal').toUpperCase()}`;
-			}
-		}
-		else if (match.remoteId) {
-			mode = `${t('game.mode2').toUpperCase()}`;
-		}
-		else
-			mode = `${t('game.mode1').toUpperCase()}`;
+      let mode;
+      if (match.tournId) {
+        const tourn = await getTournament(match.tournId);
+        switch (row.matchId) {
+          case tourn.semiId1:
+            mode = `${t('profile.semifinal').toUpperCase()}`;
+            break;
+          case tourn.semiId2:
+            mode = `${t('profile.semifinal').toUpperCase()}`;
+            break;
+          case tourn.finalId:
+            mode = `${t('profile.final').toUpperCase()}`;
+            break;
+          default:
+            mode = `${t('profile.quarterfinal').toUpperCase()}`;
+        }
+      }
+      else if (match.remoteId) {
+        mode = `${t('game.mode2').toUpperCase()}`;
+      }
+      else
+        mode = `${t('game.mode1').toUpperCase()}`;
 
 		this.matchObject.push({
 			day: match.date,
@@ -275,67 +304,8 @@ export class MatchesHistory extends HTMLElement {
 			mode: mode
 		});
 
-	};
+    };
   }
 };
 
 customElements.define('matches-history', MatchesHistory);
-
-// TODO: this is a mock. Replace with real data fetching logic
-const mockMatches = [
-  {
-    day: '2025-08-10',
-    time: '15:30',
-    score: '3-1',
-    matchId: 'M001',
-    opponent: 'PESTO SUPREME',
-    winLoss: 'Win',
-    mode: 'REMOTE'
-  },
-  {
-    day: '2025-08-09',
-    time: '18:00',
-    score: '2-3',
-    matchId: 'M002',
-    opponent: 'WINE PLEASE',
-    winLoss: 'Win',
-    mode: 'TOURNAMENT'
-  },
-  {
-    day: '2025-08-08',
-    time: '12:45',
-    score: '4-0',
-    matchId: 'M003',
-    opponent: 'SUPER PONG KILLER',
-    winLoss: 'LOSS',
-    mode: 'LOCAL'
-  },
-  {
-    day: '2025-08-08',
-    time: '12:45',
-    score: '4-0',
-    matchId: 'M003',
-    opponent: 'SUPER PONG KILLER',
-    winLoss: 'LOSS',
-    mode: 'LOCAL'
-  },
-  {
-    day: '2025-08-10',
-    time: '15:30',
-    score: '3-1',
-    matchId: 'M001',
-    opponent: 'PESTO SUPREME',
-    winLoss: 'Win',
-    mode: 'REMOTE'
-  },
-  {
-    day: '2025-08-08',
-    time: '12:45',
-    score: '4-0',
-    matchId: 'M003',
-    opponent: 'SUPER PONG KILLER',
-    winLoss: 'LOSS',
-    mode: 'LOCAL'
-  },
-  // ...more mock data...
-];
