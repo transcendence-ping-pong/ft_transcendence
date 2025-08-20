@@ -3,6 +3,15 @@ async function blockRoutes(fastify, options) {
 
 	const db = fastify.db;
 
+	// ensure table exists (defensive in case schema init didn't run)
+	db.run(`CREATE TABLE IF NOT EXISTS blockedUsers (
+		userId INTEGER NOT NULL,
+		blockedId INTEGER NOT NULL,
+		FOREIGN KEY (userId) REFERENCES users (userId) ON DELETE CASCADE,
+		FOREIGN KEY (blockedId) REFERENCES users (userId) ON DELETE CASCADE,
+		UNIQUE(userId, blockedId)
+	)`);
+
 	// block a user (the blocker must be the authenticated caller)
 	fastify.post('/block/:Id', (request, reply) => {
 		const { Id } = request.params;
@@ -55,6 +64,20 @@ async function blockRoutes(fastify, options) {
 			}
 			// respond in a standard format expected by various callers
 			return reply.send({ result: rows });
+		});
+	});
+
+	// resolve userId by username (utility for websocket server)
+	fastify.get('/userIdByUsername/:username', (request, reply) => {
+		const { username } = request.params;
+		db.get(`SELECT userId FROM users WHERE username = ?`, [username], (err, row) => {
+			if (err) {
+				return reply.status(500).send({ error: err.message });
+			}
+			if (!row) {
+				return reply.status(404).send({ error: 'User not found' });
+			}
+			return reply.send({ userId: row.userId, username });
 		});
 	});
 
