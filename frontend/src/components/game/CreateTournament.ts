@@ -168,7 +168,7 @@ export class CreateTournament extends HTMLElement {
 
   private handleAdd(e: Event) {
     e.preventDefault();
-    const name = this.input.value.trim();
+    const name = this.input.value.trim().toUpperCase();
     this.errorText.textContent = '';
     if (name.length > 20) {
       this.errorText.textContent = t('game.maxNameLength');
@@ -183,6 +183,8 @@ export class CreateTournament extends HTMLElement {
       } else {
         this.errorText.textContent = t('game.maxPlayersReached');
       }
+    } else {
+      this.errorText.textContent = t('game.dupName');
     }
   }
 
