@@ -5,12 +5,14 @@ import '@/components/navigation/StartGameButton.js';
 import '@/components/navigation/Logo.js';
 import '@/components/notification/ToogleChatBox.js';
 
-import '@/components/notification/FriendsList.js';
 // chat-box removed from delivery scope
 import { logout } from '@/services/authService.js';
 
 export function renderHome(containerId: string) {
   const container = document.getElementById(containerId);
+  let onLastMatchSummary: ((e: any) => void) | undefined;
+  let onLogoutBtnClick: (() => void) | undefined;
+
   if (container) {
     container.innerHTML = `
       <div class="video-bg-container w-full h-screen relative overflow-hidden">
@@ -54,19 +56,20 @@ export function renderHome(containerId: string) {
 
     const logoutBtn = container.querySelector('#logoutBtn');
     if (logoutBtn) {
-      logoutBtn.addEventListener('click', async () => {
+      onLogoutBtnClick = async () => {
         const refreshToken = localStorage.getItem('refreshToken');
         if (refreshToken) {
           await logout(refreshToken);
         } else {
           window.dispatchEvent(new CustomEvent('logout', { bubbles: true, composed: true }));
         }
-      });
+      };
+      logoutBtn.addEventListener('click', onLogoutBtnClick);
     }
   }
+
   // show last match summary if any
   try {
-    const container = document.getElementById(containerId);
     const showSummary = (summary) => {
       const el = document.createElement('div');
       el.style.cssText = 'position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:5000;background:rgba(0,0,0,0.6);color:white;padding:8px 12px;border-radius:8px;';
@@ -84,14 +87,32 @@ export function renderHome(containerId: string) {
         arr.push({ sender: '', message: msgText, type: 'system', category: 'global', timestamp: Date.now() });
         localStorage.setItem('chatMessages', JSON.stringify(arr));
         window.dispatchEvent(new CustomEvent('chatSystemMessage', { detail: { message: msgText, timestamp: Date.now() } }));
-      } catch {}
+      } catch { }
     };
-    window.addEventListener('lastMatchSummary', (e: any) => showSummary(e.detail));
+
+    onLastMatchSummary = (e: any) => showSummary(e.detail);
+    window.addEventListener('lastMatchSummary', onLastMatchSummary);
+
     const cached = localStorage.getItem('lastMatchSummary');
     if (cached) {
       const s = JSON.parse(cached);
       showSummary(s);
       localStorage.removeItem('lastMatchSummary');
     }
-  } catch {}
+  } catch { }
+
+  // Expose cleanup for router navigation or hot reload
+  (window as any).cleanupHome = () => {
+    // Remove event listeners to prevent leaks
+    if (onLastMatchSummary) {
+      window.removeEventListener('lastMatchSummary', onLastMatchSummary);
+    }
+    const container = document.getElementById(containerId);
+    if (container && onLogoutBtnClick) {
+      const logoutBtn = container.querySelector('#logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.removeEventListener('click', onLogoutBtnClick);
+      }
+    }
+  };
 }

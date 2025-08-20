@@ -266,6 +266,10 @@ template.innerHTML = `
 export class TopBar extends HTMLElement {
   logoutButton: HTMLButtonElement | null = null;
   profileButton: HTMLButtonElement | null = null;
+  private _onLogoutClick?: (e: Event) => void;
+  private _onProfileClick?: (e: Event) => void;
+  private _onUsernameUpdated?: () => void;
+  private _onAvatarUpdated?: () => void;
 
   static get observedAttributes() {
     return ['mode'];
@@ -281,15 +285,33 @@ export class TopBar extends HTMLElement {
     this.logoutButton = shadow?.getElementById('logout') as HTMLButtonElement;
     this.profileButton = shadow?.getElementById('avatar') as HTMLButtonElement;
 
-    this.logoutButton.addEventListener('click', (e) => this.handleLogout(e));
-    this.profileButton.addEventListener('click', (e) => this.handleProfile(e));
+    // Store handlers so we can remove them later
+    this._onLogoutClick = (e: Event) => this.handleLogout(e);
+    this._onProfileClick = (e: Event) => this.handleProfile(e);
+    this._onUsernameUpdated = () => this.updateAvatar();
+    this._onAvatarUpdated = () => this.updateAvatar();
+
+    this.logoutButton?.addEventListener('click', this._onLogoutClick);
+    this.profileButton?.addEventListener('click', this._onProfileClick);
 
     // SIMPLIFIED: Just one listener
-    window.addEventListener('username-updated', () => this.updateAvatar());
-    window.addEventListener('avatar-updated', () => this.updateAvatar());
+    window.addEventListener('username-updated', this._onUsernameUpdated);
+    window.addEventListener('avatar-updated', this._onAvatarUpdated);
 
     this.updateAvatar();
     this.updateButtons();
+  }
+
+  disconnectedCallback() {
+    // Remove all listeners to prevent leaks
+    if (this.logoutButton && this._onLogoutClick)
+      this.logoutButton.removeEventListener('click', this._onLogoutClick);
+    if (this.profileButton && this._onProfileClick)
+      this.profileButton.removeEventListener('click', this._onProfileClick);
+    if (this._onUsernameUpdated)
+      window.removeEventListener('username-updated', this._onUsernameUpdated);
+    if (this._onAvatarUpdated)
+      window.removeEventListener('avatar-updated', this._onAvatarUpdated);
   }
 
   private updateAvatar() {
@@ -298,6 +320,7 @@ export class TopBar extends HTMLElement {
 
     const username = state.userData?.username;
     const customAvatar = state.userData?.avatar;
+    // keep my comments
     console.log('TopBar.updateAvatar customAvatar:', customAvatar);
 
     if (customAvatar) {
