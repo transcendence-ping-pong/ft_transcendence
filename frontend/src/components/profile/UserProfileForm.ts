@@ -131,9 +131,6 @@ template.innerHTML = `
       transition: background 0.2s, color 0.2s;
       margin-left: 0;
     }
-    .profile-form__auth-btn:hover {
-      box-shadow: var(--shadow-soft);
-    }
     .profile-form__auth-btn:disabled {
       cursor: not-allowed;
       opacity: 0.5;
@@ -166,8 +163,8 @@ template.innerHTML = `
     }
     .profile-form__footer-btn:hover, .profile-form__footer-btn:focus {
       background: var(--accent);
+      border: 2px solid var(--video-transition-bg);
       color: var(--text);
-      box-shadow: var(--shadow-soft);
     }
     .profile-form__footer-btn:disabled {
       background: var(--accent-secondary);
@@ -217,10 +214,9 @@ template.innerHTML = `
     <section class="profile-form__auth">
       <h2 class="profile-form__auth-title">${t('profile.authentication')}</h2>
       <div class="profile-form__auth-checkbox--label">
-        <button id="enable2fa" class="profile-form__auth-btn" type="button"></button>
+        <custom-tag id="enable2fa" text="${t('profile.enable2FA')}" closable><custom-tag>
       </div>
       <button id="disable2fa">Disable 2fa</button>
-
     </section>
 
     <div class="profile-form__footer">
@@ -229,6 +225,8 @@ template.innerHTML = `
     </div>
   </form>
 `;
+
+// <button id="enable2fa" class="profile-form__auth-btn" type="button"></button>
 
 export class UserProfileForm extends HTMLElement {
   private editButton: HTMLButtonElement;
@@ -245,7 +243,7 @@ export class UserProfileForm extends HTMLElement {
   private avatarOverlay: HTMLElement;
   private isEditMode = false;
   private pendingAvatarFile: File | null = null;
-  private disable2fa : HTMLButtonElement;
+  private disable2fa: HTMLButtonElement;
   private userData: UserData = { email: '', username: '', userId: 0, avatar: '' };
 
   private boundHandleModalDismiss = this.handleModalDismiss.bind(this);
@@ -329,24 +327,24 @@ export class UserProfileForm extends HTMLElement {
     this.passwordInput.type = isPasswordVisible ? 'password' : 'text';
     this.viewBtn.innerHTML = isPasswordVisible ? actionIcons.eyeClosed : actionIcons.eye;
   }
-private async handleDisable2fa() {
-  try {
-    const accessToken = state.userData?.accessToken;
-    if (!accessToken) {
-      alert('No access token found.');
-      return;
+  private async handleDisable2fa() {
+    try {
+      const accessToken = state.userData?.accessToken;
+      if (!accessToken) {
+        alert('No access token found.');
+        return;
+      }
+      const response = await authService.disable2FA(accessToken);
+      if (response.error) {
+        alert(`Failed to disable 2FA: ${response.error}`);
+      } else {
+        alert('2FA disabled successfully!');
+        window.dispatchEvent(new CustomEvent('profile-loaded'));
+      }
+    } catch (error: any) {
+      alert(`Error disabling 2FA: ${error.message}`);
     }
-    const response = await authService.disable2FA(accessToken);
-    if (response.error) {
-      alert(`Failed to disable 2FA: ${response.error}`);
-    } else {
-      alert('2FA disabled successfully!');
-      window.dispatchEvent(new CustomEvent('profile-loaded'));
-    }
-  } catch (error: any) {
-    alert(`Error disabling 2FA: ${error.message}`);
   }
-}
   private handleEditBtnClick() {
     this.isEditMode = !this.isEditMode;
     this.editButton.style.backgroundColor = this.isEditMode ? 'var(--accent-secondary)' : 'var(--accent)';
@@ -439,7 +437,7 @@ private async handleDisable2fa() {
       this.enable2fa.disabled = false;
       this.enable2fa.textContent = t('profile.enable2FA');
       this.enable2fa.classList.remove('profile-form__auth-btn--success');
-      this.disable2fa.style.display = 'none'; 
+      this.disable2fa.style.display = 'none';
       this.disable2fa.disabled = true;
     });
   }
