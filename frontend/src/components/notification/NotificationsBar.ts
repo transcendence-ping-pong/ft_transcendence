@@ -1,6 +1,8 @@
 // notifications component kept but inert for delivery
-import { NotificationPayload, NotificationAction } from "@/services/notificationService";
-import { getWelcomeNotification } from "@/utils/Notifications.js";
+// removing runtime deps for delivery stability
+// import { NotificationPayload, NotificationAction } from "@/services/notificationService";
+// import { getWelcomeNotification } from "@/utils/Notifications.js";
+type NotificationPayload = any; type NotificationAction = any;
 import { t } from "@/locales/Translations.js";
 import { state } from "@/state";
 import "./NotificationCard.js";
@@ -223,9 +225,9 @@ export class NotificationsBar extends HTMLElement {
       if (notif || compactFriends) this.showDetails();
     });
 
-    const welcomeNotif = getWelcomeNotification(this.username);
-    this.#all = [welcomeNotif];
-    this.#visible = [welcomeNotif];
+    // disable welcome injection for delivery
+    this.#all = [];
+    this.#visible = [];
     this.renderDetails();
     this._showInitial();
 
@@ -254,7 +256,7 @@ export class NotificationsBar extends HTMLElement {
   _showInitial() {
     // only show welcome at start
     // TODO: get username, this value is mocked for now
-    this.#visible = [getWelcomeNotification(this.username)];
+    this.#visible = [];
     this.renderNotifications();
     this._scheduleFade();
   }

@@ -5,6 +5,8 @@ import '@/components/navigation/StartGameButton.js';
 import '@/components/navigation/Logo.js';
 import '@/components/notification/ToogleChatBox.js';
 
+import '@/components/notification/FriendsList.js';
+// chat-box removed from delivery scope
 import { logout } from '@/services/authService.js';
 
 export function renderHome(containerId: string) {

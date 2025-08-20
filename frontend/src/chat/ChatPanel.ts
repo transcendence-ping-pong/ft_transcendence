@@ -1097,7 +1097,7 @@ export default class ChatPanel extends HTMLElement {
       let message = messageParts.join(' ');
 
       if (receiver && message) {
-        try { (window as any).notificationService?.emit({ type: 'chatPm', from: this.getCurrentUsername(), to: receiver, text: message }); } catch {}
+        // no sidebar notifications
         // always allowed to send; backend will validate receiver presence and warn sender if needed
         if (receiver === this.getCurrentUsername()) {
           this.addMessage('', t("pmError"), 'system', 'global');
@@ -1353,11 +1353,9 @@ export default class ChatPanel extends HTMLElement {
 
         // ABSOLUTELY NO local message addition - UI only renders what backend sends back
       } else {
-        console.error('WebSocket service not available or not connected');
         this.addMessage('', 'Failed to send message: WebSocket not connected', 'system', 'global');
       }
     } catch (error) {
-      console.error('Error sending message:', error);
       this.addMessage('', 'Failed to send message', 'system', 'global');
     }
   }
