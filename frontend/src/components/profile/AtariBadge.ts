@@ -247,6 +247,9 @@ export class AtariBadge extends HTMLElement {
     this.avatar = this.shadowRoot!.querySelector('.avatar') as HTMLImageElement | null;
     this.fileInput = this.shadowRoot!.querySelector('.hidden-file-input') as HTMLInputElement | null;
 
+    const mainUsername = state.userData?.username;
+    if (!mainUsername) this.fileInput.disabled = true;
+
     if (this.avatar) this.avatar.addEventListener('click', this.boundAvatarClick);
     if (this.fileInput) this.fileInput.addEventListener('change', this.boundFileInputChange);
 

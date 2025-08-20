@@ -18,26 +18,30 @@ export function renderGame(containerId: string) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  function renderTopBar() {
-    return (PLAYER_1.name && PLAYER_2.name)
-      ? `
-        <top-bar mode="game">
-          <img slot="player1-avatar" src="${PLAYER_1.avatar}" alt="${PLAYER_1.name}" />
-          <p slot="player1-username">${PLAYER_1.name}</p>
-          <pong-logo slot="logo"></logo>
-          <p slot="player2-username">${PLAYER_2.name}</p>
-          <img slot="player2-avatar" src="${PLAYER_2.avatar}" alt="${PLAYER_2.name}" />
-        </top-bar>
-      `
-      : `
-        <top-bar mode="game">
-          <pong-logo slot="logo-center"></logo>
-        </top-bar>
-      `;
-  }
+  //  ${renderTopBar()} -- TODO: render player names and avatars dynamically
+  // function renderTopBar() {
+  //   return (PLAYER_1.name && PLAYER_2.name)
+  //     ? `
+  //       <top-bar mode="game">
+  //         <img slot="player1-avatar" src="${PLAYER_1.avatar}" alt="${PLAYER_1.name}" />
+  //         <p slot="player1-username">${PLAYER_1.name}</p>
+  //         <pong-logo slot="logo-center"></logo>
+  //         <p slot="player2-username">${PLAYER_2.name}</p>
+  //         <img slot="player2-avatar" src="${PLAYER_2.avatar}" alt="${PLAYER_2.name}" />
+  //       </top-bar>
+  //     `
+  //     : `
+  //       <top-bar mode="game">
+  //         <pong-logo slot="logo-center"></logo>
+  //       </top-bar>
+  //     `;
+  // }
 
   container.innerHTML = `
-    ${renderTopBar()}
+    <top-bar mode="game">
+      <pong-logo slot="logo-center"></logo>
+    </top-bar>
+
     <div class="game-area relative w-screen h-screen">
       <div id="game-screen" class="absolute z-10"></div>
       <img 
@@ -85,8 +89,9 @@ export function renderGame(containerId: string) {
         // ...set players names, it comes from event detail
         PLAYER_1.name = e.detail.player1;
         PLAYER_2.name = e.detail.player2;
+
         // ...re-render top bar with player info
-        container.querySelector('top-bar').outerHTML = renderTopBar();
+        // container.querySelector('top-bar').outerHTML = renderTopBar();
         // ...finally, start the game
         // this is an exception, as the game start is usually triggered by the gameOrchestrator
         state.players = { p1: e.detail.player1, p2: e.detail.player2 }

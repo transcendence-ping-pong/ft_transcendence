@@ -71,6 +71,15 @@ export async function renderProfile(containerId: string, params: Record<string, 
           <matches-history userdata='${JSON.stringify(userData)}'></matches-history>
         </div>
       </section>
+
+      <section class="footer">
+        <div class="fade-top"></div>
+        <img 
+          src="/public/footer.png"
+          alt="Footer Background"
+          class="footer-img"
+        />
+      </section>
     `;
 
     // always remove previous listeners before adding new ones
