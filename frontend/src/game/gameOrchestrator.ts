@@ -29,6 +29,14 @@ export class gameOrchestrator {
   private multiplayerKeyUpHandler?: (event: KeyboardEvent) => void;
   private handledGameOver: boolean = false;
   private handledOpponentLeft: boolean = false;
+  // bound window handlers for cleanup
+  private onGameStart?: (e: CustomEvent) => void;
+  private onGameEnd?: (e: CustomEvent) => void;
+  private onGameCountdown?: (e: CustomEvent) => void;
+  private onGameStarted?: (e: CustomEvent) => void;
+  private onGameUpdate?: (e: CustomEvent) => void;
+  private onPlayerLeft?: (e: CustomEvent) => void;
+  private onResize?: () => void;
 
   private gameLevel: GameLevel = GameLevel.EASY;
   private gameMode: GameMode = GameMode.LOCAL;
@@ -83,11 +91,12 @@ export class gameOrchestrator {
     } catch {}
 
     // TODO FIX: when refreshing the page, resume the game from where it left off
-    window.addEventListener('resize', () => {
+    this.onResize = () => {
       this.babylonCanvas.cleanupGame();
       state.scaleFactor = this.getScaleFactor();
       window.location.reload();
-    });
+    };
+    window.addEventListener('resize', this.onResize as EventListener);
   }
 
   private getScaleFactor() {
@@ -122,7 +131,7 @@ export class gameOrchestrator {
   }
 
   setupMultiplayerEvents() {
-    window.addEventListener('gameStart', (e: CustomEvent) => {
+    this.onGameStart = (e: CustomEvent) => {
       try {
         // reset one-shot guards for a fresh session
         this.handledGameOver = false;
@@ -187,9 +196,10 @@ export class gameOrchestrator {
       } catch (error) {
         this.isMultiplayerMode = false;
       }
-    });
+    };
+    window.addEventListener('gameStart', this.onGameStart as EventListener);
 
-    window.addEventListener('gameEnd', (e: CustomEvent) => {
+    this.onGameEnd = (e: CustomEvent) => {
       if (this.handledGameOver) return;
       this.handledGameOver = true;
       this.isMultiplayerMode = false;
@@ -237,32 +247,36 @@ export class gameOrchestrator {
           window.dispatchEvent(new PopStateEvent('popstate'));
         } catch { window.location.href = '/'; }
       }, 3000);
-    });
+    };
+    window.addEventListener('gameEnd', this.onGameEnd as EventListener);
 
     // reflect server countdown ticks (3->2->1) then start
-    window.addEventListener('gameCountdown', (e: CustomEvent) => {
+    this.onGameCountdown = (e: CustomEvent) => {
       try { (this.gui as any).setCountdownNumber(e.detail.countdown); } catch {}
-    });
-    window.addEventListener('gameStarted', (e: CustomEvent) => {
+    };
+    window.addEventListener('gameCountdown', this.onGameCountdown as EventListener);
+    this.onGameStarted = (_e: CustomEvent) => {
       try { (this.gui as any).endCountdownOverlay(); } catch {}
       if (this.gameCanvas instanceof MultiplayerGameCanvas) {
         (this.gameCanvas as any).startGame();
       }
-    });
+    };
+    window.addEventListener('gameStarted', this.onGameStarted as EventListener);
 
     // track latest score for persistence on opponent leave
-    window.addEventListener('gameUpdate', (e: CustomEvent) => {
+    this.onGameUpdate = (e: CustomEvent) => {
       const gs: any = (e as any).detail?.gameState;
       if (gs?.paddles) {
         this.lastKnownScore = { LEFT: gs.paddles.left.score, RIGHT: gs.paddles.right.score };
       }
-    });
+    };
+    window.addEventListener('gameUpdate', this.onGameUpdate as EventListener);
 
 	// TODO: think its somewhat buggy
     // removed: duplicate with playerLeft handler below
 
     // opponent left
-    window.addEventListener('playerLeft', (e: CustomEvent) => {
+    this.onPlayerLeft = (e: CustomEvent) => {
       if (this.handledOpponentLeft) return;
       this.handledOpponentLeft = true;
       if (this.isMultiplayerMode) {
@@ -296,7 +310,8 @@ export class gameOrchestrator {
           window.location.href = '/';
         }
       }
-    });
+    };
+    window.addEventListener('playerLeft', this.onPlayerLeft as EventListener);
   }
 
   private setupMultiplayerInput() {
@@ -327,6 +342,20 @@ export class gameOrchestrator {
     if (this.multiplayerKeyUpHandler) {
       window.removeEventListener('keyup', this.multiplayerKeyUpHandler);
     }
+  }
+
+  public destroy() {
+    // remove all bound window listeners
+    try { if (this.onGameStart) window.removeEventListener('gameStart', this.onGameStart as EventListener); } catch {}
+    try { if (this.onGameEnd) window.removeEventListener('gameEnd', this.onGameEnd as EventListener); } catch {}
+    try { if (this.onGameCountdown) window.removeEventListener('gameCountdown', this.onGameCountdown as EventListener); } catch {}
+    try { if (this.onGameStarted) window.removeEventListener('gameStarted', this.onGameStarted as EventListener); } catch {}
+    try { if (this.onGameUpdate) window.removeEventListener('gameUpdate', this.onGameUpdate as EventListener); } catch {}
+    try { if (this.onPlayerLeft) window.removeEventListener('playerLeft', this.onPlayerLeft as EventListener); } catch {}
+    try { if (this.onResize) window.removeEventListener('resize', this.onResize as EventListener); } catch {}
+
+    this.removeMultiplayerInput();
+    try { this.babylonCanvas.cleanupGame(); } catch {}
   }
 
   // keep track of score changes and update the GUI accordingly

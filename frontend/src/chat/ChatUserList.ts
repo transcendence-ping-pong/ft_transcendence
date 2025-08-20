@@ -4,6 +4,7 @@ class ChatUserList extends HTMLElement {
   private container: HTMLDivElement;
   private usersContainer: HTMLDivElement;
   private titleElement: HTMLHeadingElement;
+  private updateIntervalId: number | null = null;
 
   constructor() {
     super();
@@ -213,7 +214,7 @@ class ChatUserList extends HTMLElement {
     };
 
     // check every 100ms for updates
-    setInterval(checkForUpdates, 100);
+    this.updateIntervalId = setInterval(checkForUpdates, 100) as unknown as number;
   }
 
   private render() {
@@ -300,7 +301,7 @@ class ChatUserList extends HTMLElement {
   }
 
   private inviteUser(username: string) {
-    // rRemoved chatService dependency
+    // removed chatService dependency
   }
 
   private blockUser(username: string) {
@@ -320,6 +321,13 @@ class ChatUserList extends HTMLElement {
         input.focus();
         input.setSelectionRange(input.value.length, input.value.length);
       }
+    }
+  }
+
+  disconnectedCallback() {
+    if (this.updateIntervalId !== null) {
+      clearInterval(this.updateIntervalId);
+      this.updateIntervalId = null;
     }
   }
 }
