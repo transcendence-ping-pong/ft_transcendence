@@ -499,6 +499,10 @@ export class UserProfileForm extends HTMLElement {
       const newPassword = this.passwordInput.value;
       const confirmPassword = this.confirmPasswordInput.value;
       if (newUsername && newUsername !== this.userData.username) {
+        if (!isValidUsername(newUsername)) {
+          this.setError(t("error.usernameLength"));
+          return;
+        }
         await authService.updateUsername(newUsername, accessToken);
         this.userData.username = newUsername;
         state.userData.username = newUsername;
@@ -508,15 +512,18 @@ export class UserProfileForm extends HTMLElement {
       }
 
       //Only regular accounts can change password
-      if (!this.isGoogleAccount()) {
-        if (newPassword && newPassword.length > 6) {
+      if (!this.isGoogleAccount()) 
+      {
+          if (newPassword && !isValidPassword(newPassword)) {
+            this.setError(t("error.passwordTooShort"));
+            return;
+          }
           if (newPassword !== confirmPassword) {
             this.setError(t("error.passwordsDoNotMatch"));
             return;
           }
           await authService.updatePassword(newPassword, accessToken);
           hasChanges = true;
-        }
       }
 
       if (hasChanges) {
@@ -539,3 +546,13 @@ export class UserProfileForm extends HTMLElement {
 customElements.define('user-profile-form', UserProfileForm);
 
 export { makeAuthenticatedRequest };
+
+function isValidUsername(username: string): boolean {
+  return !!username && username.length >= 3 && username.length <= 10 &&
+    /^[a-zA-Z0-9\s._-]+$/.test(username);
+}
+
+function isValidPassword(password: string): boolean {
+  return !!password && password.length > 6 &&
+    /^[a-zA-Z0-9!-/]+$/.test(password);
+}

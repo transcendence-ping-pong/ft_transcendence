@@ -68,7 +68,9 @@
       "notFound": "Page not found.",
       "emptyFields": "Please enter both email and password.",
       "alreadyExists": "An account with this email already exists.",
-      "passwordsDoNotMatch": "Passwords do not match."
+      "passwordsDoNotMatch": "Passwords do not match.",
+      "passwordTooShort": "Password must be at least 7 characters and contain only allowed characters.",
+      "usernameLength": "Username must be 3-10 characters and contain only letters, numbers, spaces, . _ -"
     },
     "game": {
       "start": "START GAME",
@@ -101,7 +103,8 @@
       "listTitle": "List of Games",
       "noGames": "No games available",
       "beFirstToCreateRoom": "Be the first to create a room and invite a friend.",
-      "createGame": "Create Game"
+      "createGame": "Create Game",
+      "dupName": "Duplicate name"
     },
     "notification": {
       "title": {
@@ -260,7 +263,9 @@
       "notFound": "Page non trouvée.",
       "emptyFields": "Veuillez saisir l'email et le mot de passe.",
       "alreadyExists": "Un compte avec cet email existe déjà.",
-      "passwordsDoNotMatch": "Les mots de passe ne correspondent pas."
+      "passwordsDoNotMatch": "Les mots de passe ne correspondent pas.",
+      "passwordTooShort": "Le mot de passe doit comporter au moins 7 caractères et uniquement des caractères autorisés.",
+      "usernameLength": "Le nom d'utilisateur doit comporter 3 à 10 caractères et uniquement des lettres, chiffres, espaces, . _ -"
     },
     "game": {
       "start": "COMMENCER LE JEU",
@@ -293,7 +298,8 @@
       "listTitle": "Liste des jeux disponibles",
       "noGames": "Aucun jeu disponible",
       "beFirstToCreateRoom": "Soyez le premier à créer une salle et à inviter un ami.",
-      "createGame": "Créer un jeu"
+      "createGame": "Créer un jeu",
+      "dupName": "Nom dupliqué"
     },
     "notification": {
       "title": {
@@ -452,7 +458,9 @@
       "notFound": "Página não encontrada.",
       "emptyFields": "Por favor, insira o email e a senha.",
       "alreadyExists": "Já existe uma conta com este email.",
-      "passwordsDoNotMatch": "As senhas não coincidem."
+      "passwordsDoNotMatch": "As senhas não coincidem.",
+      "passwordTooShort": "A senha deve ter pelo menos 7 caracteres e conter apenas caracteres permitidos.",
+      "usernameLength": "O nome de usuário deve ter de 3 a 10 caracteres e conter apenas letras, números, espaços, . _ -"
     },
     "game": {
       "start": "INICIAR JOGO",
@@ -485,7 +493,8 @@
       "listTitle": "Lista de Jogos",
       "noGames": "Nenhum jogo disponível",
       "beFirstToCreateRoom": "Seja o primeiro a criar uma sala e convidar um amigo.",
-      "createGame": "Criar Jogo"
+      "createGame": "Criar Jogo",
+      "dupName": "Nome duplicado"
     },
     "notification": {
       "title": {
@@ -644,7 +653,9 @@
       "notFound": "ページが見つかりません。",
       "emptyFields": "メールアドレスとパスワードを入力してください。",
       "alreadyExists": "このメールアドレスは既に登録されています。",
-      "passwordsDoNotMatch": "パスワードが一致しません。"
+      "passwordsDoNotMatch": "パスワードが一致しません。",
+      "passwordTooShort": "パスワードは7文字以上で、許可された文字のみ使用してください。",
+      "usernameLength": "ユーザー名は3～10文字で、英数字、スペース、. _ - のみ使用できます。"
     },
     "game": {
       "start": "ゲーム開始",
@@ -677,7 +688,8 @@
       "listTitle": "ゲーム一覧",
       "noGames": "利用可能なゲームはありません",
       "beFirstToCreateRoom": "最初にルームを作成して、友達を招待してください。",
-      "createGame": "ゲームを作成"
+      "createGame": "ゲームを作成",
+      "dupName": "名前が重複しています"
     },
     "notification": {
       "title": {
