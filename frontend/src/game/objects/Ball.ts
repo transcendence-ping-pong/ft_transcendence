@@ -55,22 +55,29 @@ export class Ball {
   }
 
   collidesWithPaddle = (paddle: Paddle) => {
+    // only consider collision if ball is moving toward this paddle (mirrors remote logic)
+    const isPaddleOnLeft = paddle.getX() < this.virtualX;
+    if ((isPaddleOnLeft && this.vx >= 0) || (!isPaddleOnLeft && this.vx <= 0)) {
+      return false;
+    }
+
+    // aabb overlap check, mirrors remote collision for robustness
+    const ballLeft = this.virtualX - this.size / 2;
+    const ballRight = this.virtualX + this.size / 2;
     const ballTop = this.virtualY - this.size / 2;
     const ballBottom = this.virtualY + this.size / 2;
+
+    const paddleLeft = paddle.getX();
+    const paddleRight = paddle.getX() + paddle.getWidth();
     const paddleTop = paddle.getY();
     const paddleBottom = paddle.getY() + paddle.getHeight();
 
-    const verticalOverlap = Math.max(0, Math.min(ballBottom, paddleBottom) - Math.max(ballTop, paddleTop));
-    if (verticalOverlap <= 0) return false;
-
-    if (paddle.getX() < this.virtualX && this.vx < 0) {
-      return this.virtualX - this.size / 2 <= paddle.getX() + paddle.getWidth() &&
-            this.virtualX - this.size / 2 >= paddle.getX();
-    } else if (paddle.getX() > this.virtualX && this.vx > 0) {
-      return this.virtualX + this.size / 2 >= paddle.getX() &&
-            this.virtualX + this.size / 2 <= paddle.getX() + paddle.getWidth();
-    }
-    return false;
+    return (
+      ballRight >= paddleLeft &&
+      ballLeft <= paddleRight &&
+      ballBottom >= paddleTop &&
+      ballTop <= paddleBottom
+    );
   };
 
   public getY(): number {
@@ -99,20 +106,29 @@ export class Ball {
   bounceOffPaddle(paddle: Paddle, onPaddleBounce?: () => void) {
     const { MAX, MIN, maxBounceAngle } = BallLevelConfig[this.level];
 
-    if (paddle.getX() < this.virtualX) {
-      this.virtualX = paddle.getX() + paddle.getWidth() + this.size / 2;
+    // determine side based on pre-bounce velocity
+    const comingFromLeft = this.vx > 0 ? true : false; // vx>0 means moving right, hit right paddle; else left paddle
+
+    // prevent sticking to the paddle: push ball just outside with a 1px buffer
+    if (!comingFromLeft) {
+      // moving left, collided with left paddle
+      this.virtualX = paddle.getX() + paddle.getWidth() + this.size / 2 + 1;
     } else {
-      this.virtualX = paddle.getX() - this.size / 2;
+      // moving right, collided with right paddle
+      this.virtualX = paddle.getX() - this.size / 2 - 1;
     }
 
+    // calculate bounce angle based on contact point
     const relativeIntersectY = this.virtualY - (paddle.getY() + paddle.getHeight() / 2);
     const normalized = relativeIntersectY / (paddle.getHeight() / 2);
     const bounceAngle = normalized * maxBounceAngle;
 
+    // increase speed slightly, clamp within level min/max
     let speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
     speed = Math.max(Math.min(speed * 1.2, MAX), MIN);
 
-    this.vx = (paddle.getX() < this.virtualX ? Math.abs(speed * Math.cos(bounceAngle)) : -Math.abs(speed * Math.cos(bounceAngle)));
+    // update velocity: reflect horizontally and set according to angle
+    this.vx = (comingFromLeft ? -Math.abs(speed * Math.cos(bounceAngle)) : Math.abs(speed * Math.cos(bounceAngle)));
     this.vy = speed * Math.sin(bounceAngle);
 
     if (onPaddleBounce) onPaddleBounce();
