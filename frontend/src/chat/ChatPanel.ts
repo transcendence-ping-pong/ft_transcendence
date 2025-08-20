@@ -95,23 +95,23 @@ export default class ChatPanel extends HTMLElement {
 
         window.addEventListener('websocketDisconnected', () => {
           this.updateConnectionStatus('Disconnected', 'rgba(255,255,0,0.7)');
-          this.addMessage('', '⚠️ WebSocket disconnected. Trying to reconnect...', 'system', 'global');
+          this.addMessage('', t("chat.socketDisconnect"), 'system', 'global');
           this.attemptReconnection();
         }, { once: true });
 
         window.addEventListener('websocketError', () => {
           this.updateConnectionStatus('Error', 'rgba(255,0,0,0.7)');
-          this.addMessage('', '⚠️ WebSocket connection error. Check your connection.', 'system', 'global');
+          this.addMessage('', t("chat.socketConnError"), 'system', 'global');
         }, { once: true });
       } else {
         console.error('WebSocket service not available');
         this.updateConnectionStatus('Service not found', 'rgba(255,0,0,0.7)');
-        this.addMessage('', '⚠️ WebSocket service not available. Please refresh the page.', 'system', 'global');
+        this.addMessage('', t("chat.socketService"), 'system', 'global');
       }
     } catch (error) {
       console.error('Failed to initialize WebSocket:', error);
       this.updateConnectionStatus('Init failed', 'rgba(255,0,0,0.7)');
-      this.addMessage('', '⚠️ Failed to initialize WebSocket connection.', 'system', 'global');
+      this.addMessage('', t("chat.socketInit"), 'system', 'global');
     }
   }
 
@@ -215,7 +215,7 @@ export default class ChatPanel extends HTMLElement {
     const onInviteSent = (e: any) => {
       const data = e.detail || {};
       if (data && data.targetUsername) {
-        this.addMessage('', `✅ Invite sent to ${data.targetUsername}`, 'system', 'global');
+        this.addMessage('', t("chat.inviteSent", { username: `${data.targetUsername}`}), 'system', 'global');
       }
     };
     window.addEventListener('inviteSent', onInviteSent);
@@ -230,7 +230,7 @@ export default class ChatPanel extends HTMLElement {
 
     // room created
     const onRoomCreated = () => {
-      this.addMessage('', '🎮 Game room created!', 'system', 'global');
+      this.addMessage('', t("chat.roomCreated"), 'system', 'global');
     };
     window.addEventListener('roomCreated', onRoomCreated);
 
@@ -270,17 +270,17 @@ export default class ChatPanel extends HTMLElement {
         const otherUsers = data.filter((user: any) => user.username !== currentUsername);
 
         if (otherUsers.length === 0) {
-          this.addMessage('', 'No other users online', 'system', 'global');
+          this.addMessage('', t("chat.noOtherUsersOnline"), 'system', 'global');
         } else {
           const userList = data.map((user: any) => {
             const isCurrentUser = user.username === currentUsername;
             return isCurrentUser ? `${user.username} (You)` : user.username;
           }).join(', ');
 
-          this.addMessage('', `Online: ${userList}`, 'system', 'global');
+          this.addMessage('', t("chat.onlineUsers", {users: userList}), 'system', 'global');
         }
       } else {
-        this.addMessage('', 'Failed to get online users', 'system', 'global');
+        this.addMessage('',  t("chat.failedToGetOnlineUsers"), 'system', 'global');
       }
       this.requestedOnlineUsers = false;
     }
@@ -303,20 +303,20 @@ export default class ChatPanel extends HTMLElement {
     if (input && sendButton) {
       input.disabled = true;
       sendButton.disabled = true;
-      input.placeholder = 'Chat temporarily disabled due to spam...';
+      input.placeholder = t("chat.chatTemporarilyDisabled");
 
       setTimeout(() => {
         input.disabled = false;
         sendButton.disabled = false;
         input.placeholder = 'Type your message...';
-        this.addMessage('', 'Chat re-enabled. Please be mindful of message frequency.', 'system', 'global');
+        this.addMessage('', t("chat.chatReenabled"), 'system', 'global');
       }, 120000); // 2 min
     }
   }
 
   private attemptReconnection() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      this.addMessage('', '⚠️ Max reconnection attempts reached. Please refresh the page.', 'system', 'global');
+      this.addMessage('', t("chat.maxConnect"), 'system', 'global');
       return;
     }
 
@@ -324,7 +324,7 @@ export default class ChatPanel extends HTMLElement {
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000);
 
     if (this.reconnectAttempts === 1) {
-      this.addMessage('', `⚠️ WebSocket disconnected. Attempting to reconnect...`, 'system', 'global');
+      this.addMessage('', t("chat.socketDisconnect"), 'system', 'global');
     }
 
     setTimeout(() => {
@@ -332,7 +332,7 @@ export default class ChatPanel extends HTMLElement {
       if (websocketService && websocketService.isConnected()) {
         this.reconnectAttempts = 0;
         this.updateConnectionStatus('Connected', 'rgba(0,255,0,0.7)');
-        this.addMessage('', '✅ Reconnected successfully!', 'system', 'global');
+        this.addMessage('', t("chat.reconnect"), 'system', 'global');
         this.setupWebSocketListeners();
         this.authenticateUser();
       } else {

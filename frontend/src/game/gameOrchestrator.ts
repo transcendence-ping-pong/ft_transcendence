@@ -459,7 +459,14 @@ export class gameOrchestrator {
     this.babylonCanvas.createGameCanvas(this.gameLevel, this.gamePlayerMode);
     this.gameCanvas = this.babylonCanvas.getGameCanvas();
 
-    this.gui.showCountdown(1, () => {
+    if (this.gamePlayerMode === PlayerMode.ONE_PLAYER) {
+      if (typeof this.gameCanvas.enableBotForPlayer === 'function') {
+        this.gameCanvas.enableBotMode(true);
+        this.gameCanvas.enableBotForPlayer(1); // 1 = player 2
+      }
+    }
+    
+    this.gui.showCountdown(3, () => {
       this.gameCanvas.startGame();
       this.gui.showScoreBoard({ LEFT: 0, RIGHT: 0 }, () => { });
     });
@@ -496,12 +503,9 @@ export class gameOrchestrator {
                 this.clearStateTournament();
                 state.players = { p1: "Player1", p2: "Player2" };
                 this.gui.showPlayerSelector((mode) => {
-                  if (mode === PlayerMode.ONE_PLAYER) {
-                    this.gameCanvas.enableBotForPlayer(1);
-                  }
+                  this.gamePlayerMode = mode as PlayerMode;
+                  this.startGame();
                 });
-
-                this.startGame();
               } else {
                 // tournmament mode, there is a the need of showing a modal for more complex config
                 window.dispatchEvent(new CustomEvent('openTournamentConfig', {

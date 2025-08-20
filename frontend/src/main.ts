@@ -134,7 +134,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.body.classList.toggle('theme-primary', state.theme === 'primary');
   document.body.classList.toggle('theme-secondary', state.theme === 'secondary');
 
-  websocketService.connect(`ws://${window.location.hostname}:4001`);
+  const wsUrl = window.location.origin.replace(/^http/, 'ws');
+  websocketService.connect(wsUrl);
 
   navigate = initRouter(routes, 'app');
 
