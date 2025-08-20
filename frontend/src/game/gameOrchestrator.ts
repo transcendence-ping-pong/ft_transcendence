@@ -312,8 +312,6 @@ export class gameOrchestrator {
         winner = state.players.p1;
       else
         winner = state.players.p2;
-      console.log("Final winner:", winner);
-      console.log("Final score Left: ", e.detail.score.LEFT, "Final score Right: ", e.detail.score.RIGHT);
       await updateMatch(this.matchId, winner, e.detail.score.LEFT, e.detail.score.RIGHT);
 
       // TODO FIX: arguments are obsolete (player and score), review
