@@ -1,17 +1,10 @@
 services:
-  addhost:
-    image: alpine
-    volumes:
-      - ./add-host.sh:/add-host.sh
-    command: sh /add-host.sh
-
   frontend:
     build: ./frontend
     command: npm run dev -- --host
     ports:
       - "3000:3000"
     depends_on:
-      - addhost
       - backend
 
   backend:
@@ -29,7 +22,7 @@ services:
   nginx:
     image: nginx:alpine
     ports:
-      - "80:80"
+      - "9019:9019"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - uploads_data:/var/www/uploads
