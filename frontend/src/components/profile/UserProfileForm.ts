@@ -214,9 +214,8 @@ template.innerHTML = `
     <section class="profile-form__auth">
       <h2 class="profile-form__auth-title">${t('profile.authentication')}</h2>
       <div class="profile-form__auth-checkbox--label">
-        <custom-tag id="enable2fa" text="${t('profile.enable2FA')}" closable><custom-tag>
+        <custom-tag id="enable2fa" text="${t('profile.enable2FA')}" button size="m"><custom-tag>
       </div>
-      <button id="disable2fa">Disable 2fa</button>
     </section>
 
     <div class="profile-form__footer">
@@ -243,13 +242,13 @@ export class UserProfileForm extends HTMLElement {
   private avatarOverlay: HTMLElement;
   private isEditMode = false;
   private pendingAvatarFile: File | null = null;
-  private disable2fa: HTMLButtonElement;
   private userData: UserData = { email: '', username: '', userId: 0, avatar: '' };
 
   private boundHandleModalDismiss = this.handleModalDismiss.bind(this);
   private boundHandleAvatarChanged = this.handleAvatarChanged.bind(this);
   private boundHandleProfileLoaded = this.handleProfileLoaded.bind(this);
   private boundHandleAvatarUpdated = this.handleAvatarUpdated.bind(this);
+  private boundHandleEnable2faClose = this.handleEnable2faClose.bind(this);
 
   static get observedAttributes() {
     return ['userdata'];
@@ -293,7 +292,6 @@ export class UserProfileForm extends HTMLElement {
     this.saveBtn = shadowRoot.getElementById('saveBtn') as HTMLButtonElement;
     this.deleteBtn = shadowRoot.getElementById('deleteBtn') as HTMLButtonElement;
     this.avatarOverlay = shadowRoot.querySelector('.avatar-upload-overlay') as HTMLElement;
-    this.disable2fa = shadowRoot.getElementById('disable2fa') as HTMLButtonElement;
   }
 
   private addEventListeners() {
@@ -302,12 +300,12 @@ export class UserProfileForm extends HTMLElement {
     this.enable2fa?.addEventListener('click', this.handleEnable2faClick.bind(this));
     this.saveBtn?.addEventListener('click', this.handleSaveBtnClick.bind(this));
     this.deleteBtn?.addEventListener('click', this.handleDeleteBtnClick.bind(this));
-    this.disable2fa?.addEventListener('click', this.handleDisable2fa.bind(this));
 
     window.addEventListener('avatar-changed', this.boundHandleAvatarChanged);
     window.addEventListener('profile-loaded', this.boundHandleProfileLoaded);
     window.addEventListener('avatar-updated', this.boundHandleAvatarUpdated);
     window.addEventListener('modal-dismiss', this.boundHandleModalDismiss);
+    this.enable2fa.addEventListener('close', this.boundHandleEnable2faClose);
   }
 
   // you do not call disconnectedCallback yourself...
@@ -318,6 +316,7 @@ export class UserProfileForm extends HTMLElement {
     window.removeEventListener('profile-loaded', this.boundHandleProfileLoaded);
     window.removeEventListener('avatar-updated', this.boundHandleAvatarUpdated);
     window.removeEventListener('modal-dismiss', this.boundHandleModalDismiss);
+    this.enable2fa?.removeEventListener('close', this.boundHandleEnable2faClose);
   }
 
   // event handlers - track user interactions
@@ -388,6 +387,17 @@ export class UserProfileForm extends HTMLElement {
     this.renderForm();
   }
 
+  private async handleEnable2faClose(e: Event) {
+    e.stopPropagation();
+    try {
+      await this.handleDisable2fa();
+    } catch (error) {
+      console.error('Error disabling 2FA:', error);
+    } finally {
+      window.location.reload(); // TODO: fix, show tag updated after disabling
+    }
+  }
+
   // after closing a modal, update form data (maybe the user authenticated...
   // ...flag must be set and button/modal removed)
   private handleModalDismiss() {
@@ -420,25 +430,21 @@ export class UserProfileForm extends HTMLElement {
     authService.check2FAStatus(this.userData?.email || '').then((status) => {
       const enabled = !!status.has2FA;
       if (enabled) {
-        this.enable2fa.textContent = t('profile.success2FA');
-        this.enable2fa.classList.add('profile-form__auth-btn--success');
-        this.enable2fa.disabled = true;
-        this.disable2fa.style.display = 'block';
-        this.disable2fa.disabled = false;
+        this.enable2fa.removeAttribute('button');
+        this.enable2fa.removeAttribute('text');
+        this.enable2fa.setAttribute('text', t('profile.success2FA'));
+        this.enable2fa.setAttribute('color', 'WIN');
+        this.enable2fa.setAttribute('closable', "true");
       } else {
         this.enable2fa.disabled = this.isGoogleAccount();
         this.enable2fa.textContent = t('profile.enable2FA');
         this.enable2fa.classList.remove('profile-form__auth-btn--success');
-        this.disable2fa.style.display = 'none';
-        this.disable2fa.disabled = true;
       }
     }).catch((error) => {
       console.error('Error checking 2FA status:', error);
       this.enable2fa.disabled = false;
       this.enable2fa.textContent = t('profile.enable2FA');
       this.enable2fa.classList.remove('profile-form__auth-btn--success');
-      this.disable2fa.style.display = 'none';
-      this.disable2fa.disabled = true;
     });
   }
 
