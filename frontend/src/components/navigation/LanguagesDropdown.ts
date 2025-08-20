@@ -46,6 +46,8 @@ const LANGUAGE_NAMES: Record<string, string> = {
 };
 
 export class LanguagesDropdown extends HTMLElement {
+  private _onLanguageChange?: (e: Event) => void;
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' }).appendChild(template.content.cloneNode(true));
@@ -66,14 +68,23 @@ export class LanguagesDropdown extends HTMLElement {
     });
     select.value = state.language;
 
-    select.addEventListener('change', (e) => {
+    // Store handler so we can remove it later
+    this._onLanguageChange = (e: Event) => {
       const newLang = (e.target as HTMLSelectElement).value;
       this.dispatchEvent(new CustomEvent('languagechange', {
         detail: { language: newLang },
         bubbles: true,
         composed: true
       }));
-    });
+    };
+    select.addEventListener('change', this._onLanguageChange);
+  }
+
+  disconnectedCallback() {
+    const select = this.shadowRoot?.getElementById('selectLanguages') as HTMLSelectElement;
+    if (select && this._onLanguageChange) {
+      select.removeEventListener('change', this._onLanguageChange);
+    }
   }
 }
 

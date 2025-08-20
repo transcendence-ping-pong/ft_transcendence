@@ -127,6 +127,12 @@ export class UserSignup2 extends HTMLElement {
     this.usernameInput.addEventListener('input', () => this._clearError());
   }
 
+  disconnectedCallback() {
+    this.emailInput.removeEventListener('input', () => this._clearError());
+    this.passwordInput.removeEventListener('input', () => this._clearError());
+    this.usernameInput.removeEventListener('input', () => this._clearError());
+  }
+
   async _onSignup(e: Event) {
     e.preventDefault();
     const email = this.emailInput.value.trim();

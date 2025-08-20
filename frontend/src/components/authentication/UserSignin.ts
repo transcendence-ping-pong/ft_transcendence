@@ -148,6 +148,11 @@ export class UserSignin2 extends HTMLElement {
     this.passwordInput.addEventListener('input', () => this._clearError());
   }
 
+  disconnectedCallback() {
+    this.emailInput.removeEventListener('input', () => this._clearError());
+    this.passwordInput.removeEventListener('input', () => this._clearError());
+  }
+
   private async _onLogin(e: Event) {
     e.preventDefault();
     const email = this.emailInput.value.trim();

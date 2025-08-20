@@ -110,6 +110,18 @@ export class CustomTag extends HTMLElement {
     this.setupEvents();
   }
 
+  disconnectedCallback() {
+    // remove all event listeners to prevent leaks
+    const tag = this.shadowRoot.querySelector('.tournament__tag') as HTMLSpanElement;
+    const closeBtn = this.shadowRoot.querySelector('.tournament__tag-remove') as HTMLButtonElement;
+
+    if (closeBtn) closeBtn.onclick = null;
+    if (tag) {
+      tag.onclick = null;
+      tag.onkeydown = null;
+    }
+  }
+
   attributeChangedCallback() {
     this.render();
   }

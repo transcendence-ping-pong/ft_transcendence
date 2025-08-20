@@ -88,20 +88,22 @@ template.innerHTML = `
   <auth-form-layout>
     <h3 slot="header" id="title" class="tournament__title"></h3>
 
-  <div slot="content">
-    <p id="players" class="tournament__description"></p>
-    <div class="tournament__view"></div>
-  </div>
+    <div slot="content">
+      <p id="players" class="tournament__description"></p>
+      <div class="tournament__view"></div>
+    </div>
 
-  <div slot="footer" class="tournament__footer">
-    <button id="startBtn" class="template__primary-button" type="button">${t('game.start')}</button>
-  </div>
+    <div slot="footer" class="tournament__footer">
+      <button id="startBtn" class="template__primary-button" type="button">${t('game.start')}</button>
+    </div>
+  </auth-form-layout>
 `;
 
 export class ViewTournament extends HTMLElement {
   private _matches: Array<{ player1: string, player2: string }> = [];
   private _currentMatchIndex: number = state.tournamentData.currentMatchIndex;
   private stageTitle: HTMLHeadingElement;
+  private _onStartBtnClick?: (e: Event) => void;
 
   constructor() {
     super();
@@ -128,7 +130,8 @@ export class ViewTournament extends HTMLElement {
     this.stageTitle.textContent = '';
     this.stageTitle.textContent = this.setStageTitle(state.tournamentData.stage);
 
-    startBtn.addEventListener('click', (e) => {
+    // Store the handler so we can remove it later
+    this._onStartBtnClick = (e: Event) => {
       e.preventDefault();
       const match = this._matches[this._currentMatchIndex];
       state.tournamentData.currentMatchIndex++;
@@ -140,7 +143,19 @@ export class ViewTournament extends HTMLElement {
         bubbles: true,
         composed: true
       }));
-    });
+    };
+    startBtn.addEventListener('click', this._onStartBtnClick);
+  }
+
+  disconnectedCallback() {
+    // Remove event listener to prevent leaks
+    const startBtn = this.shadowRoot?.querySelector('#startBtn') as HTMLButtonElement;
+    if (startBtn && this._onStartBtnClick) {
+      startBtn.removeEventListener('click', this._onStartBtnClick);
+    }
+    this._matches = [];
+    this._currentMatchIndex = 0;
+    if (this.stageTitle) this.stageTitle.textContent = '';
   }
 
   set matchesData(data: Array<{ player1: string, player2: string }>) {
@@ -169,7 +184,16 @@ export class ViewTournament extends HTMLElement {
   }
 
   private setPlayersDescription() {
-    this.shadowRoot.getElementById("players").textContent = t('game.nextMatch', { players: `${this._matches[this._currentMatchIndex].player1} ${t("game.and")} ${this._matches[this._currentMatchIndex].player2}` })
+    if (
+      this._matches &&
+      this._matches[this._currentMatchIndex]
+    ) {
+      this.shadowRoot.getElementById("players").textContent = t('game.nextMatch', {
+        players: `${this._matches[this._currentMatchIndex].player1} ${t("game.and")} ${this._matches[this._currentMatchIndex].player2}`
+      });
+    } else {
+      this.shadowRoot.getElementById("players").textContent = '';
+    }
   }
 }
 

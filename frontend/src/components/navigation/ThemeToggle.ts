@@ -53,20 +53,27 @@ template.innerHTML = `
 `;
 
 export class ThemeToggle extends HTMLElement {
+  private _onToggleClick?: (e: Event) => void;
+
   // JS will construct the element whenever an instance is created
   constructor() {
-    super(); // execute the base parent class constructor first
+    super();
     const shadow = this.attachShadow({ mode: 'open' });
-    // append child to shadow DOM tree, not light DOM
     shadow.appendChild(template.content.cloneNode(true));
   }
 
-  // custom element added to the DOM, it is mounted here
-  // opposite would be disconnectedCallback()
   connectedCallback() {
     const btn = this.shadowRoot?.getElementById('toggle');
-    btn?.addEventListener('click', () => this.toggleTheme());
+    this._onToggleClick = () => this.toggleTheme();
+    btn?.addEventListener('click', this._onToggleClick);
     this._applyTheme();
+  }
+
+  disconnectedCallback() {
+    const btn = this.shadowRoot?.getElementById('toggle');
+    if (btn && this._onToggleClick) {
+      btn.removeEventListener('click', this._onToggleClick);
+    }
   }
 
   toggleTheme() {

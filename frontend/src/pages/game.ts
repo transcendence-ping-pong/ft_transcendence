@@ -20,7 +20,7 @@ export function renderGame(containerId: string) {
 
   container.innerHTML = `
     <top-bar mode="game">
-      <pong-logo slot="logo-center"></logo>
+      <pong-logo slot="logo-center"></pong-logo>
     </top-bar>
 
     <div class="game-area relative w-screen h-screen">
@@ -36,19 +36,8 @@ export function renderGame(containerId: string) {
 
   const orchestrator = new gameOrchestrator('game-screen');
 
-  // expose cleanup for router navigation
-  (window as any).cleanupGame = () => {
-    try { document.body.classList.remove('overflow-hidden'); } catch {}
-    try { window.removeEventListener('openRemoteGamesModal', openRemoteGamesModalHandler as EventListener); } catch {}
-    try { window.removeEventListener('roomCreated', roomCreatedHandler as EventListener); } catch {}
-    try { window.removeEventListener('playerJoined', playerJoinedHandler as EventListener); } catch {}
-    try { (orchestrator as any).destroy?.(); } catch {}
-  };
-
-  // listen for tournament-created globally, so it works for every round
-  // this is important because in the case of a TOURNAMENT, the view modal will be triggered many times
-  window.addEventListener('tournament-stage', (e: CustomEvent) => {
-    // remove any existing modal
+  // --- Event handler references for cleanup ---
+  const tournamentStageHandler = (e: CustomEvent) => {
     const oldModal = container.querySelector('generic-modal');
     if (oldModal) oldModal.remove();
 
@@ -88,9 +77,9 @@ export function renderGame(containerId: string) {
         orchestrator.startGame();
       });
     }
-  });
+  };
 
-  window.addEventListener('openTournamentConfig', () => {
+  const openTournamentConfigHandler = () => {
     container.insertAdjacentHTML('beforeend', `
       <generic-modal dismissible="false" appear-delay="500">
         <div slot="body" class="w-full h-full min-h-full flex justify-center items-center" id="tournament-modal-content"></div>
@@ -107,7 +96,7 @@ export function renderGame(containerId: string) {
       const el = document.createElement('create-tournament');
       content.appendChild(el);
     }
-  });
+  };
 
   // listen for remote games modal
   const openRemoteGamesModalHandler = () => {
@@ -134,19 +123,34 @@ export function renderGame(containerId: string) {
       });
     }
   };
-  window.addEventListener('openRemoteGamesModal', openRemoteGamesModalHandler as EventListener);
 
   const roomCreatedHandler = (e: CustomEvent) => {
     setupInviteGame(e.detail.room, true);
   };
-  window.addEventListener('roomCreated', roomCreatedHandler as EventListener);
 
   const playerJoinedHandler = (e: CustomEvent) => {
     const room = e.detail.room;
     PLAYER_1.name = room.hostUsername;
     PLAYER_2.name = room.guestUsername;
   };
+
+  // --- Register event listeners ---
+  window.addEventListener('tournament-stage', tournamentStageHandler as EventListener);
+  window.addEventListener('openTournamentConfig', openTournamentConfigHandler as EventListener);
+  window.addEventListener('openRemoteGamesModal', openRemoteGamesModalHandler as EventListener);
+  window.addEventListener('roomCreated', roomCreatedHandler as EventListener);
   window.addEventListener('playerJoined', playerJoinedHandler as EventListener);
+
+  // --- Expose cleanup for router navigation ---
+  (window as any).cleanupGame = () => {
+    try { document.body.classList.remove('overflow-hidden'); } catch { }
+    try { window.removeEventListener('tournament-stage', tournamentStageHandler as EventListener); } catch { }
+    try { window.removeEventListener('openTournamentConfig', openTournamentConfigHandler as EventListener); } catch { }
+    try { window.removeEventListener('openRemoteGamesModal', openRemoteGamesModalHandler as EventListener); } catch { }
+    try { window.removeEventListener('roomCreated', roomCreatedHandler as EventListener); } catch { }
+    try { window.removeEventListener('playerJoined', playerJoinedHandler as EventListener); } catch { }
+    try { (orchestrator as any).destroy?.(); } catch { }
+  };
 
   function setupInviteGame(room: any, isHost: boolean) {
     const remoteMultiplayerManager = (window as any).remoteMultiplayerManager;

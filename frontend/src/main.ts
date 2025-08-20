@@ -10,7 +10,6 @@ import { websocketService } from "@/services/websocketService.js";
 import { remoteMultiplayerManager } from "@/multiplayer/RemoteMultiplayerManager.js";
 import '@/styles/index.css';
 import '@babylonjs/loaders';
-import { renderBracket } from '@/pages/tournament.js';
 // chat system
 import { ChatPanel } from '@/chat/index.js';
 
@@ -33,7 +32,6 @@ const routes = {
   "/login": renderLogin,
   "/game": renderGame,
   "/profile/:username": renderProfile,
-  "/tournament": renderBracket,
 };
 
 type NavigateFn = (path: string) => void;
