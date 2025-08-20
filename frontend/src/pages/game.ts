@@ -4,6 +4,7 @@ import '@/components/navigation/Logo.js';
 import '@/components/_templates/GenericModal.js';
 import '@/components/game/CreateTournament.js';
 import '@/components/game/ViewTournament.js';
+import '@/components/notification/ToogleChatBox.js';
 import { state } from '@/state';
 
 // TODO: THIS IS A MOCK, pass player names and avatars dynamically
@@ -17,26 +18,11 @@ export function renderGame(containerId: string) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  function renderTopBar() {
-    return (PLAYER_1.name && PLAYER_2.name)
-      ? `
-        <top-bar mode="game">
-          <img slot="player1-avatar" src="${PLAYER_1.avatar}" alt="${PLAYER_1.name}" />
-          <p slot="player1-username">${PLAYER_1.name}</p>
-          <pong-logo slot="logo"></logo>
-          <p slot="player2-username">${PLAYER_2.name}</p>
-          <img slot="player2-avatar" src="${PLAYER_2.avatar}" alt="${PLAYER_2.name}" />
-        </top-bar>
-      `
-      : `
-        <top-bar mode="game">
-          <pong-logo slot="logo-center"></logo>
-        </top-bar>
-      `;
-  }
-
   container.innerHTML = `
-    ${renderTopBar()}
+    <top-bar mode="game">
+      <pong-logo slot="logo-center"></logo>
+    </top-bar>
+
     <div class="game-area relative w-screen h-screen">
       <div id="game-screen" class="absolute z-10"></div>
       <img 
@@ -45,6 +31,7 @@ export function renderGame(containerId: string) {
         class="absolute top-0 left-0 w-full h-full z-20 pointer-events-none"
       />
     </div>
+    <toggle-chat-box></toggle-chat-box>
   `;
 
   const orchestrator = new gameOrchestrator('game-screen');
@@ -83,8 +70,9 @@ export function renderGame(containerId: string) {
         // ...set players names, it comes from event detail
         PLAYER_1.name = e.detail.player1;
         PLAYER_2.name = e.detail.player2;
+
         // ...re-render top bar with player info
-        container.querySelector('top-bar').outerHTML = renderTopBar();
+        // container.querySelector('top-bar').outerHTML = renderTopBar();
         // ...finally, start the game
         // this is an exception, as the game start is usually triggered by the gameOrchestrator
         state.players = { p1: e.detail.player1, p2: e.detail.player2 }
@@ -138,34 +126,22 @@ export function renderGame(containerId: string) {
     }
   });
 
-  // Listen for remote multiplayer events from invite system
-  // keep page listener minimal; don't override the manager's flow to avoid duplicate state churn
   window.addEventListener('roomCreated', (e: CustomEvent) => {
-    console.log('Game page: Room created event received', e.detail);
     setupInviteGame(e.detail.room, true);
   });
 
   window.addEventListener('playerJoined', (e: CustomEvent) => {
-    console.log('Game page: Player joined event received', e.detail);
-    // only set names/top bar; do not call setInviteRoom again
     const room = e.detail.room;
     PLAYER_1.name = room.hostUsername;
     PLAYER_2.name = room.guestUsername;
-    container.querySelector('top-bar').outerHTML = renderTopBar();
   });
 
-  // Set up invite game - just set up the room, let multiplayer flow handle the rest
   function setupInviteGame(room: any, isHost: boolean) {
-    // Set the room in the existing RemoteMultiplayerManager ONCE
     const remoteMultiplayerManager = (window as any).remoteMultiplayerManager;
     if (remoteMultiplayerManager && !remoteMultiplayerManager.isInRoom()) {
       remoteMultiplayerManager.setInviteRoom(room, isHost);
     }
-    // Set player names for the game
     PLAYER_1.name = room.hostUsername;
     PLAYER_2.name = room.guestUsername;
-
-    // Re-render top bar with player info
-    container.querySelector('top-bar').outerHTML = renderTopBar();
   }
 }

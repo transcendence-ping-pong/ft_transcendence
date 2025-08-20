@@ -81,7 +81,8 @@ async function userRoutes(fastify, options) {
             const refreshToken = generateRefreshToken({ username, userId, email });
             await saveRefreshToken(db, refreshToken, userId);
 
-            const redirectUrl = `http://localhost:9019/?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}&username=${encodeURIComponent(username)}`;
+            const hostbaseurl = process.env.HOST_URL || 'http://localhost:9019'
+            const redirectUrl = `${hostbaseurl}/?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}&username=${encodeURIComponent(username)}`;
             return res.redirect(redirectUrl);
 
         } catch (error) {
@@ -274,7 +275,6 @@ async function userRoutes(fastify, options) {
                 'SELECT userId, username, email, avatar FROM users WHERE userId = ?', 
                 [userId]
             );
-            console.log(user);
             if (!user) {
                 return reply.code(404).send({ error: 'User not found' });
             }
@@ -332,13 +332,10 @@ async function userRoutes(fastify, options) {
     fastify.post('/verify-token', (req, res) => {
         const { email, token, secret } = req.body;
 
-        console.log('VERIFY', { email, token, secret });
         const expectedToken = speakeasy.totp({
             secret: secret,
             encoding: 'base32'
         });
-        console.log('EXPECTED', {expectedToken});
-
         if (!email || !token) {
             return res.status(400).send({ error: MSG.EMAIL_AND_TOKEN_REQUIRED });
         }
@@ -400,7 +397,16 @@ async function userRoutes(fastify, options) {
             res.send({ has2FA: !!row.secret });
         });
     });
-
+    fastify.post('/disable-2fa', { preHandler: authenticateToken }, async (request, reply) => {
+    const userId = request.user.userId;
+    try {
+        await dbRun(db, `UPDATE users SET secret = NULL WHERE userId = ?`, [userId]);
+        reply.send({ message: '2FA disabled successfully' });
+    } catch (error) {
+        console.error('Error disabling 2FA:', error);
+        reply.status(500).send({ error: 'Failed to disable 2FA' });
+    }
+    });
     fastify.get('/current-token', { preHandler: authenticateToken }, (req, res) => {
         const { email } = req.query;
 

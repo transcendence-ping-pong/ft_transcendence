@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS users (
 	userId INTEGER PRIMARY KEY AUTOINCREMENT,
 	username TEXT NOT NULL UNIQUE,
-	password TEXT, -- Remove NOT NULL constraint
-	secret TEXT,   -- Remove NOT NULL constraint
+	password TEXT,
+	secret TEXT,  
 	googleID TEXT UNIQUE,
 	avatar TEXT,
 	email TEXT
@@ -67,4 +67,11 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     expires_at DATETIME,
     FOREIGN KEY (userId) REFERENCES users (userId) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS blockedUsers (
+	userId INTEGER NOT NULL,
+	blockedId INTEGER NOT NULL,
+	FOREIGN KEY (userId) REFERENCES users (userId) ON DELETE CASCADE,
+	FOREIGN KEY (blockedId) REFERENCES users (userId) ON DELETE CASCADE
 );

@@ -1,5 +1,6 @@
 import { t } from '@/locales/Translations';
 import { UserData } from '@/utils/playerUtils/types';
+import { state } from '@/state';
 
 const VIRTUAL_WIDTH = 725;
 const VIRTUAL_HEIGHT = 1080;
@@ -75,8 +76,8 @@ template.innerHTML = `
       position: absolute;
       top: 0;
       left: 0;
-      width: 110px;
-      height: 110px;
+      width: calc(var(--avatar-badge-size) + 6px);
+      height: calc(var(--avatar-badge-size) + 6px);
       border-radius: 50%;
       background: rgba(0,0,0,0.5);
       display: flex;
@@ -245,6 +246,9 @@ export class AtariBadge extends HTMLElement {
   connectedCallback() {
     this.avatar = this.shadowRoot!.querySelector('.avatar') as HTMLImageElement | null;
     this.fileInput = this.shadowRoot!.querySelector('.hidden-file-input') as HTMLInputElement | null;
+
+    const mainUsername = state.userData?.username;
+    if (!mainUsername) this.fileInput.disabled = true;
 
     if (this.avatar) this.avatar.addEventListener('click', this.boundAvatarClick);
     if (this.fileInput) this.fileInput.addEventListener('change', this.boundFileInputChange);

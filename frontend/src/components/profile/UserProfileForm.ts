@@ -1,4 +1,4 @@
-import { t } from '@/locales/Translations';
+import { t, err } from '@/locales/Translations';
 import { actionIcons } from '@/utils/Constants';
 import * as authService from '@/services/authService.js';
 import * as friendsService from '@/services/friendsService.js';
@@ -53,6 +53,7 @@ template.innerHTML = `
     }
     .profile-form__edit-btn:hover {
       background: var(--accent-secondary);
+      box-shadow: var(--shadow-soft);
       cursor: pointer;
     }
     hr {
@@ -162,6 +163,7 @@ template.innerHTML = `
     }
     .profile-form__footer-btn:hover, .profile-form__footer-btn:focus {
       background: var(--accent);
+      border: 2px solid var(--video-transition-bg);
       color: var(--text);
     }
     .profile-form__footer-btn:disabled {
@@ -212,7 +214,7 @@ template.innerHTML = `
     <section class="profile-form__auth">
       <h2 class="profile-form__auth-title">${t('profile.authentication')}</h2>
       <div class="profile-form__auth-checkbox--label">
-        <button id="enable2fa" class="profile-form__auth-btn" type="button"></button>
+        <custom-tag id="enable2fa" text="${t('profile.enable2FA')}" button size="m"><custom-tag>
       </div>
     </section>
 
@@ -238,13 +240,13 @@ export class UserProfileForm extends HTMLElement {
   private avatarOverlay: HTMLElement;
   private isEditMode = false;
   private pendingAvatarFile: File | null = null;
-
   private userData: UserData = { email: '', username: '', userId: 0, avatar: '' };
 
   private boundHandleModalDismiss = this.handleModalDismiss.bind(this);
   private boundHandleAvatarChanged = this.handleAvatarChanged.bind(this);
   private boundHandleProfileLoaded = this.handleProfileLoaded.bind(this);
   private boundHandleAvatarUpdated = this.handleAvatarUpdated.bind(this);
+  private boundHandleEnable2faClose = this.handleEnable2faClose.bind(this);
 
   static get observedAttributes() {
     return ['userdata'];
@@ -301,6 +303,7 @@ export class UserProfileForm extends HTMLElement {
     window.addEventListener('profile-loaded', this.boundHandleProfileLoaded);
     window.addEventListener('avatar-updated', this.boundHandleAvatarUpdated);
     window.addEventListener('modal-dismiss', this.boundHandleModalDismiss);
+    this.enable2fa.addEventListener('close', this.boundHandleEnable2faClose);
   }
 
   // you do not call disconnectedCallback yourself...
@@ -311,6 +314,11 @@ export class UserProfileForm extends HTMLElement {
     window.removeEventListener('profile-loaded', this.boundHandleProfileLoaded);
     window.removeEventListener('avatar-updated', this.boundHandleAvatarUpdated);
     window.removeEventListener('modal-dismiss', this.boundHandleModalDismiss);
+    this.enable2fa?.removeEventListener('close', this.boundHandleEnable2faClose);
+  }
+
+  private setError(msg: string) {
+    this.errorText.textContent = msg;
   }
 
   // event handlers - track user interactions
@@ -320,7 +328,23 @@ export class UserProfileForm extends HTMLElement {
     this.passwordInput.type = isPasswordVisible ? 'password' : 'text';
     this.viewBtn.innerHTML = isPasswordVisible ? actionIcons.eyeClosed : actionIcons.eye;
   }
-
+  private async handleDisable2fa() {
+    try {
+      const accessToken = state.userData?.accessToken;
+      if (!accessToken) {
+        this.setError('No access token found.');
+        return;
+      }
+      const response = await authService.disable2FA(accessToken);
+      if (response.error) {
+        this.setError(`Failed to disable 2FA: ${err(response.error)}`);
+      } else {
+        window.dispatchEvent(new CustomEvent('profile-loaded'));
+      }
+    } catch (error: any) {
+      this.setError(`Error disabling 2FA: ${err(error.message)}`);
+    }
+  }
   private handleEditBtnClick() {
     this.isEditMode = !this.isEditMode;
     this.editButton.style.backgroundColor = this.isEditMode ? 'var(--accent-secondary)' : 'var(--accent)';
@@ -364,6 +388,17 @@ export class UserProfileForm extends HTMLElement {
     this.renderForm();
   }
 
+  private async handleEnable2faClose(e: Event) {
+    e.stopPropagation();
+    try {
+      await this.handleDisable2fa();
+    } catch (error) {
+      console.error('Error disabling 2FA:', error);
+    } finally {
+      window.location.reload(); // TODO: fix, show tag updated after disabling
+    }
+  }
+
   // after closing a modal, update form data (maybe the user authenticated...
   // ...flag must be set and button/modal removed)
   private handleModalDismiss() {
@@ -396,9 +431,11 @@ export class UserProfileForm extends HTMLElement {
     authService.check2FAStatus(this.userData?.email || '').then((status) => {
       const enabled = !!status.has2FA;
       if (enabled) {
-        this.enable2fa.textContent = t('profile.success2FA');
-        this.enable2fa.classList.add('profile-form__auth-btn--success');
-        this.enable2fa.disabled = true;
+        this.enable2fa.removeAttribute('button');
+        this.enable2fa.removeAttribute('text');
+        this.enable2fa.setAttribute('text', t('profile.success2FA'));
+        this.enable2fa.setAttribute('color', 'WIN');
+        this.enable2fa.setAttribute('closable', "true");
       } else {
         this.enable2fa.disabled = this.isGoogleAccount();
         this.enable2fa.textContent = t('profile.enable2FA');
@@ -421,7 +458,7 @@ export class UserProfileForm extends HTMLElement {
 
     // hide, show simplified profile form for visitors, i.e. no password fields, no delete profile
     // if more elements are needed to be hidden, add their id to the hiddenElements array
-    const hiddenElements = ["passwordInput", "confirmPasswordInput", "viewBtn", "authSection", "editButton", "avatarOverlay", "deleteBtn","saveBtn"];
+    const hiddenElements = ["passwordInput", "confirmPasswordInput", "viewBtn", "authSection", "editButton", "avatarOverlay", "deleteBtn", "saveBtn"];
     for (const element of hiddenElements) {
       if (this[element]) {
         this[element].style.display = 'none';
@@ -474,7 +511,8 @@ export class UserProfileForm extends HTMLElement {
       if (!this.isGoogleAccount()) {
         if (newPassword && newPassword.length > 6) {
           if (newPassword !== confirmPassword) {
-            throw new Error('Passwords do not match');
+            this.setError(t("error.passwordsDoNotMatch"));
+            return;
           }
           await authService.updatePassword(newPassword, accessToken);
           hasChanges = true;
@@ -484,20 +522,16 @@ export class UserProfileForm extends HTMLElement {
       if (hasChanges) {
         window.dispatchEvent(new CustomEvent('username-updated'));
         window.dispatchEvent(new CustomEvent('profile-loaded'));
-        alert("Profile updated successfully!");
         this.passwordInput.value = '';
         this.confirmPasswordInput.value = '';
         this.isEditMode = false;
         this.viewBtn.style.display = 'none';// TODO disable it or hide it // not working 
         this.editButton.style.backgroundColor = 'var(--accent)';
         this.toggleEditMode();
-      } else {
-        alert("No changes to save.");
       }
-
+      this.setError('');
     } catch (error) {
       console.error('Error saving profile:', error);
-      alert(`Error updating profile: ${error.message}`);
     }
   }
 };

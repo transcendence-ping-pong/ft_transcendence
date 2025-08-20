@@ -12,8 +12,8 @@ template.innerHTML = `
     .template__primary-button {
       padding: var(--component-padding);
       border: none;
-      background: var(--accent-secondary);
-      color: var(--body);
+      background: var(--body);
+      color: var(--text);
       font-size: var(--main-font-size);
       font-weight: bold;
       min-height: var(--select-height);
@@ -24,12 +24,13 @@ template.innerHTML = `
       align-items: center;
       gap: 0.5rem;
       justify-content: center;
-      border: 2px solid var(--border);
+      border: 2px solid var(--text);
       box-shadow: var(--shadow-soft);
     }
     .template__primary-button:hover, .template__primary-button:focus {
-      background: var(--accent);
-      color: var(--text);
+      background: var(--accent-secondary);
+      color: #fff;
+      box-shadow: var(--shadow);
     }
     .start-game-button--icon {
       display: flex;

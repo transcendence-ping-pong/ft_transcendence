@@ -276,7 +276,7 @@ export class BabylonGUI {
         this.countdownText.scaleY = 1.5;
         this.countdownText.alpha = 1;
       }, 80);
-    } catch {}
+    } catch { }
   }
 
   public endCountdownOverlay() {
@@ -391,6 +391,5 @@ export class BabylonGUI {
   hideAllGUI() {
     // Hide all GUI elements for multiplayer mode
     this.clearGUI();
-    console.log('🎮 All GUI elements hidden for multiplayer mode');
   }
 }

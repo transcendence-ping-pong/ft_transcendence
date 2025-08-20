@@ -21,7 +21,7 @@ const PADDLE_MARGIN_X = 0.20;
 const LEFT_PADDLE_X = VIRTUAL_WIDTH * PADDLE_MARGIN_X;
 const RIGHT_PADDLE_X = VIRTUAL_WIDTH * (1 - PADDLE_MARGIN_X) - PADDLE_WIDTH;
 
-const SCORE_MAX = 5;
+const SCORE_MAX = 2;
 const GAME_FPS = 60;
 
 module.exports = {

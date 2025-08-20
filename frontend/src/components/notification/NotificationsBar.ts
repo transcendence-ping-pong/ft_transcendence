@@ -1,5 +1,8 @@
-import { NotificationPayload, NotificationAction, notificationService } from "@/services/notificationService";
-import { mapNotification, getWelcomeNotification } from "@/utils/Notifications.js";
+// notifications component kept but inert for delivery
+// removing runtime deps for delivery stability
+// import { NotificationPayload, NotificationAction } from "@/services/notificationService";
+// import { getWelcomeNotification } from "@/utils/Notifications.js";
+type NotificationPayload = any; type NotificationAction = any;
 import { t } from "@/locales/Translations.js";
 import { state } from "@/state";
 import "./NotificationCard.js";
@@ -222,19 +225,15 @@ export class NotificationsBar extends HTMLElement {
       if (notif || compactFriends) this.showDetails();
     });
 
-    const welcomeNotif = getWelcomeNotification(this.username);
-    this.#all = [welcomeNotif];
-    this.#visible = [welcomeNotif];
+    // disable welcome injection for delivery
+    this.#all = [];
+    this.#visible = [];
     this.renderDetails();
     this._showInitial();
 
     // listen for real-time notifications from notificationService
-    this._notifListener = (payload) => {
-      const notif = mapNotification(payload);
-      if (notif) this.pushNotification(notif);
-    }
-
-    notificationService.listen(this._notifListener);
+    // disabled runtime notifications
+    this._notifListener = null;
   }
 
   disconnectedCallback() {
@@ -257,7 +256,7 @@ export class NotificationsBar extends HTMLElement {
   _showInitial() {
     // only show welcome at start
     // TODO: get username, this value is mocked for now
-    this.#visible = [getWelcomeNotification(this.username)];
+    this.#visible = [];
     this.renderNotifications();
     this._scheduleFade();
   }
@@ -325,14 +324,14 @@ export class NotificationsBar extends HTMLElement {
       el => el.hasAttribute && el.hasAttribute('welcome')
     );
 
-    // create and insert the compact chat-box before the welcome card
-    const compact = document.createElement('chat-box');
-    compact.setAttribute('mode', 'compact');
-    if (welcomeCard) {
-      this.stack.insertBefore(compact, welcomeCard);
-    } else {
-      this.stack.appendChild(compact);
-    }
+    // chat-box disabled per current delivery scope; keep UI stable
+    // const compact = document.createElement('chat-box');
+    // compact.setAttribute('mode', 'compact');
+    // if (welcomeCard) {
+    //   this.stack.insertBefore(compact, welcomeCard);
+    // } else {
+    //   this.stack.appendChild(compact);
+    // }
   }
 
   showDetails() {

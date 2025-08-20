@@ -26,6 +26,8 @@
   --qr-size: 200px;
   --icon-size: 20px;
 
+  --chat-icon-size: 64px;
+
   --component-padding: 0.5rem;
   --sidebar-width: 30vw;
   --friends-height: 25vh;
@@ -72,6 +74,8 @@
     --qr-size: 180px;
     --icon-size: 16px;
 
+    --chat-icon-size: 56px;
+
     --component-padding: 0.5rem;
     --sidebar-width: 30vw;
     --friends-height: 30vh;
@@ -116,6 +120,8 @@
     --qr-size: 250px;
     --icon-size: 24px;
 
+    --chat-icon-size: 72px;
+
     --component-padding: 0.75rem;
     --sidebar-width: 30vw;
     --friends-height: 20vh;
@@ -158,7 +164,38 @@
   right: 0;
   bottom: 0;
   height: 30%;
-  background: var(--fade);
+  background: var(--fade-b);
+  z-index: 2;
+}
+
+.footer {
+  position: relative;
+  width: 100vw;
+  background: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.footer-img {
+  width: 100vw;
+  min-width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  position: relative;
+  z-index: 1;
+}
+
+.footer .fade-top {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 30%;
+  background: var(--fade-t);
   z-index: 2;
 }
 
@@ -195,17 +232,38 @@
   }
 }
 
+.footer {
+  width: 100vw;
+  background: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.footer-img {
+  width: 100vw;
+  min-width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+
 .theme-primary {
   --body: #e2d7b7;
   --gradient-1: linear-gradient(178.7deg, rgb(184, 167, 122) 1.7%, rgba(226, 215, 183, 1) 63%);
   --gradient-2: linear-gradient(178.7deg, rgba(226, 215, 183, 1) 1.7%, rgb(184, 167, 122) 63%);
-  --fade: linear-gradient(to bottom,
+  --fade-b: linear-gradient(to bottom,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(255, 255, 255, 0.01) 80%,
+      rgba(184, 167, 122, 1) 100%);
+  --fade-t: linear-gradient(to top,
       rgba(0, 0, 0, 0) 0%,
       rgba(255, 255, 255, 0.01) 80%,
       rgba(184, 167, 122, 1) 100%);
   --accent: #b8a77a;
-  /* 80 = 50% alpha */
-  --accent-50: #b8a77a80;
+  /* b3 = 70% alpha */
+  --accent-70: #b8a77ab3;
   --accent-secondary: #856f35;
   --accent-tertiary: #560126;
   --border: #8a7676;
@@ -219,7 +277,7 @@
   --hover: #f0e9d2;
   --google: #ffffff;
   --google-hover: #EEEEEE;
-  --shadow: 0 8px 32px #0004;
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   --shadow-soft: 0 4px 16px #0004;
   --avatar-bg: rgba(0, 0, 0, 0.35);
   --game-gradient-start: #f8c434;
@@ -233,13 +291,17 @@
   --body: #06022f;
   --gradient-1: linear-gradient(178.7deg, rgb(2, 0, 20) 1.7%, rgba(31, 15, 92, 1) 63%);
   --gradient-2: linear-gradient(178.7deg, rgba(31, 15, 92, 1) 1.7%, rgb(2, 0, 20) 63%);
-  --fade: linear-gradient(to bottom,
+  --fade-b: linear-gradient(to bottom,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(255, 255, 255, 0.01) 60%,
+      rgb(2, 0, 20) 100%);
+  --fade-t: linear-gradient(to top,
       rgba(0, 0, 0, 0) 0%,
       rgba(255, 255, 255, 0.01) 60%,
       rgb(2, 0, 20) 100%);
   --accent: #2b1583;
   /* 80 = 50% alpha */
-  --accent-50: #2b158380;
+  --accent-70: #2b1583b3;
   --accent-secondary: #4724d5;
   --accent-tertiary: #4285F4;
   --border: #8982ac;
@@ -253,7 +315,7 @@
   --hover: #2a1484;
   --google: #000000;
   --google-hover: #1e1e1e;
-  --shadow: 0 8px 32px #8982ac;
+  --shadow: 0 8px 32px rgba(255, 255, 255, 0.25);
   --shadow-soft: 0 2px 10px 0 #ffffff44;
   --avatar-bg: rgba(255, 255, 255, 0.35);
   --game-gradient-start: #1f0f5c;

@@ -1,0 +1,34 @@
+for chrome:
+
+const events = [
+  'gameStart','gameStarted','gameUpdate','gameEnd','playerLeft',
+  'roomStateChanged','playerReadyStatus','availableRoomsList',
+  'inviteAccepted','hideMultiplayerUI',
+  'websocketConnected','websocketDisconnected','websocketAuthenticated',
+  'roomCreated','playerJoined','availableRooms','navigateToGame',
+  'gameInvite','inviteSent','inviteDeclined',
+  'onlineUsers','chatMessage','directMessage'
+];
+(function countListeners(){
+  if (typeof getEventListeners !== 'function') { console.warn('Use Chrome'); return; }
+  const l = getEventListeners(window), out = {}; let total = 0;
+  for (const e of events) { const n=(l[e]||[]).length; out[e]=n; total+=n; }
+  out.total = total; console.table(out); return out;
+})();
+
+for rest:
+
+(() => {
+  const counts = Object.create(null);
+  const add = window.addEventListener, rem = window.removeEventListener;
+  window.addEventListener = function(t, f, o){ counts[t]=(counts[t]||0)+1; return add.call(this,t,f,o); };
+  window.removeEventListener = function(t, f, o){ counts[t]=(counts[t]||0)-1; return rem.call(this,t,f,o); };
+  window.__listenerCounts = counts;
+})();
+
+(() => {
+  const keys = ['gameStart','gameStarted','gameUpdate','gameEnd','playerLeft',
+    'roomStateChanged','playerReadyStatus','availableRoomsList','inviteAccepted','hideMultiplayerUI'];
+  const out = {}; for (const k of keys) out[k] = window.__listenerCounts?.[k] || 0;
+  console.table(out); out;
+})();

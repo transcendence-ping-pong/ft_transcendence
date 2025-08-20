@@ -23,7 +23,7 @@ template.innerHTML = `
       justify-content: space-between;
       gap: 0.5rem;
       background: var(--accent);
-      border: 1px solid var(--border);
+      border: 1px solid var(--body);
       padding: 0.18em 0.7em 0.18em 0.7em;
       font-size: 0.85em;
       cursor: pointer;
@@ -67,9 +67,11 @@ template.innerHTML = `
       width: 1.3rem;
       height: 1.3rem;
     }
-    .tournament__tag[role="button"]:hover {
+    /*TODO FIX: NOT WORKING, fix it later for future improvements*/
+    .tournament__tag[role="button"][data-default-color]:hover {
       background: var(--accent-secondary);
-      color: var(--body);
+      border: 2px solid var(--video-transition-bg);
+      color: #fff;
       transition: background 0.2s, color 0.2s;
     }
     .tournament__tag-content {
@@ -145,6 +147,9 @@ export class CustomTag extends HTMLElement {
 
     // Color
     tag.style.background = bgColor;
+    if (colorAttr && colorMapping[colorAttr.toUpperCase()] === colorMapping.WIN) {
+      tag.style.color = '#fff'; // ensure contrast for WIN color. TODO: make this dynamic
+    }
 
     // Accessibility and button-like behavior
     if (button) {

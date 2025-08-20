@@ -2,7 +2,7 @@ import { t } from '@/locales/Translations';
 import { actionIcons } from '@/utils/Constants';
 import '@/components/_templates/CustomTag.js';
 import { state, Match } from '@/state';
-import { getMatchHistory, getMatch, getTournament } from '@/services/matchService';
+import { getMatchHistory, getMatch, getTournament, getMatchStats } from '@/services/matchService';
 import { UserData } from '@/utils/playerUtils/types';
 import '@/components/navigation/StartGameButton.js';
 
@@ -250,10 +250,10 @@ export class MatchesHistory extends HTMLElement {
         <div class="timeline-content">
           <div class="timeline-side">
             <span class="date">${m.day} ${m.time}</span>
-            <span class="status">${t('profile.winner')}: ${m.winLoss.toUpperCase()}</span>
+            <span class="status">${t('profile.winner')}: ${m.winLoss?.toUpperCase()}</span>
           </div>
           <div class="timeline-info">
-            <span class="score">${m.scorePlayer1} vs ${m.scorePlayer2}</span>
+            <span class="score">${m.scorePlayer1 ? `${m.scorePlayer1}` : '---'} vs ${m.scorePlayer2 ? `${m.scorePlayer2}` : '---'}</span>
             <span class="opponent"><custom-tag text="${m.player1} vs ${m.player2}" size="m" button></custom-tag></span>
             <span class="meta">${m.mode} ${m.tournId ? `&middot; #T${m.tournId}` : ''} &middot; #M${m.matchId}</span>
           </div>
@@ -294,13 +294,13 @@ export class MatchesHistory extends HTMLElement {
       this.matchObject.push({
         day: match.date,
         time: match.time,
-        scorePlayer1: match.scorep1,
-        scorePlayer2: match.scorep2,
+        scorePlayer1: match.scorep1?.toString(),
+        scorePlayer2: match.scorep2?.toString(),
         matchId: row.matchId?.toString().padStart(3, "0"),
         tournId: match.tournId?.toString().padStart(2, "0"),
         player1: match.p1,
         player2: match.p2,
-        winLoss: match.winner,
+        winLoss: (match.winner ? match.winner : '---'),
         mode: mode
       });
 

@@ -1,6 +1,6 @@
 
 const { splitIntoRandomPairs } = require('./utils');
-const { dbRun } = require('./utils');
+const { dbRun, dbGet } = require('./utils');
 const { getWinner } = require('./utils');
 
 async function matchRoutes(fastify, options) {
@@ -20,8 +20,8 @@ async function matchRoutes(fastify, options) {
 	fastify.post('/matches', async (request, reply) => {
 		const {
 			creatorUserId,
-			remoteUserId = 0,
-			tournId = 0,
+			remoteUserId = null,
+			tournId = null,
 			player1DisplayName,
 			player2DisplayName = 'Bot'
 		} = request.body;
@@ -40,30 +40,28 @@ async function matchRoutes(fastify, options) {
 
 			if (tournId)
 			{
-				db.run(`UPDATE matches SET tournamentId = ? WHERE matchId = ?`, [tournId, matchId]);
-				db.get(`SELECT quarterId1, quarterId2, quarterId3, quarterId4, semiId1, semiId2, finalId FROM tournaments WHERE tournamentId = ?`, [tournId], (err, row) => {
-					if (err || !row) {
-						return ;
-					}
+				await dbRun(db, `UPDATE matches SET tournamentId = ? WHERE matchId = ?`, [tournId, matchId]);
+				const row = await dbGet(db, `SELECT quarterId1, quarterId2, quarterId3, quarterId4, semiId1, semiId2, finalId FROM tournaments WHERE tournamentId = ?`, [tournId]);
+					if (!row)
+						throw new Error('Failed to fetch tournament match');
 
-					const columns = ['quarterId1', 'quarterId2', 'quarterId3', 'quarterId4', 'semiId1', 'semiId2', 'finalId'];
-					let emptyCol = null;
+				const columns = ['quarterId1', 'quarterId2', 'quarterId3', 'quarterId4', 'semiId1', 'semiId2', 'finalId'];
+				let emptyCol = null;
 
-					for (const col of columns) {
-						if (!row[col]) {
-							emptyCol = col;
-							break ;
-						}
+				for (const col of columns) {
+					if (!row[col]) {
+						emptyCol = col;
+						break ;
 					}
-					if (!emptyCol) {
-						return ;
-					}
-					db.run(`UPDATE tournaments SET ${emptyCol} = ? WHERE tournamentId = ?`, [matchId, tournId]);
-				});
+				}
+				if (!emptyCol) {
+					return ;
+				}
+				await dbRun(db, `UPDATE tournaments SET ${emptyCol} = ? WHERE tournamentId = ?`, [matchId, tournId]);
 			}
 			reply.send({message: 'Match created', id: matchId});
 		} catch (err) {
-			return reply.status(500).send({ error: 'Error creating match'});
+			return reply.status(500).send({ error: err.message});
 		}
 	});
 
@@ -201,6 +199,19 @@ async function matchRoutes(fastify, options) {
 		});
 	});
 
+	fastify.get('/matches/stats/:userId', async (request, reply) => {
+		const { userId } = request.params;
+
+		try {
+			const {wins} = await dbGet(db, `SELECT COUNT(*) AS wins FROM matches WHERE remoteUserId > 0 AND (creatorUserId = ? AND winnerDisplayName = player1DisplayName) OR (remoteUserId = ? AND winnerDisplayName = player2DisplayName)`, [userId, userId]);
+			const {losses} = await dbGet(db, `SELECT COUNT(*) AS losses FROM matches WHERE remoteUserId > 0 AND (creatorUserId = ? AND winnerDisplayName = player2DisplayName) OR (remoteUserId = ? AND winnerDisplayName = player1DisplayName)`, [userId, userId]);
+			return reply.send({wins, losses});
+
+		} catch (err) {
+			return reply.send(err.message)
+		}
+
+	});
 
 };
 

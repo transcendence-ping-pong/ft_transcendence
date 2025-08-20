@@ -19,10 +19,8 @@ services:
     env_file:
       - ./backend/.env
     volumes:
-      - ./backend:/app
-      - /app/node_modules
-      - ./backend/database:/app/database
-      - uploads_data:/app/uploads # Add this line
+      - db_data:/app/database
+      - uploads_data:/app/uploads
 
   nginx:
     image: nginx:alpine
@@ -30,7 +28,7 @@ services:
       - "9019:9019"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - uploads_data:/var/www/uploads # Add this line
+      - uploads_data:/var/www/uploads
     depends_on:
       - frontend
       - backend

@@ -30,7 +30,6 @@ class GameManager {
 
 	// creates initial game state
 	createGameState(difficulty = 'MEDIUM') {
-		// difficulty-based speed configuration (kept simple and predictable)
 		const speedConfig = (() => {
 			const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 			const configs = {
@@ -281,13 +280,12 @@ class GameManager {
 		gameState.lastUpdate = Date.now();
 	}
 
-	// checks if game should end (ping pong rule: to 11 and win by 2)
+	// checks if game should end
 	checkGameEnd(gameState) {
 		const leftScore = gameState.paddles.left.score;
 		const rightScore = gameState.paddles.right.score;
-		const TARGET = 11; // base target; must win by 2
 
-		if (leftScore >= TARGET || rightScore >= TARGET) {
+		if (leftScore >= SCORE_MAX || rightScore >= SCORE_MAX) {
 			if (Math.abs(leftScore - rightScore) >= 2) {
 				gameState.gamePhase = 'finished';
 				gameState.winner = leftScore > rightScore ? 'left' : 'right';
