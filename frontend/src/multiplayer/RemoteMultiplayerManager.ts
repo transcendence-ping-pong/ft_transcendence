@@ -13,6 +13,16 @@ export class RemoteMultiplayerManager {
   private currentUsername: string = '';
   private hasAutoJoined: boolean = false;
   private hasAutoReadied: boolean = false;
+  // bound handlers for add/remove symmetry
+  private onWebsocketAuthenticated?: () => void;
+  private onRoomCreated?: (e: CustomEvent) => void;
+  private onPlayerJoined?: (e: CustomEvent) => void;
+  private onPlayerReady?: (e: CustomEvent) => void;
+  private onPlayerLeft?: (e: CustomEvent) => void;
+  private onAvailableRooms?: (e: CustomEvent) => void;
+  private onWebsocketError?: (e: CustomEvent) => void;
+  private onGameStart?: (e: CustomEvent) => void;
+  private onInviteAccepted?: (e: CustomEvent) => void;
 
   constructor() {
     this.setupEventListeners();
@@ -61,14 +71,15 @@ export class RemoteMultiplayerManager {
   }
 
   private setupEventListeners() {
-    window.addEventListener('websocketAuthenticated', () => {
+    this.onWebsocketAuthenticated = () => {
       if (this.state.currentRoomId && !this.hasAutoJoined) {
         this.joinRoom(this.state.currentRoomId);
         this.hasAutoJoined = true;
       }
-    });
+    };
+    window.addEventListener('websocketAuthenticated', this.onWebsocketAuthenticated as EventListener);
 
-    window.addEventListener('roomCreated', (e: CustomEvent) => {
+    this.onRoomCreated = (e: CustomEvent) => {
       this.state.currentRoom = this.mapToRemoteRoom(e.detail.room);
       this.state.currentRoomId = e.detail.roomId;
       this.state.isHost = true;
@@ -78,9 +89,10 @@ export class RemoteMultiplayerManager {
       window.dispatchEvent(new CustomEvent('roomStateChanged', { 
         detail: { ...this.state } 
       }));
-    });
+    };
+    window.addEventListener('roomCreated', this.onRoomCreated as EventListener);
 
-    window.addEventListener('playerJoined', (e: CustomEvent) => {
+    this.onPlayerJoined = (e: CustomEvent) => {
       
       if (!this.state.currentRoom) {
         this.state.currentRoom = this.mapToRemoteRoom(e.detail.room);
@@ -103,9 +115,10 @@ export class RemoteMultiplayerManager {
           detail: { room: this.state.currentRoom } 
         }));
       }
-    });
+    };
+    window.addEventListener('playerJoined', this.onPlayerJoined as EventListener);
 
-    window.addEventListener('playerReady', (e: CustomEvent) => {
+    this.onPlayerReady = (e: CustomEvent) => {
       if (this.state.currentRoom) {
         const readyPlayer = e.detail.player;
         const isHostReady = readyPlayer.username === this.state.currentRoom.hostUsername;
@@ -130,9 +143,10 @@ export class RemoteMultiplayerManager {
           } 
         }));
       }
-    });
+    };
+    window.addEventListener('playerReady', this.onPlayerReady as EventListener);
 
-    window.addEventListener('playerLeft', (e: CustomEvent) => {
+    this.onPlayerLeft = (e: CustomEvent) => {
       if (this.state.currentRoom) {
         this.state.currentRoom.currentPlayers = Math.max(1, this.state.currentRoom.currentPlayers - 1);
         
@@ -140,36 +154,41 @@ export class RemoteMultiplayerManager {
           detail: { ...this.state } 
         }));
       }
-    });
+    };
+    window.addEventListener('playerLeft', this.onPlayerLeft as EventListener);
 
-    window.addEventListener('availableRooms', (e: CustomEvent) => {
+    this.onAvailableRooms = (e: CustomEvent) => {
       window.dispatchEvent(new CustomEvent('availableRoomsList', { 
         detail: e.detail 
       }));
-    });
+    };
+    window.addEventListener('availableRooms', this.onAvailableRooms as EventListener);
 
-    window.addEventListener('websocketError', (e: CustomEvent) => {
+    this.onWebsocketError = (e: CustomEvent) => {
       if (e.detail.message?.includes('Connection lost') || e.detail.message?.includes('Max reconnection attempts')) {
         this.resetState();
         window.dispatchEvent(new CustomEvent('connectionLost', { 
           detail: e.detail 
         }));
       }
-    });
+    };
+    window.addEventListener('websocketError', this.onWebsocketError as EventListener);
 
     // Game start - both players ready
-    window.addEventListener('gameStart', (e: CustomEvent) => {
+    this.onGameStart = (_e: CustomEvent) => {
       if (this.state.currentRoom) {
         this.state.currentRoom.status = 'playing';
         window.dispatchEvent(new CustomEvent('hideMultiplayerUI'));
       }
-    });
+    };
+    window.addEventListener('gameStart', this.onGameStart as EventListener);
 
-    window.addEventListener('inviteAccepted', (e: CustomEvent) => {
+    this.onInviteAccepted = (e: CustomEvent) => {
       if (!this.state.currentRoom && e.detail.room) {
         this.setInviteRoom(e.detail.room, false);
       }
-    });
+    };
+    window.addEventListener('inviteAccepted', this.onInviteAccepted as EventListener);
   }
 
   public setInviteRoom(room: any, isHost: boolean) {
@@ -236,14 +255,15 @@ export class RemoteMultiplayerManager {
   }
 
   public destroy() {
-    window.removeEventListener('roomCreated', () => {});
-    window.removeEventListener('playerJoined', () => {});
-    window.removeEventListener('playerReady', () => {});
-    window.removeEventListener('playerLeft', () => {});
-    window.removeEventListener('availableRooms', () => {});
-    window.removeEventListener('websocketError', () => {});
-    window.removeEventListener('gameStart', () => {});
-    window.removeEventListener('inviteAccepted', () => {});
+    try { if (this.onWebsocketAuthenticated) window.removeEventListener('websocketAuthenticated', this.onWebsocketAuthenticated as EventListener); } catch {}
+    try { if (this.onRoomCreated) window.removeEventListener('roomCreated', this.onRoomCreated as EventListener); } catch {}
+    try { if (this.onPlayerJoined) window.removeEventListener('playerJoined', this.onPlayerJoined as EventListener); } catch {}
+    try { if (this.onPlayerReady) window.removeEventListener('playerReady', this.onPlayerReady as EventListener); } catch {}
+    try { if (this.onPlayerLeft) window.removeEventListener('playerLeft', this.onPlayerLeft as EventListener); } catch {}
+    try { if (this.onAvailableRooms) window.removeEventListener('availableRooms', this.onAvailableRooms as EventListener); } catch {}
+    try { if (this.onWebsocketError) window.removeEventListener('websocketError', this.onWebsocketError as EventListener); } catch {}
+    try { if (this.onGameStart) window.removeEventListener('gameStart', this.onGameStart as EventListener); } catch {}
+    try { if (this.onInviteAccepted) window.removeEventListener('inviteAccepted', this.onInviteAccepted as EventListener); } catch {}
   }
 }
 

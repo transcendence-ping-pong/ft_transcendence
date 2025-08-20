@@ -36,6 +36,15 @@ export function renderGame(containerId: string) {
 
   const orchestrator = new gameOrchestrator('game-screen');
 
+  // expose cleanup for router navigation
+  (window as any).cleanupGame = () => {
+    try { document.body.classList.remove('overflow-hidden'); } catch {}
+    try { window.removeEventListener('openRemoteGamesModal', openRemoteGamesModalHandler as EventListener); } catch {}
+    try { window.removeEventListener('roomCreated', roomCreatedHandler as EventListener); } catch {}
+    try { window.removeEventListener('playerJoined', playerJoinedHandler as EventListener); } catch {}
+    try { (orchestrator as any).destroy?.(); } catch {}
+  };
+
   // listen for tournament-created globally, so it works for every round
   // this is important because in the case of a TOURNAMENT, the view modal will be triggered many times
   window.addEventListener('tournament-stage', (e: CustomEvent) => {
@@ -101,7 +110,7 @@ export function renderGame(containerId: string) {
   });
 
   // listen for remote games modal
-  window.addEventListener('openRemoteGamesModal', () => {
+  const openRemoteGamesModalHandler = () => {
     container.insertAdjacentHTML('beforeend', `
       <generic-modal dismissible="true" appear-delay="500">
         <div slot="body" class="w-full h-full min-h-full flex flex-col justify-center items-center p-8" id="remote-games-modal-content">
@@ -124,17 +133,20 @@ export function renderGame(containerId: string) {
         window.dispatchEvent(new CustomEvent('refreshRemoteGames'));
       });
     }
-  });
+  };
+  window.addEventListener('openRemoteGamesModal', openRemoteGamesModalHandler as EventListener);
 
-  window.addEventListener('roomCreated', (e: CustomEvent) => {
+  const roomCreatedHandler = (e: CustomEvent) => {
     setupInviteGame(e.detail.room, true);
-  });
+  };
+  window.addEventListener('roomCreated', roomCreatedHandler as EventListener);
 
-  window.addEventListener('playerJoined', (e: CustomEvent) => {
+  const playerJoinedHandler = (e: CustomEvent) => {
     const room = e.detail.room;
     PLAYER_1.name = room.hostUsername;
     PLAYER_2.name = room.guestUsername;
-  });
+  };
+  window.addEventListener('playerJoined', playerJoinedHandler as EventListener);
 
   function setupInviteGame(room: any, isHost: boolean) {
     const remoteMultiplayerManager = (window as any).remoteMultiplayerManager;
