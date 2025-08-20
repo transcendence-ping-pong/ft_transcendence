@@ -4,6 +4,7 @@ import '@/components/navigation/Logo.js';
 import '@/components/_templates/GenericModal.js';
 import '@/components/game/CreateTournament.js';
 import '@/components/game/ViewTournament.js';
+import '@/components/notification/ToogleChatBox.js';
 import { state } from '@/state';
 
 // TODO: THIS IS A MOCK, pass player names and avatars dynamically
@@ -45,6 +46,7 @@ export function renderGame(containerId: string) {
         class="absolute top-0 left-0 w-full h-full z-20 pointer-events-none"
       />
     </div>
+    <toggle-chat-box></toggle-chat-box>
   `;
 
   const orchestrator = new gameOrchestrator('game-screen');

@@ -169,7 +169,7 @@ export class ViewTournament extends HTMLElement {
   }
 
   private setPlayersDescription() {
-    this.shadowRoot.getElementById("players").textContent = t('game.nextMatch', { players: `${this._matches[this._currentMatchIndex].player1} and ${this._matches[this._currentMatchIndex].player2}` })
+    this.shadowRoot.getElementById("players").textContent = t('game.nextMatch', { players: `${this._matches[this._currentMatchIndex].player1} ${t("game.and")} ${this._matches[this._currentMatchIndex].player2}` })
   }
 }
 
