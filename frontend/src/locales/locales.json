@@ -68,7 +68,9 @@
       "notFound": "Page not found.",
       "emptyFields": "Please enter both email and password.",
       "alreadyExists": "An account with this email already exists.",
-      "passwordsDoNotMatch": "Passwords do not match."
+      "passwordsDoNotMatch": "Passwords do not match.",
+      "passwordTooShort": "Password must be at least 7 characters and contain only allowed characters.",
+      "usernameLength": "Username must be 3-10 characters and contain only letters, numbers, spaces, . _ -"
     },
     "game": {
       "start": "START GAME",
@@ -252,7 +254,9 @@
       "notFound": "Page non trouvée.",
       "emptyFields": "Veuillez saisir l'email et le mot de passe.",
       "alreadyExists": "Un compte avec cet email existe déjà.",
-      "passwordsDoNotMatch": "Les mots de passe ne correspondent pas."
+      "passwordsDoNotMatch": "Les mots de passe ne correspondent pas.",
+      "passwordTooShort": "Le mot de passe doit comporter au moins 7 caractères et uniquement des caractères autorisés.",
+      "usernameLength": "Le nom d'utilisateur doit comporter 3 à 10 caractères et uniquement des lettres, chiffres, espaces, . _ -"
     },
     "game": {
       "start": "COMMENCER LE JEU",
@@ -436,7 +440,9 @@
       "notFound": "Página não encontrada.",
       "emptyFields": "Por favor, insira o email e a senha.",
       "alreadyExists": "Já existe uma conta com este email.",
-      "passwordsDoNotMatch": "As senhas não coincidem."
+      "passwordsDoNotMatch": "As senhas não coincidem.",
+      "passwordTooShort": "A senha deve ter pelo menos 7 caracteres e conter apenas caracteres permitidos.",
+      "usernameLength": "O nome de usuário deve ter de 3 a 10 caracteres e conter apenas letras, números, espaços, . _ -"
     },
     "game": {
       "start": "INICIAR JOGO",
@@ -620,7 +626,9 @@
       "notFound": "ページが見つかりません。",
       "emptyFields": "メールアドレスとパスワードを入力してください。",
       "alreadyExists": "このメールアドレスは既に登録されています。",
-      "passwordsDoNotMatch": "パスワードが一致しません。"
+      "passwordsDoNotMatch": "パスワードが一致しません。",
+      "passwordTooShort": "パスワードは7文字以上で、許可された文字のみ使用してください。",
+      "usernameLength": "ユーザー名は3～10文字で、英数字、スペース、. _ - のみ使用できます。"
     },
     "game": {
       "start": "ゲーム開始",
