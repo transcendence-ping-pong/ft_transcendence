@@ -34,6 +34,9 @@ export class BabylonCanvas {
   private glowLayer?: BABYLON.GlowLayer;
   private model: BABYLON.Mesh | null = null;
   private lastTimestamp: number = performance.now(); // used to calculate deltaTime
+  // SOFIA
+//   private onResize?: () => void;
+//end
 
   constructor(containerId: string) {
     this.canvas = document.createElement('canvas');
@@ -55,6 +58,10 @@ export class BabylonCanvas {
 
     // when browser window is resized, resize the canvas and engine
     window.addEventListener('resize', () => this.engine.resize());
+	// SOFIA
+	// this.onResize = () => this.engine && this.engine.resize();
+    // window.addEventListener('resize', this.onResize);
+	// end
   }
 
   createScene(): Scene {
@@ -314,7 +321,27 @@ export class BabylonCanvas {
       this.gameCanvas = null;
     }
     this.initPlaneMaterial();
-    this.engine.stopRenderLoop();
+	this.engine.stopRenderLoop();
+	// SOFIA
+    // try { this.engine.stopRenderLoop(); } catch {}
+
+    // // dispose dynamic resources
+    // try { if (this.glowLayer) { this.glowLayer.dispose(); this.glowLayer = undefined; } } catch {}
+    // try { if (this.dynamicTexture) { this.dynamicTexture.dispose(); this.dynamicTexture = undefined; } } catch {}
+    // try {
+    //   const plane = this.scene.getMeshByName('gameScreen');
+    //   if (plane) plane.dispose();
+    // } catch {}
+    // try { if (this.model) { this.model.dispose(); this.model = null; } } catch {}
+
+    // // detach resize listener
+    // try { if (this.onResize) { window.removeEventListener('resize', this.onResize); this.onResize = undefined; } } catch {}
+
+    // // dispose scene and engine
+    // try { if (this.scene) { this.scene.dispose(); } } catch {}
+    // try { if (this.engine) { this.engine.dispose(); } } catch {}
+
+	// end
 
     // if (this.canvas && this.canvas.parentNode) {
     //   this.canvas.parentNode.removeChild(this.canvas);

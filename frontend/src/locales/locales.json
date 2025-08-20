@@ -103,7 +103,8 @@
       "listTitle": "List of Games",
       "noGames": "No games available",
       "beFirstToCreateRoom": "Be the first to create a room and invite a friend.",
-      "createGame": "Create Game"
+      "createGame": "Create Game",
+      "dupName": "Duplicate name"
     },
     "notification": {
       "title": {
@@ -182,7 +183,15 @@
       "chatReenabled": "Chat re-enabled. Please be mindful of message frequency.",
       "chatTemporarilyDisabled": "Chat temporarily disabled due to spam...",
       "gameStarting": "🎮 Game starting in {{countdown}}...",
-      "error": "Error: {{error}}"
+      "error": "Error: {{error}}",
+	  "socketDisconnect": "⚠️ WebSocket disconnected. Trying to reconnect...",
+	  "socketConnError": "⚠️ WebSocket connection error. Check your connection.",
+	  "socketService": "⚠️ WebSocket service not available. Please refresh the page.",
+	  "socketInit": "⚠️ Failed to initialize WebSocket connection.",
+	  "inviteSent": "✅ Invite sent to {{username}}",
+	  "roomCreated": "🎮 Game room created!",
+	  "maxConnect": "⚠️ Max reconnection attempts reached. Please refresh the page.",
+	  "reconnect": "✅ Reconnected successfully!"
     }
   },
   "FR": {
@@ -289,7 +298,8 @@
       "listTitle": "Liste des jeux disponibles",
       "noGames": "Aucun jeu disponible",
       "beFirstToCreateRoom": "Soyez le premier à créer une salle et à inviter un ami.",
-      "createGame": "Créer un jeu"
+      "createGame": "Créer un jeu",
+      "dupName": "Nom dupliqué"
     },
     "notification": {
       "title": {
@@ -368,7 +378,15 @@
       "chatReenabled": "Chat réactivé. Merci de ne pas envoyer de messages trop fréquemment.",
       "chatTemporarilyDisabled": "Chat temporairement désactivé pour cause de spam...",
       "gameStarting": "🎮 La partie commence dans {{countdown}}...",
-      "error": "Erreur : {{error}}"
+      "error": "Erreur : {{error}}",
+      "socketDisconnect": "⚠️ WebSocket déconnecté. Tentative de reconnexion...",
+      "socketConnError": "⚠️ Erreur de connexion WebSocket. Vérifiez votre connexion.",
+      "socketService": "⚠️ Service WebSocket non disponible. Veuillez actualiser la page.",
+      "socketInit": "⚠️ Échec de l’initialisation de la connexion WebSocket.",
+      "inviteSent": "✅ Invitation envoyée à {{username}}",
+      "roomCreated": "🎮 Salon de jeu créé !",
+      "maxConnect": "⚠️ Nombre maximum de tentatives de reconnexion atteint. Veuillez actualiser la page.",
+      "reconnect": "✅ Reconnexion réussie !"
     }
   },
   "PT": {
@@ -475,7 +493,8 @@
       "listTitle": "Lista de Jogos",
       "noGames": "Nenhum jogo disponível",
       "beFirstToCreateRoom": "Seja o primeiro a criar uma sala e convidar um amigo.",
-      "createGame": "Criar Jogo"
+      "createGame": "Criar Jogo",
+      "dupName": "Nome duplicado"
     },
     "notification": {
       "title": {
@@ -554,7 +573,15 @@
       "chatReenabled": "Chat reativado. Por favor, evite enviar mensagens com muita frequência.",
       "chatTemporarilyDisabled": "Chat temporariamente desativado devido a spam...",
       "gameStarting": "🎮 O jogo começa em {{countdown}}...",
-      "error": "Erro: {{error}}"
+      "error": "Erro: {{error}}",
+	  "socketDisconnect": "⚠️ WebSocket desconectado. A tentar reconectar...",
+      "socketConnError": "⚠️ Erro de ligação ao WebSocket. Verifique a sua ligação.",
+      "socketService": "⚠️ Serviço de WebSocket indisponível. Por favor atualize a página.",
+      "socketInit": "⚠️ Falha ao inicializar a ligação WebSocket.",
+      "inviteSent": "✅ Convite enviado para {{username}}",
+      "roomCreated": "🎮 Sala de jogo criada!",
+      "maxConnect": "⚠️ Número máximo de tentativas de reconexão atingido. Por favor atualize a página.",
+      "reconnect": "✅ Reconectado com sucesso!"
     }
   },
   "JP": {
@@ -661,7 +688,8 @@
       "listTitle": "ゲーム一覧",
       "noGames": "利用可能なゲームはありません",
       "beFirstToCreateRoom": "最初にルームを作成して、友達を招待してください。",
-      "createGame": "ゲームを作成"
+      "createGame": "ゲームを作成",
+      "dupName": "名前が重複しています"
     },
     "notification": {
       "title": {
@@ -740,7 +768,15 @@
       "chatReenabled": "チャットが再度有効になりました。メッセージの送信頻度にご注意ください。",
       "chatTemporarilyDisabled": "スパムのためチャットが一時的に無効になっています...",
       "gameStarting": "🎮 ゲーム開始まであと{{countdown}}...",
-      "error": "エラー: {{error}}"
+      "error": "エラー: {{error}}",
+      "socketDisconnect": "⚠️ WebSocket が切断されました。再接続を試みています...",
+      "socketConnError": "⚠️ WebSocket 接続エラー。接続を確認してください。",
+      "socketService": "⚠️ WebSocket サービスを利用できません。ページを更新してください。",
+      "socketInit": "⚠️ WebSocket 接続の初期化に失敗しました。",
+      "inviteSent": "✅ {{username}} に招待を送りました",
+      "roomCreated": "🎮 ゲームルームを作成しました！",
+      "maxConnect": "⚠️ 再接続の最大試行回数に達しました。ページを更新してください。",
+      "reconnect": "✅ 正常に再接続されました！"
     }
   }
 }

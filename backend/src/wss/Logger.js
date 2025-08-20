@@ -25,14 +25,14 @@ class Logger {
 		}
 	}
 
-	// debug logging (disabled by default)
+	// debug logging
 	static debug(message, data = {}) {
-		// debug logging disabled to reduce spam
+		// disabled
 	}
 
 	// info logging (disabled by default)
 	static info(message, data = {}) {
-		// info logging disabled to reduce spam
+		// disabled
 	}
 
 	// warning logging
@@ -62,29 +62,29 @@ class Logger {
 		}
 	}
 
-	// game event logging (disabled to reduce spam)
+	// game event logging
 	static logGameEvent(event, roomId, data = {}) {
-		// game event logging disabled to reduce spam
+		// disabled
 	}
 
-	// user event logging (disabled to reduce spam)
+	// user event logging
 	static logUserEvent(event, username, data = {}) {
-		// user event logging disabled to reduce spam
+		// disabled
 	}
 
-	// room event logging (disabled to reduce spam)
+	// room event logging
 	static logRoomEvent(event, roomId, data = {}) {
-		// room event logging disabled to reduce spam
+		//  disabled
 	}
 
-	// chat event logging (disabled to reduce spam)
+	// chat event logging
 	static logChatEvent(event, username, data = {}) {
-		// chat event logging disabled to reduce spam
+		//  disabled
 	}
 
-	// invite event logging (disabled to reduce spam)
+	// invite event logging
 	static logInviteEvent(event, senderUsername, receiverUsername, data = {}) {
-		// invite event logging disabled to reduce spam
+		// disabled
 	}
 }
 

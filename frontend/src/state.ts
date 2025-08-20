@@ -35,8 +35,6 @@ const initialState = savedState ? JSON.parse(savedState) : {
   // TODO: add other state properties that we need to persist
 };
 
-console.log('State initialized with Username:', initialState.userData?.username);
-
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
 export const state = new Proxy(initialState, {
   set(target, prop, value) {

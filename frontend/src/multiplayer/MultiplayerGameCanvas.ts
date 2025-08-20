@@ -7,49 +7,54 @@ export class MultiplayerGameCanvas extends GameCanvas {
 	private isMultiplayerMode: boolean = false;
 	private currentRoomId: string | null = null;
 	private playerIndex: number = -1;
+	private onGameStarted?: (e: CustomEvent) => void;
+	private onGameUpdate?: (e: CustomEvent) => void;
+	private onGameEnd?: (e: CustomEvent) => void;
+	private onPlayerLeft?: (e: CustomEvent) => void;
+	private listenersAttached: boolean = false;
 
 	constructor(level: GameLevel, containerId?: string, width?: number, height?: number) {
 		super(level, containerId, width, height);
 
-		// Stop the base class to prevent conflicts
+		// stop the base class to prevent conflicts
 		this.stop();
 
-		// Initialize multiplayer state
+		// init multiplayer state
 		this.setupMultiplayerEvents();
 	}
 
 	private setupMultiplayerEvents() {
-		// Game started event
-		    window.addEventListener('gameStarted', (e: CustomEvent) => {
-			if (this.isMultiplayerMode && e.detail.gameState) {
-				// sync state but avoid emitting score change during countdown overlay
-				this.updateFromServerState(e.detail.gameState);
-			}
-		});
+		if (this.listenersAttached) return;
 
-		// Game update event
-		    window.addEventListener('gameUpdate', (e: CustomEvent) => {
+		this.onGameStarted = (e: CustomEvent) => {
 			if (this.isMultiplayerMode && e.detail.gameState) {
 				this.updateFromServerState(e.detail.gameState);
 			}
-		});
-
-		// Game end event
-		    window.addEventListener('gameEnd', (e: CustomEvent) => {
+		};
+		this.onGameUpdate = (e: CustomEvent) => {
+			if (this.isMultiplayerMode && e.detail.gameState) {
+				this.updateFromServerState(e.detail.gameState);
+			}
+		};
+		this.onGameEnd = (_e: CustomEvent) => {
 			this.isMultiplayerMode = false;
 			this.currentRoomId = null;
 			this.playerIndex = -1;
-		});
-
-		// Player disconnect event
-		    window.addEventListener('playerLeft', (e: CustomEvent) => {
+		};
+		this.onPlayerLeft = (_e: CustomEvent) => {
 			if (this.isMultiplayerMode) {
 				this.isMultiplayerMode = false;
 				this.currentRoomId = null;
 				this.playerIndex = -1;
-				// do not re-dispatch a synthetic event here; the orchestrator listens to playerLeft already
 			}
-		});
+		};
+
+		window.addEventListener('gameStarted', this.onGameStarted as EventListener);
+		window.addEventListener('gameUpdate', this.onGameUpdate as EventListener);
+		window.addEventListener('gameEnd', this.onGameEnd as EventListener);
+		window.addEventListener('playerLeft', this.onPlayerLeft as EventListener);
+
+		this.listenersAttached = true;
 	}
 
 	private getPlayerIndex(): number {
@@ -63,12 +68,11 @@ export class MultiplayerGameCanvas extends GameCanvas {
 	}
 
 	private updateFromServerState(gameState: GameState) {
-		// Update scores
+		// update scores
 		if (gameState.paddles) {
 			this.gameManager.score.LEFT = gameState.paddles.left?.score || 0;
 			this.gameManager.score.RIGHT = gameState.paddles.right?.score || 0;
 
-			// notify GUI about score change to mirror single-player HUD
 			this.dispatchEvent(new CustomEvent('scoreChanged', { 
 				detail: { 
 					LEFT: this.gameManager.score.LEFT, 
@@ -77,7 +81,7 @@ export class MultiplayerGameCanvas extends GameCanvas {
 			}));
 		}
 
-		// Update ball position
+		// update ball position
 		if (gameState.ball) {
 			const ball = this.getBall();
 			if (ball) {
@@ -85,11 +89,11 @@ export class MultiplayerGameCanvas extends GameCanvas {
 				(ball as any).virtualY = gameState.ball.y;
 				(ball as any).vx = gameState.ball.velocityX;
 				(ball as any).vy = gameState.ball.velocityY;
-				(ball as any).size = gameState.ball.size; // Use size directly
+				(ball as any).size = gameState.ball.size;
 			}
 		}
 
-		// Update paddle positions
+		// update paddle positions
 		if (gameState.paddles) {
 			const paddles = this.getPaddles();
 
@@ -107,7 +111,6 @@ export class MultiplayerGameCanvas extends GameCanvas {
 		if (this.isMultiplayerMode) {
 			this.gameManager.isStarted = true;
 
-			// Initialize ball position to center
 			const ball = this.getBall();
 			if (ball) {
 				(ball as any).virtualX = VIRTUAL_WIDTH / 2;
@@ -127,6 +130,18 @@ export class MultiplayerGameCanvas extends GameCanvas {
 			this.currentRoomId = null;
 			this.playerIndex = -1;
 		}
+		// detach multiplayer listeners if attached
+		if (this.listenersAttached) {
+			if (this.onGameStarted) window.removeEventListener('gameStarted', this.onGameStarted as EventListener);
+			if (this.onGameUpdate) window.removeEventListener('gameUpdate', this.onGameUpdate as EventListener);
+			if (this.onGameEnd) window.removeEventListener('gameEnd', this.onGameEnd as EventListener);
+			if (this.onPlayerLeft) window.removeEventListener('playerLeft', this.onPlayerLeft as EventListener);
+			this.onGameStarted = undefined;
+			this.onGameUpdate = undefined;
+			this.onGameEnd = undefined;
+			this.onPlayerLeft = undefined;
+			this.listenersAttached = false;
+		}
 		
 		super.stop();
 	}
@@ -135,17 +150,16 @@ export class MultiplayerGameCanvas extends GameCanvas {
 		
 		if (this.isMultiplayerMode) {
 			
-			// Ensure game is started for rendering
 			if (!this.gameManager.isStarted) {
 				this.gameManager.isStarted = true;
 			}
 
-			// Clear canvas
+			// clear canvas
 			const ctx = this.getCtx();
 			const canvas = this.getCanvas();
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-			// Draw game objects (same as single-player)
+			// draw game objects
 			const { PADDLE_WIDTH_RATIO, PADDLE_HEIGHT_RATIO } = GameSize;
 			const paddleSizeX = VIRTUAL_WIDTH * PADDLE_WIDTH_RATIO;
 			const paddleSizeY = (VIRTUAL_HEIGHT - this.getCourtBounds().specs.top * 2) * PADDLE_HEIGHT_RATIO;
@@ -174,6 +188,10 @@ export class MultiplayerGameCanvas extends GameCanvas {
 		}
 
 		if (this.playerIndex === -1) {
+			return;
+		}
+
+		if (this.playerIndex === 1 && this.getIsBotEnable()) {
 			return;
 		}
 

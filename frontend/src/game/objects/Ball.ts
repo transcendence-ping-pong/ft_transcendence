@@ -55,12 +55,22 @@ export class Ball {
   }
 
   collidesWithPaddle = (paddle: Paddle) => {
-    return (
-      this.virtualX + this.size / 2 >= paddle.getX() &&
-      this.virtualX - this.size / 2 <= paddle.getX() + paddle.getWidth() &&
-      this.virtualY + this.size / 2 >= paddle.getY() &&
-      this.virtualY - this.size / 2 <= paddle.getY() + paddle.getHeight()
-    );
+    const ballTop = this.virtualY - this.size / 2;
+    const ballBottom = this.virtualY + this.size / 2;
+    const paddleTop = paddle.getY();
+    const paddleBottom = paddle.getY() + paddle.getHeight();
+
+    const verticalOverlap = Math.max(0, Math.min(ballBottom, paddleBottom) - Math.max(ballTop, paddleTop));
+    if (verticalOverlap <= 0) return false;
+
+    if (paddle.getX() < this.virtualX && this.vx < 0) {
+      return this.virtualX - this.size / 2 <= paddle.getX() + paddle.getWidth() &&
+            this.virtualX - this.size / 2 >= paddle.getX();
+    } else if (paddle.getX() > this.virtualX && this.vx > 0) {
+      return this.virtualX + this.size / 2 >= paddle.getX() &&
+            this.virtualX + this.size / 2 <= paddle.getX() + paddle.getWidth();
+    }
+    return false;
   };
 
   public getY(): number {
@@ -69,6 +79,14 @@ export class Ball {
 
   public getX(): number {
     return this.virtualX;
+  }
+
+  public getVelocityX(): number {
+    return this.vx;
+  }
+
+  public getVelocityY(): number {
+    return this.vy;
   }
 
   isOutOfBounds = (left: number, right: number) => {
@@ -81,29 +99,51 @@ export class Ball {
   bounceOffPaddle(paddle: Paddle, onPaddleBounce?: () => void) {
     const { MAX, MIN, maxBounceAngle } = BallLevelConfig[this.level];
 
-    // prevent sticking to the paddle
-    if (this.vx < 0) {
-      this.virtualX = paddle.getX() + paddle.getWidth() + this.size / 2; // left paddle
+    if (paddle.getX() < this.virtualX) {
+      this.virtualX = paddle.getX() + paddle.getWidth() + this.size / 2;
     } else {
-      this.virtualX = paddle.getX() - this.size / 2; // right paddle
+      this.virtualX = paddle.getX() - this.size / 2;
     }
 
-    // calculate normalized hit position (-1 to 1)
-    const relativeIntersectY = (this.virtualY - (paddle.getY() + paddle.getHeight() / 2));
+    const relativeIntersectY = this.virtualY - (paddle.getY() + paddle.getHeight() / 2);
     const normalized = relativeIntersectY / (paddle.getHeight() / 2);
     const bounceAngle = normalized * maxBounceAngle;
 
-    // TODO CONCEPT: should we increase speed after each hit? or after first hit?
-    // calculate current speed and increase by 20% (cap at MAX_BALL_SPEED)
     let speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-    speed = Math.max(Math.min(speed * 1.5, MAX), MIN);
+    speed = Math.max(Math.min(speed * 1.2, MAX), MIN);
 
-    // update velocity: always right direction after left paddle, or left direction after right paddle
-    this.vx = (this.vx < 0 ? Math.abs(speed * Math.cos(bounceAngle)) : -Math.abs(speed * Math.cos(bounceAngle)));
+    this.vx = (paddle.getX() < this.virtualX ? Math.abs(speed * Math.cos(bounceAngle)) : -Math.abs(speed * Math.cos(bounceAngle)));
     this.vy = speed * Math.sin(bounceAngle);
 
-    if (onPaddleBounce) onPaddleBounce(); // TODO CONCEPT: sound?? log??
+    if (onPaddleBounce) onPaddleBounce();
   }
+
+  // bounceOffPaddle(paddle: Paddle, onPaddleBounce?: () => void) {
+  //   const { MAX, MIN, maxBounceAngle } = BallLevelConfig[this.level];
+
+  //   // prevent sticking to the paddle
+  //   if (this.vx < 0) {
+  //     this.virtualX = paddle.getX() + paddle.getWidth() + this.size / 2; // left paddle
+  //   } else {
+  //     this.virtualX = paddle.getX() - this.size / 2; // right paddle
+  //   }
+
+  //   // calculate normalized hit position (-1 to 1)
+  //   const relativeIntersectY = (this.virtualY - (paddle.getY() + paddle.getHeight() / 2));
+  //   const normalized = relativeIntersectY / (paddle.getHeight() / 2);
+  //   const bounceAngle = normalized * maxBounceAngle;
+
+  //   // TODO CONCEPT: should we increase speed after each hit? or after first hit?
+  //   // calculate current speed and increase by 20% (cap at MAX_BALL_SPEED)
+  //   let speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+  //   speed = Math.max(Math.min(speed * 1.5, MAX), MIN);
+
+  //   // update velocity: always right direction after left paddle, or left direction after right paddle
+  //   this.vx = (this.vx < 0 ? Math.abs(speed * Math.cos(bounceAngle)) : -Math.abs(speed * Math.cos(bounceAngle)));
+  //   this.vy = speed * Math.sin(bounceAngle);
+
+  //   if (onPaddleBounce) onPaddleBounce(); // TODO CONCEPT: sound?? log??
+  // }
 
   // https://www.virtualYoutube.com/watch?v=6i5kZV_KOCU
   updatePosition(

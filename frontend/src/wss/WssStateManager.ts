@@ -70,7 +70,6 @@ export class WssStateManager {
   
   authenticate(username: string) {
     if (this.isAuthenticated && this.authToken === username) {
-      console.log('🔐 Already authenticated with', username, '- skipping re-authentication');
       return;
     }
     
@@ -103,18 +102,18 @@ export class WssStateManager {
     if (!this.socket) return;
     
     this.socket.on('connect', () => {
-      console.log('🔌 WebSocket connected');
+      console.log('WebSocket connected');
       window.dispatchEvent(new CustomEvent('websocketConnected'));
     });
     
     this.socket.on('disconnect', () => {
-      console.log('🔌 WebSocket disconnected');
+      console.log('WebSocket disconnected');
       this._isAuthenticated = false;
       window.dispatchEvent(new CustomEvent('websocketDisconnected'));
     });
     
     this.socket.on('connect_error', (error: any) => {
-      console.error('🔌 WebSocket connection error:', error);
+      console.error(' WebSocket connection error:', error);
       window.dispatchEvent(new CustomEvent('websocketError', { detail: error }));
     });
     
@@ -213,7 +212,6 @@ export class WssStateManager {
     });
     
     this.socket.on('notification', (data: any) => {
-      console.log('🔔 WebSocket notification received:', data);
       window.dispatchEvent(new CustomEvent('notification', { detail: data }));
     });
     
