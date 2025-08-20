@@ -60,24 +60,6 @@ export class BotPlayer {
         this.gameCanvas.setPaddleDirection(this.playerIndex, null);
       }
     }
-
-    // const now = Date.now();
-    // if (now - this.lastDecisionTime < 1000) return; // refresh 1s
-    // this.lastDecisionTime = now;
-
-    // if (this.isBallApproaching()) {
-    //   const predictedY = this.predictBallY(1); // 1s à frente
-    //   this.targetY = this.targetY === null
-    //     ? predictedY
-    //     : this.smoothTarget(this.targetY, predictedY);
-    // } else {
-    //   this.targetY = null;
-    //   this.gameCanvas.setPaddleDirection(this.playerIndex, null);
-    // }
-
-   
-
-    
   }
 
   private predictBallY(secondsAhead: number = 0): number {
@@ -87,12 +69,9 @@ export class BotPlayer {
     let ballVX = this.ball.getVelocityX();
     const paddleX = this.paddle.getX();
     const { top, bottom } = this.gameCanvas.getCourtBounds().specs;
-
-    // prever apenas se a bola está indo em direção ao paddle
     if ((this.playerIndex === 1 && ballVX > 0) || (this.playerIndex === 0 && ballVX < 0)) {
-      // tempo até chegar na posição do paddle
       const distance = Math.abs(paddleX - ballX);
-      const time = distance / Math.abs(ballVX) + secondsAhead; // antecipa
+      const time = distance / Math.abs(ballVX) + secondsAhead;
 
       let predictedY = ballY;
       let vy = ballVY;
@@ -111,12 +90,6 @@ export class BotPlayer {
           predictedY = Math.max(top, Math.min(bottom, predictedY));
         }
       }
-
-      // para Medium, adiciona leve imperfeição humana
-      if (this.level === 'MEDIUM') {
-        const offset = (Math.random() - 0.5) * this.paddle.getHeight() * 0.2;
-        predictedY += offset;
-      }
       return predictedY;
     }
     return (top + bottom) / 2;
@@ -130,7 +103,7 @@ export class BotPlayer {
 
     let range;
     switch (this.level) {
-      case 'EASY': range = fieldWidth * 0.2; break;
+      case 'EASY': range = fieldWidth * 0.3; break;
       case 'MEDIUM': range = fieldWidth * 0.6; break;
       case 'HARD': range = fieldWidth * 0.95; break;
       default: range = fieldWidth * 0.5;
@@ -144,7 +117,10 @@ export class BotPlayer {
   }
 
   private moveTowards(targetY: number, paddleCenter: number, threshold: number) {
-    const deadZone = this.level === 'HARD' ? 1 : (this.level === 'MEDIUM' ? 1.5 : 2);
+    let deadZone = 1;
+    if (this.level === 'HARD') {
+      deadZone = 2;
+    }
     const diff = targetY - paddleCenter;
 
     if (Math.abs(diff) > threshold || Math.abs(diff) > deadZone) {
@@ -167,7 +143,7 @@ export class BotPlayer {
   private smoothTarget(oldY: number, newY: number): number {
     switch (this.level) {
       case 'EASY': return 0.6 * oldY + 0.3 * newY;
-      case 'MEDIUM': return 0.7 * oldY + 0.3 * newY; 
+      case 'MEDIUM': return newY;
       case 'HARD': return newY;
       default: return newY;
     }
@@ -181,8 +157,8 @@ export class BotPlayer {
     const fieldHeight = this.gameCanvas.getHeight();
     switch (this.level) {
       case 'EASY': return fieldHeight * 0.04;
-      case 'MEDIUM': return fieldHeight * 0.001;
-      case 'HARD': return fieldHeight * 0.001;
+      case 'MEDIUM': return fieldHeight * 0.05;
+      case 'HARD': return fieldHeight * 0.01;
       default: return fieldHeight * 0.03;
     }
   }
