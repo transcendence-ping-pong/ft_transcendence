@@ -7,6 +7,48 @@ const ChatManager = require('./ChatManager.js');
 const InviteManager = require('./InviteManager.js');
 const Validator = require('./Validator.js');
 const Logger = require('./Logger.js');
+// simple fetch resolver to avoid external dependency; uses native fetch if available, otherwise falls back to Node http/https
+const getFetch = () => (typeof fetch !== 'undefined' ? fetch : null);
+const http = require('http');
+const https = require('https');
+
+async function requestJson(urlString, options) {
+	const fetchFn = getFetch();
+	if (fetchFn) {
+		const res = await fetchFn(urlString, options);
+		const text = await res.text();
+		let json;
+		try { json = text ? JSON.parse(text) : undefined; } catch { json = undefined; }
+		return { ok: res.ok, status: res.status, json, text };
+	}
+
+	return new Promise((resolve) => {
+		try {
+			const urlObj = new URL(urlString);
+			const lib = urlObj.protocol === 'https:' ? https : http;
+			const req = lib.request({
+				hostname: urlObj.hostname,
+				port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
+				path: urlObj.pathname + (urlObj.search || ''),
+				method: options?.method || 'GET',
+				headers: options?.headers || {}
+			}, (res) => {
+				let data = '';
+				res.on('data', (chunk) => { data += chunk; });
+				res.on('end', () => {
+					let json;
+					try { json = data ? JSON.parse(data) : undefined; } catch { json = undefined; }
+					resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode, json, text: data });
+				});
+			});
+			req.on('error', () => resolve({ ok: false, status: 0, json: undefined, text: 'network error' }));
+			if (options?.body) req.write(options.body);
+			req.end();
+		} catch {
+			resolve({ ok: false, status: 0, json: undefined, text: 'request error' });
+		}
+	});
+}
 
 class WebSocketServer {
 	constructor(port) {
@@ -31,6 +73,11 @@ class WebSocketServer {
 
 		this.setupEventHandlers();
 		Logger.info(`WebSocket server running at ws://localhost:${this.port}`);
+	}
+
+	// simple runtime block check via UserManager (online-only)
+	isBlocked(blockerId, blockedId) {
+		return this.userManager.isUserBlocked(blockerId, blockedId);
 	}
 
 	setupEventHandlers() {
@@ -93,6 +140,11 @@ class WebSocketServer {
 				this.handleBlockUser(socket, data);
 			});
 
+			// handles unblock user
+			socket.on('unblockUser', (data) => {
+				this.handleUnblockUser(socket, data);
+			});
+
 			// track client route/presence to gate certain commands
 			socket.on('updatePresence', (data) => {
 				const user = this.userManager.getUser(socket.id);
@@ -135,6 +187,21 @@ class WebSocketServer {
 
 			// Only send online users to the newly connected user, not broadcast to all
 			socket.emit('onlineUsers', allUsers);
+
+			// hydrate runtime blocks for this user from DB
+			if (typeof user.userId === 'number' && user.userId > 0) {
+				try {
+					const base = process.env.API_BASE_URL || 'http://localhost:4000/api';
+					requestJson(`${base}/blocked/${user.userId}`, { method: 'GET' })
+						.then(res => {
+							if (!res.ok) return;
+							const body = res.json;
+							const list = Array.isArray(body?.result) ? body.result.map(x => x.blockedId) : [];
+							this.userManager.setBlocks(user.userId, list);
+						})
+						.catch(() => { });
+				} catch { }
+			}
 
 			Logger.logUserEvent('authenticated', username);
 		} catch (error) {
@@ -416,7 +483,9 @@ class WebSocketServer {
 		this.gameManager.startGameLoop(roomId, this.io, room.gameState, (gameState) => {
 			// if game ended by rule, emit gameEnd and stop updates
 			if (gameState.gamePhase === 'finished') {
-				this.io.to(roomId).emit('gameEnd', { winner: gameState.winner, gameState });
+				// include room context so clients can reliably map players/winner
+				const finalRoom = this.roomManager.getRoom(roomId);
+				this.io.to(roomId).emit('gameEnd', { winner: gameState.winner, gameState, room: finalRoom, roomId });
 				this.gameManager.stopGameLoop(roomId);
 				return;
 			}
@@ -500,9 +569,12 @@ class WebSocketServer {
 				}
 
 				if (result.room) {
+					// include room context consistently
 					this.io.to(roomCheck.roomId).emit('playerLeft', {
 						player: user,
-						players: result.room.players
+						players: result.room.players,
+						roomId: roomCheck.roomId,
+						room: result.room
 					});
 				}
 			}
@@ -521,7 +593,7 @@ class WebSocketServer {
 	}
 
 	// Chat system methods
-	handleChatMessage(socket, data) {
+	async handleChatMessage(socket, data) {
 		const user = this.userManager.getUser(socket.id);
 		if (!user) return;
 
@@ -545,12 +617,25 @@ class WebSocketServer {
 
 		// create chat message using chat manager
 		const chatMessage = this.chatManager.addChatMessage(user.userId, user.username, validation.message, 'global');
-		this.io.emit('chatMessage', chatMessage);
+		// always echo back to sender
+		socket.emit('chatMessage', chatMessage);
+		// broadcast to others except those who have blocked the sender (DB as source of truth)
+		for (const [socketId, recipient] of this.userManager.connectedUsers.entries()) {
+			if (socketId === socket.id) continue;
+			try {
+				const blocked = await this.isBlocked(recipient.userId, user.userId);
+				if (blocked) continue;
+				this.io.to(socketId).emit('chatMessage', chatMessage);
+			} catch (e) {
+				// on DB error, default to delivering to avoid over-blocking
+				this.io.to(socketId).emit('chatMessage', chatMessage);
+			}
+		}
 
 		Logger.logChatEvent('message', user.username, { message: validation.message });
 	}
 
-	handleDirectMessage(socket, data) {
+	async handleDirectMessage(socket, data) {
 		const user = this.userManager.getUser(socket.id);
 		if (!user) return;
 
@@ -583,7 +668,9 @@ class WebSocketServer {
 			return;
 		}
 
-		if (this.userManager.isUserBlocked(receiver.userId, user.userId)) {
+		// disallow PM if either side has blocked the other
+		// DB as source of truth: forbid if either has blocked the other
+		if (await this.isBlocked(receiver.userId, user.userId) || await this.isBlocked(user.userId, receiver.userId)) {
 			socket.emit('chatError', { message: 'Cannot send message to this user' });
 			return;
 		}
@@ -608,7 +695,7 @@ class WebSocketServer {
 			validation.message
 		);
 
-		// Send to receiver
+		// Send to receiver unless they've blocked the sender
 		this.io.to(receiver.socketId).emit('directMessage', directMessage);
 
 		// Send back to sender so they can see their own message
@@ -623,26 +710,57 @@ class WebSocketServer {
 		Logger.logChatEvent('directMessage', user.username, { receiverUsername, message: validation.message });
 	}
 
-	handleBlockUser(socket, data) {
+	async handleBlockUser(socket, data) {
 		const user = this.userManager.getUser(socket.id);
 		if (!user) return;
 
 		const { targetUsername } = data;
 		if (!targetUsername) return;
 
-		// block user using user manager
-		const result = this.userManager.blockUser(user.userId, targetUsername);
-		if (!result.success) {
-			socket.emit('chatError', { message: result.error });
+		// prevent blocking self
+		if (targetUsername.toLowerCase() === String(user.username).toLowerCase()) {
+			socket.emit('chatError', { message: 'You cannot block yourself' });
 			return;
 		}
 
+
+
+		// resolve online target only
+		const targetUser = this.userManager.getUserByUsername(targetUsername);
+		if (!targetUser) { socket.emit('chatError', { message: 'User not found or offline' }); return; }
+
+		// simple runtime block (in-memory)
+		const result = this.userManager.blockUser(user.userId, targetUsername);
+		if (!result.success) { socket.emit('chatError', { message: result.error || 'Failed to block' }); return; }
+
+		// confirm to blocker only
 		socket.emit('userBlocked', {
 			blockedUsername: targetUsername,
 			message: `You blocked ${targetUsername}`
 		});
 
 		Logger.logChatEvent('userBlocked', user.username, { blockedUsername: targetUsername });
+	}
+
+	async handleUnblockUser(socket, data) {
+		const user = this.userManager.getUser(socket.id);
+		if (!user) return;
+
+		const { targetUsername } = data;
+		if (!targetUsername) return;
+
+
+		// resolve online target only
+		const target = this.userManager.getUserByUsername(targetUsername);
+		if (!target) { socket.emit('chatError', { message: 'User not found or offline' }); return; }
+
+		// simple runtime unblock (in-memory)
+		const set = this.userManager.userBlocks.get(user.userId);
+		if (set) set.delete(target.userId);
+		socket.emit('userBlocked', {
+			blockedUsername: targetUsername,
+			message: `You unblocked ${targetUsername}`
+		});
 	}
 
 	handleSlashCommand(socket, user, message) {
@@ -732,7 +850,7 @@ class WebSocketServer {
 		});
 	}
 
-	handleGameInvite(socket, user, targetUsername, difficulty = 'MEDIUM') {
+	async handleGameInvite(socket, user, targetUsername, difficulty = 'MEDIUM') {
 		// validate invite data using invite manager
 		const validation = this.inviteManager.validateInvite(user.username, targetUsername, difficulty);
 		if (!validation.valid) {
@@ -754,6 +872,12 @@ class WebSocketServer {
 			return;
 		}
 
+		// block checks via DB: disallow inviting if either user blocked the other
+		if (await this.isBlocked(user.userId, targetUser.userId) || await this.isBlocked(targetUser.userId, user.userId)) {
+			socket.emit('chatError', { message: 'Cannot invite this user' });
+			return;
+		}
+
 		const receiverInGame = this.roomManager.isPlayerInRoom(targetUser.socketId).inRoom;
 		if (receiverInGame) {
 			socket.emit('chatError', { message: 'User is already in a game' });
@@ -771,6 +895,12 @@ class WebSocketServer {
 			return;
 		}
 
+		// presence requirement: receiver must be on Home to receive invite commands cleanly
+		if (targetUser.currentPath && targetUser.currentPath !== '/') {
+			socket.emit('chatError', { message: `${targetUsername} is not on Home. Try again when they are on Home.` });
+			return;
+		}
+
 		// create invite using invite manager
 		const result = this.inviteManager.createInvite(user.userId, user.username, targetUser.userId, targetUsername, difficulty);
 		if (!result.success) {
@@ -781,12 +911,7 @@ class WebSocketServer {
 		Logger.logInviteEvent('created', user.username, targetUsername, { difficulty });
 
 		if (targetUser.socketId) {
-			// presence requirement: receiver must be on Home to receive invite commands cleanly
-			if (targetUser.currentPath && targetUser.currentPath !== '/') {
-				socket.emit('chatError', { message: `${targetUsername} is not on Home. Try again when they are on Home.` });
-			} else {
-				this.io.to(targetUser.socketId).emit('gameInvite', result.inviteMessage);
-			}
+			this.io.to(targetUser.socketId).emit('gameInvite', result.inviteMessage);
 		}
 
 		socket.emit('inviteSent', {
@@ -795,7 +920,7 @@ class WebSocketServer {
 		});
 	}
 
-	handleInviteResponse(socket, data) {
+	async handleInviteResponse(socket, data) {
 		const { inviteId, response, senderUsername, receiverUsername, difficulty } = data;
 		const user = this.userManager.getUser(socket.id);
 
@@ -822,6 +947,12 @@ class WebSocketServer {
 
 			if (!senderUser || !receiverUser) {
 				socket.emit('chatError', { message: 'One or both users not found' });
+				return;
+			}
+
+			// block checks via DB before creating room (mutual blocks forbid)
+			if (await this.isBlocked(senderUser.userId, receiverUser.userId) || await this.isBlocked(receiverUser.userId, senderUser.userId)) {
+				socket.emit('chatError', { message: 'Cannot start match: one of the users has blocked the other' });
 				return;
 			}
 

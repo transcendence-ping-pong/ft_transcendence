@@ -5,6 +5,7 @@ import { MultiplayerGameCanvas } from '@/multiplayer/MultiplayerGameCanvas.js';
 import { GameLevel, PlayerMode, GameMode, GameType, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, VIRTUAL_BORDER_X, VIRTUAL_BORDER_TOP, VIRTUAL_BORDER_BOTTOM } from '@/utils/gameUtils/GameConstants.js';
 import { state, TournamentData } from '@/state';
 import { createMatch, updateMatch, getTournamentSemi, getTournamentFinal } from '@/services/matchService';
+import { getUserProfile } from '@/services/friendsService';
 
 
 /*
@@ -26,12 +27,15 @@ export class gameOrchestrator {
   private isMultiplayerMode: boolean = false;
   private multiplayerKeyDownHandler?: (event: KeyboardEvent) => void;
   private multiplayerKeyUpHandler?: (event: KeyboardEvent) => void;
+  private handledGameOver: boolean = false;
+  private handledOpponentLeft: boolean = false;
 
   private gameLevel: GameLevel = GameLevel.EASY;
   private gameMode: GameMode = GameMode.LOCAL;
   private gameType: GameType = GameType.ONE_MATCH;
   private gamePlayerMode: PlayerMode = PlayerMode.TWO_PLAYER;
   private matchId: number | null = null;
+  private lastKnownScore: { LEFT: number; RIGHT: number } = { LEFT: 0, RIGHT: 0 };
 
   // private isTournament: boolean;
   // private gameManager: GameManager;
@@ -123,6 +127,11 @@ export class gameOrchestrator {
         console.log('GameOrchestrator: gameStart event received', e.detail);
         console.log('GameOrchestrator: Creating multiplayer game...');
 
+        // reset one-shot guards for a fresh session
+        this.handledGameOver = false;
+        this.handledOpponentLeft = false;
+        this.lastKnownScore = { LEFT: 0, RIGHT: 0 };
+
         this.isMultiplayerMode = true;
         this.babylonCanvas.createMultiplayerGameCanvas();
         this.gameCanvas = this.babylonCanvas.getGameCanvas();
@@ -152,6 +161,37 @@ export class gameOrchestrator {
         this.setupMultiplayerInput();
 
         console.log('GameOrchestrator: Multiplayer game setup complete');
+
+        // host-only: create match record for remote games
+        (async () => {
+          try {
+            const room = (e as any).detail?.room;
+            if (!room || this.matchId) return;
+            const hostUsername = room.hostUsername;
+            const me = state.userData?.username || localStorage.getItem('loggedInUser');
+            const isHost = me && hostUsername && me.toLowerCase() === hostUsername.toLowerCase();
+            if (!isHost) return;
+            const players = room.players || [];
+            const guest = players.find((p: any) => p.username && p.username.toLowerCase() !== hostUsername.toLowerCase());
+            if (!guest) return;
+            const creatorId = state.userData?.userId || parseInt(localStorage.getItem('userId') || '0');
+            let remoteId = guest.userId || 0;
+            if (!remoteId && guest.username) {
+              try { const prof = await getUserProfile(guest.username); remoteId = prof?.userId || 0; } catch {}
+            }
+            if (creatorId && remoteId) {
+              const res = await createMatch(creatorId, remoteId, null, hostUsername, guest.username);
+              if (res && typeof res.id === 'number') this.matchId = res.id;
+              // surface a lightweight system line for host only
+              try {
+                const panel = document.querySelector('chat-panel') as any;
+                if (panel && typeof panel.addMessage === 'function') {
+                  panel.addMessage('', `match created (#${this.matchId}): ${hostUsername} vs ${guest.username}`, 'system', 'global');
+                }
+              } catch { /* ignore: best-effort debug message */ }
+            }
+          } catch { /* ignore: match create failure should not block game */ }
+        })();
       } catch (error) {
         console.error('GameOrchestrator: Error setting up multiplayer game:', error);
         // Don't let errors crash the game
@@ -160,13 +200,52 @@ export class gameOrchestrator {
     });
 
     window.addEventListener('gameEnd', (e: CustomEvent) => {
+      if (this.handledGameOver) return;
+      this.handledGameOver = true;
       this.isMultiplayerMode = false;
       window.dispatchEvent(new CustomEvent('showMultiplayerUI'));
       this.removeMultiplayerInput();
-      this.gui.showGameOver('Player 1', { LEFT: 0, RIGHT: 0 });
+      const detail: any = (e as any).detail || {};
+      const winnerSide = detail.winner || 'left';
+      const paddles = detail.gameState?.paddles;
+      const score = paddles ? { LEFT: paddles.left.score, RIGHT: paddles.right.score } : { LEFT: 0, RIGHT: 0 };
+
+      // map sides to usernames
+      const room = detail.room || (window as any).websocketService?.getCurrentRoom?.();
+      const hostUsername = room?.hostUsername || 'Player 1';
+      const players = room?.players || [];
+      const guest = players.find((p: any) => p.username && p.username.toLowerCase() !== (hostUsername || '').toLowerCase());
+      const leftName = hostUsername;
+      const rightName = guest?.username || 'Player 2';
+      const winnerName = winnerSide === 'left' ? leftName : rightName;
+
+      this.gui.showGameOver(winnerName, score);
+      // stop rendering updates so the ball doesn't keep moving underneath
+      try { (this.babylonCanvas as any).cleanupGame(); } catch {}
+      // chat message is handled by Home via lastMatchSummary banner
+
+      // persist match summary for Home page (simple global event)
+      const summary = { winner: winnerName, score, reason: 'score', host: leftName, guest: rightName } as any;
+      try { localStorage.setItem('lastMatchSummary', JSON.stringify(summary)); } catch {}
+      try { window.dispatchEvent(new CustomEvent('lastMatchSummary', { detail: summary })); } catch {}
+
+      // host-only: update match stats
+      (async () => {
+        try {
+          const me = state.userData?.username || localStorage.getItem('loggedInUser');
+          const isHost = me && leftName && me.toLowerCase() === leftName.toLowerCase();
+          if (isHost && this.matchId) {
+            await updateMatch(this.matchId, winnerName, score.LEFT, score.RIGHT);
+          }
+        } catch {}
+      })();
       setTimeout(() => {
         this.gui.clearGUI();
         this.babylonCanvas.initPlaneMaterial();
+        try {
+          window.history.pushState({}, '', '/');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        } catch { window.location.href = '/'; }
       }, 3000);
     });
 
@@ -181,28 +260,45 @@ export class gameOrchestrator {
       }
     });
 
-	// TODO: think its somewhat buggy
-    window.addEventListener('playerDisconnected', (e: CustomEvent) => {
-      if (this.isMultiplayerMode) {
-        this.isMultiplayerMode = false;
-        this.removeMultiplayerInput();
-        this.gui.clearGUI();
-        // immediate redirect to home (keep it simple for now)
-        try {
-          window.history.pushState({}, '', '/');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        } catch {
-          window.location.href = '/';
-        }
+    // track latest score for persistence on opponent leave
+    window.addEventListener('gameUpdate', (e: CustomEvent) => {
+      const gs: any = (e as any).detail?.gameState;
+      if (gs?.paddles) {
+        this.lastKnownScore = { LEFT: gs.paddles.left.score, RIGHT: gs.paddles.right.score };
       }
     });
 
-    // extra safety: redirect when server notifies someone left
+	// TODO: think its somewhat buggy
+    // removed: duplicate with playerLeft handler below
+
+    // opponent left
     window.addEventListener('playerLeft', (e: CustomEvent) => {
+      if (this.handledOpponentLeft) return;
+      this.handledOpponentLeft = true;
       if (this.isMultiplayerMode) {
         this.isMultiplayerMode = false;
         this.removeMultiplayerInput();
         this.gui.clearGUI();
+        // chat message is handled by Home via lastMatchSummary banner
+        // prefer room info embedded in event if present (backend now includes it)
+        const evtRoom = (e as any).detail?.room || (window as any).websocketService?.getCurrentRoom?.();
+        const hostName = evtRoom?.hostUsername;
+        const guestName = evtRoom?.players?.find((p:any)=>p.username?.toLowerCase() !== (hostName||'').toLowerCase())?.username;
+        const summary: any = { winner: state.userData?.username || 'You', score: this.lastKnownScore, reason: 'opponentLeft', host: hostName, guest: guestName };
+        try { localStorage.setItem('lastMatchSummary', JSON.stringify(summary)); } catch {}
+        try { window.dispatchEvent(new CustomEvent('lastMatchSummary', { detail: summary })); } catch {}
+        // host-only: persist current score and winner on opponent leave
+        (async () => {
+          try {
+            const room = evtRoom;
+            const leftName = room?.hostUsername;
+            const me = state.userData?.username || localStorage.getItem('loggedInUser');
+            const isHost = me && leftName && me.toLowerCase() === leftName.toLowerCase();
+            if (isHost && this.matchId) {
+              await updateMatch(this.matchId, me || 'You', this.lastKnownScore.LEFT, this.lastKnownScore.RIGHT);
+            }
+          } catch {}
+        })();
         try {
           window.history.pushState({}, '', '/');
           window.dispatchEvent(new PopStateEvent('popstate'));
@@ -316,6 +412,13 @@ export class gameOrchestrator {
 
       // TODO FIX: arguments are obsolete (player and score), review
       this.gui.showGameOver('Player 1', { LEFT: 5, RIGHT: 3 });
+      // surface summary banner + chat line on home for normal flow
+      try {
+        const score = { LEFT: e.detail.score.LEFT, RIGHT: e.detail.score.RIGHT };
+        const summary: any = { winner, score, reason: 'score', host: state.players?.p1, guest: state.players?.p2 };
+        try { localStorage.setItem('lastMatchSummary', JSON.stringify(summary)); } catch {}
+        try { window.dispatchEvent(new CustomEvent('lastMatchSummary', { detail: summary })); } catch {}
+      } catch {}
       if (this.gameType === GameType.TOURNAMENT) {
         this.handleTournamentEvents();
       } else {

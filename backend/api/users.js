@@ -81,7 +81,8 @@ async function userRoutes(fastify, options) {
             const refreshToken = generateRefreshToken({ username, userId, email });
             await saveRefreshToken(db, refreshToken, userId);
 
-            const redirectUrl = `http://localhost/?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}&username=${encodeURIComponent(username)}`;
+            const hostbaseurl = process.env.HOST_URL || 'http://localhost:9019'
+            const redirectUrl = `${hostbaseurl}/?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}&username=${encodeURIComponent(username)}`;
             return res.redirect(redirectUrl);
 
         } catch (error) {

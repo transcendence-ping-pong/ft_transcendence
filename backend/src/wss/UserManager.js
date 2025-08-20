@@ -1,6 +1,7 @@
 class UserManager {
 	constructor() {
 		this.connectedUsers = new Map();
+		// simple runtime block list (online-only)
 		this.userBlocks = new Map();
 		this.userRateLimits = new Map();
 	}
@@ -16,11 +17,19 @@ class UserManager {
 		const user = {
 			userId: userId,
 			username: username,
-			socketId: socketId
+			socketId: socketId,
+			// default presence to '/' so presence checks are strict
+			currentPath: '/'
 		};
 
 		this.connectedUsers.set(socketId, user);
 		return user;
+	}
+
+	// optional hydration for compatibility (not required in simple mode)
+	setBlocks(blockerId, blockedIdList) {
+		const set = new Set(blockedIdList || []);
+		this.userBlocks.set(blockerId, set);
 	}
 
 	// gets user by socket id
@@ -28,9 +37,11 @@ class UserManager {
 		return this.connectedUsers.get(socketId);
 	}
 
-	// gets user by username
+	// gets user by username (case-insensitive)
 	getUserByUsername(username) {
-		return Array.from(this.connectedUsers.values()).find(user => user.username === username);
+		if (!username) return null;
+		const lower = String(username).toLowerCase();
+		return Array.from(this.connectedUsers.values()).find(user => String(user.username).toLowerCase() === lower) || null;
 	}
 
 	// removes user connection
@@ -64,25 +75,22 @@ class UserManager {
 		return Array.from(this.connectedUsers.values()).some(user => user.username === username);
 	}
 
-	// blocks user
+	// blocks target username for a given blocker id (online-only resolution)
 	blockUser(blockerId, targetUsername) {
 		const targetUser = this.getUserByUsername(targetUsername);
 		if (!targetUser) {
-			return { success: false, error: 'User not found' };
+			return { success: false, error: 'User not found or offline' };
 		}
-
 		if (!this.userBlocks.has(blockerId)) {
 			this.userBlocks.set(blockerId, new Set());
 		}
 		this.userBlocks.get(blockerId).add(targetUser.userId);
-
 		return { success: true, blockedUsername: targetUsername };
 	}
 
-	// checks if user is blocked
-	isUserBlocked(blockerId, blockedId) {
-		return this.userBlocks.has(blockerId) &&
-			this.userBlocks.get(blockerId).has(blockedId);
+	// checks if recipient blocked sender (recipientId has senderId in their set)
+	isUserBlocked(recipientId, senderId) {
+		return this.userBlocks.has(recipientId) && this.userBlocks.get(recipientId).has(senderId);
 	}
 
 	// checks rate limiting for user
@@ -121,7 +129,7 @@ class UserManager {
 	getUserStats() {
 		return {
 			totalConnected: this.connectedUsers.size,
-			totalBlocked: Array.from(this.userBlocks.values()).reduce((total, blockedSet) => total + blockedSet.size, 0),
+			totalBlocked: Array.from(this.userBlocks.values()).reduce((acc, set) => acc + set.size, 0),
 			totalRateLimited: this.userRateLimits.size
 		};
 	}

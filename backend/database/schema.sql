@@ -68,3 +68,10 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     expires_at DATETIME,
     FOREIGN KEY (userId) REFERENCES users (userId) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS blockedUsers (
+	userId INTEGER NOT NULL,
+	blockedId INTEGER NOT NULL,
+	FOREIGN KEY (userId) REFERENCES users (userId) ON DELETE CASCADE,
+	FOREIGN KEY (blockedId) REFERENCES users (userId) ON DELETE CASCADE
+);

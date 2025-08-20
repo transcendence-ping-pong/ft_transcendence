@@ -6,8 +6,6 @@ import { renderGame } from '@/pages/game.js';
 import { renderProfile } from '@/pages/profile.js';
 import { renderLoading } from '@/pages/loading.js';
 import { initRouter } from '@/utils/Router.js';
-import { notificationService } from "@/services/notificationService";
-import { startMockNotifications } from "@/services/mockNotifications.js";
 import { websocketService } from "@/services/websocketService.js";
 import { remoteMultiplayerManager } from "@/multiplayer/RemoteMultiplayerManager.js";
 import '@/styles/index.css';
@@ -41,12 +39,7 @@ const routes = {
 type NavigateFn = (path: string) => void;
 export let navigate: NavigateFn;
 
-notificationService.listen((notif) => {
-  window.dispatchEvent(new CustomEvent("new-notification", { detail: notif }));
-});
-
-// TODO SOCKET: REMOVE MOCK
-// startMockNotifications();
+// notifications removed from scope for current delivery
 
 // // initialize chat system
 function initializeChatSystem() {
@@ -177,6 +170,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // initialize chat system
   initializeChatSystem();
+  // ensure chat panel is initialized before game page for invite acceptance on /game
+  // no-op if already constructed
+
+  // notification service removed
 
 
   window.addEventListener('login-success', async (e: CustomEvent) => {

@@ -1,4 +1,5 @@
 import { websocketService as wss } from '@/services/websocketService.js';
+// notifications removed; use chat-panel system messages instead
 import { state } from '../state.js';
 import { actionIcons } from '@/utils/Constants.js';
 import { t } from '@/locales/Translations.js'
@@ -19,6 +20,9 @@ export default class ChatPanel extends HTMLElement {
   private currentUsername: string = '';
   private lastInvite: any = null;
   private hasRenderedHistory: boolean = false;
+  private shownSystemMessages: Set<string> = new Set();
+  private lastSystemMessageKey: string = '';
+  private lastSystemMessageAt: number = 0;
 
   constructor() {
     super();
@@ -45,6 +49,19 @@ export default class ChatPanel extends HTMLElement {
               this.renderHistoryOnce();
               this.hasRenderedHistory = true;
             }
+            // on open: pick up any pending system messages added while closed
+            try {
+              const saved = localStorage.getItem('chatMessages');
+              if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > this.messageHistory.length) {
+                  // render only the new tail
+                  const newOnes = parsed.slice(this.messageHistory.length);
+                  this.loadSavedMessagesToUI(newOnes);
+                  this.messageHistory = parsed;
+                }
+              }
+            } catch {}
           }
         }
       });
@@ -114,9 +131,9 @@ export default class ChatPanel extends HTMLElement {
         if (!usernameFromState || usernameFromState === 'Anonymous') {
           return;
         }
-        // Send authentication event with real username
-        websocketService.emit('authenticate', { username: usernameFromState });
-
+        // authenticate with helper so numeric userId is included from localStorage
+        websocketService.authenticate(usernameFromState);
+        
         // Listen for authentication response
         window.addEventListener('websocketAuthenticated', (event: CustomEvent) => {
           const { success, username } = event.detail as any;
@@ -169,7 +186,8 @@ export default class ChatPanel extends HTMLElement {
     websocketService.socket.on('chatMessage', (data: any) => {
       // ONLY show messages that are explicitly marked as global
       if (data && data.type === 'global' && data.senderUsername && data.message) {
-        this.addMessage(data.senderUsername, data.message, 'other', 'global');
+        this.addMessage(data.senderUsername, data.message, 'other', 'global', undefined, undefined, data.timestamp);
+        // no sidebar notifications
       }
     });
 
@@ -178,6 +196,7 @@ export default class ChatPanel extends HTMLElement {
       if (data && data.type === 'direct' && data.senderUsername && data.message) {
         // Pass the receiverUsername to addMessage for proper display
         this.addMessage(data.senderUsername, data.message, 'other', 'direct', data.receiverUsername);
+        // no sidebar notifications
       }
     });
 
@@ -216,33 +235,35 @@ export default class ChatPanel extends HTMLElement {
     };
     window.addEventListener('tournament-stage', onTournMatch);
 
-    // feedback for sender when invite is sent
-    websocketService.socket.on('inviteSent', (data: any) => {
-      this.addMessage('', `✅ Invite sent to ${data.targetUsername}`, 'system', 'global');
-    });
+    // feedback for sender when invite is sent: listen to centralized window event to avoid duplicates
+    const onInviteSent = (e: any) => {
+      const data = e.detail || {};
+      if (data && data.targetUsername) {
+        this.addMessage('', `✅ Invite sent to ${data.targetUsername}`, 'system', 'global');
+      }
+    };
+    window.addEventListener('inviteSent', onInviteSent);
 
-    // Handle invite responses (no redirect here; wait for roomCreated)
-    websocketService.socket.on('inviteAccepted', (data: any) => {
-      this.addMessage('', data.message, 'system', 'global');
+    // Handle invite responses (no additional chat noise)
+    websocketService.socket.on('inviteAccepted', (_data: any) => {
+      // intentionally no chat line; navigation to game handles the flow
     });
 
     websocketService.socket.on('inviteDeclined', (data: any) => {
       this.addMessage('', data.message, 'system', 'global');
+      // no sidebar notification
     });
 
-    // Handle game countdown
-    websocketService.socket.on('gameCountdown', (data: any) => {
-      this.addMessage('', `🎮 Game starting in ${data.countdown}...`, 'system', 'global');
-    });
+    // Remove countdown logs from chat for cleaner UX
 
     // Handle game start - removed direct websocket listener to prevent conflicts
     // The gameStart event should be handled by the game orchestrator, not the chat
 
-    // Handle room creation for invite flow (keep existing event chain)
-    websocketService.socket.on('roomCreated', (data: any) => {
+    // room created: single source via window event
+    const onRoomCreated = () => {
       this.addMessage('', '🎮 Game room created!', 'system', 'global');
-      window.dispatchEvent(new CustomEvent('roomCreated', { detail: data }));
-    });
+    };
+    window.addEventListener('roomCreated', onRoomCreated);
 
     // Navigate to game on server instruction (both host/guest)
     window.addEventListener('navigateToGame', (e: any) => {
@@ -272,13 +293,9 @@ export default class ChatPanel extends HTMLElement {
       } catch { }
     });
 
-    // Handle player joined for invite flow
-    websocketService.socket.on('playerJoined', (data: any) => {
-      this.addMessage('', '🎮 Guest joined the game room!', 'system', 'global');
-
-      // Dispatch event for RemoteMultiplayerManager to handle
-      window.dispatchEvent(new CustomEvent('playerJoined', { detail: data }));
-    });
+    // Handle player joined for invite flow (listen to centralized window event)
+    // suppress extra chat noise for playerJoined; UI reacts elsewhere if needed
+    // window.addEventListener('playerJoined', () => {});
   }
 
   // Handle online users updates
@@ -443,7 +460,11 @@ export default class ChatPanel extends HTMLElement {
     messages.forEach((msg: any) => {
       try {
         if (msg.type === 'system' && msg.message !== 'Welcome to Pong Live Chat!' && msg.message !== 'Use /help to see available commands') {
-          this.renderMessageToUI('', msg.message, 'system', msg.category || 'global', undefined, undefined, msg.timestamp);
+          const key = `${msg.message}`;
+          if (!this.shownSystemMessages.has(key)) {
+            this.renderMessageToUI('', msg.message, 'system', msg.category || 'global', undefined, undefined, msg.timestamp);
+            this.shownSystemMessages.add(key);
+          }
         } else if ((msg.type === 'user' || msg.type === 'other') && msg.sender && msg.message) {
           const messageType = msg.sender === this.getCurrentUsername() ? 'user' : 'other';
           this.renderMessageToUI(msg.sender, msg.message, messageType, msg.category || 'global', undefined, undefined, msg.timestamp);
@@ -890,9 +911,12 @@ export default class ChatPanel extends HTMLElement {
     sendButton.addEventListener('click', sendMessage);
     input.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
-        sendMessage();
+        if (this.hasAttribute('visible')) {
+          sendMessage();
+        }
       }
     });
+	
 
     input.addEventListener('focus', () => {
       input.style.borderColor = 'rgba(255,255,255,0.5)';
@@ -942,6 +966,21 @@ export default class ChatPanel extends HTMLElement {
       messageDiv.className = `message ${type} ${category}`;
 
       if (type === 'system') {
+        // simple de-duplication for system messages to avoid chat spam
+        const key = `${message}`;
+        const now = Date.now();
+        if (this.lastSystemMessageKey === key && (now - this.lastSystemMessageAt) < 1500) {
+          return;
+        }
+        this.lastSystemMessageKey = key;
+        this.lastSystemMessageAt = now;
+        if (this.shownSystemMessages.size > 200) {
+          this.shownSystemMessages.clear();
+        }
+        if (this.shownSystemMessages.has(key)) {
+          return;
+        }
+        this.shownSystemMessages.add(key);
         // System messages - clean, minimal style
         messageDiv.style.cssText = `
           margin: 0.5rem 0;
@@ -991,9 +1030,7 @@ export default class ChatPanel extends HTMLElement {
         timestampDiv.style.cssText = 'color: var(--border); font-size: var(--secondary-font-size); margin-top: 0.15rem; text-align: right;';
         const ts = timestampOverride || Date.now();
         timestampDiv.textContent = new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
-
-
+        
         messageDiv.appendChild(senderDiv);
         messageDiv.appendChild(messageDiv2);
         messageDiv.appendChild(timestampDiv);
@@ -1080,6 +1117,7 @@ export default class ChatPanel extends HTMLElement {
       let message = messageParts.join(' ');
 
       if (receiver && message) {
+        // no sidebar notifications
         // always allowed to send; backend will validate receiver presence and warn sender if needed
         if (receiver === this.getCurrentUsername()) {
           this.addMessage('', t("pmError"), 'system', 'global');
@@ -1107,12 +1145,29 @@ export default class ChatPanel extends HTMLElement {
         message: `/invite ${receiver} ${difficulty}`,
         username: this.getCurrentUsername()
       });
+    } else if (cmd.startsWith('/block ')) {
+      const [_, raw] = cmd.split(/\s+/);
+      const target = raw?.trim();
+      if (!target) { this.addMessage('', 'Usage: /block username', 'system', 'global'); return; }
+      const me = this.getCurrentUsername();
+      if (target.toLowerCase() === me.toLowerCase()) {
+        this.addMessage('', 'You cannot block yourself!', 'system', 'global');
+        return;
+      }
+      // runtime enforcement via socket; server will emit userBlocked to blocker
+      wss.emit('blockUser', { targetUsername: target });
+    } else if (cmd.startsWith('/unblock ')) {
+      const [_, raw] = cmd.split(/\s+/);
+      const target = raw?.trim();
+      if (!target) { this.addMessage('', 'Usage: /unblock username', 'system', 'global'); return; }
+      wss.emit('unblockUser', { targetUsername: target });
     } else if (cmd === '/accept') {
       // accept from anywhere; server will validate pending invite
       // Accept the most recent game invite
       this.handleInviteCommand('accept');
     } else if (cmd === '/decline') {
       // decline from anywhere
+	  // a
       // Decline the most recent game invite
       this.handleInviteCommand('decline');
     } else if (cmd.startsWith('/profile ')) {
@@ -1300,11 +1355,9 @@ export default class ChatPanel extends HTMLElement {
 
         // ABSOLUTELY NO local message addition - UI only renders what backend sends back
       } else {
-        console.error('WebSocket service not available or not connected');
         this.addMessage('', 'Failed to send message: WebSocket not connected', 'system', 'global');
       }
     } catch (error) {
-      console.error('Error sending message:', error);
       this.addMessage('', 'Failed to send message', 'system', 'global');
     }
   }

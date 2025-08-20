@@ -66,6 +66,11 @@ class WebSocketService {
         this.reconnectDelay = 1000;
         this.isReconnecting = false;
         this.isAuthenticatedFlag = true;
+        // sync current presence immediately after auth so backend blocks/permits correctly
+        try {
+          const currentPath = window.location.pathname;
+          this.socket.emit('updatePresence', { path: currentPath });
+        } catch {}
         
         window.dispatchEvent(new CustomEvent('websocketAuthenticated', { detail: { success: true, username: data.username } }));
       } else {
@@ -233,14 +238,18 @@ class WebSocketService {
   }
 
   authenticate(username: string) {
-    // authenticates user with backend using username
+    // authenticates user with backend using username + numeric userId when available
     this.authToken = username;
+    const rawId = localStorage.getItem('userId');
+    const userId = rawId ? parseInt(rawId) : undefined;
+    const payload: any = { username };
+    if (userId && Number.isFinite(userId) && userId > 0) payload.userId = userId;
     if (this.socket && this.socket.connected) {
-      this.socket.emit('authenticate', { username });
+      this.socket.emit('authenticate', payload);
     } else if (this.socket) {
       // if socket exists but not connected, wait for connection
       this.socket.once('connect', () => {
-        this.socket.emit('authenticate', { username });
+        this.socket.emit('authenticate', payload);
       });
     }
   }
