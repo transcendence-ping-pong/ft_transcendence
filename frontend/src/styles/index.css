@@ -210,8 +210,8 @@
       rgba(255, 255, 255, 0.01) 80%,
       rgba(184, 167, 122, 1) 100%);
   --accent: #b8a77a;
-  /* 80 = 50% alpha */
-  --accent-50: #b8a77a80;
+  /* b3 = 70% alpha */
+  --accent-70: #b8a77ab3;
   --accent-secondary: #856f35;
   --accent-tertiary: #560126;
   --border: #8a7676;
@@ -245,7 +245,7 @@
       rgb(2, 0, 20) 100%);
   --accent: #2b1583;
   /* 80 = 50% alpha */
-  --accent-50: #2b158380;
+  --accent-70: #2b1583b3;
   --accent-secondary: #4724d5;
   --accent-tertiary: #4285F4;
   --border: #8982ac;

@@ -16,8 +16,11 @@ template.innerHTML = `
       border-radius: 50%;
       width: var(--chat-icon-size);
       height: var(--chat-icon-size);
-      background: var(--body);
-      border: 2px solid var(--text);
+      /*background: var(--body);*/
+      /*border: 2px solid var(--text);*/
+
+      background: var(--accent-70);
+      border: 2px solid rgba(255, 255, 255, 0.6);
       color: white;
       display: flex;
       align-items: center;
@@ -28,7 +31,7 @@ template.innerHTML = `
       box-shadow: var(--shadow-soft);
     }
     #chatButton:hover {
-      background: var(--accent-secondary);
+      background: var(--accent);
       box-shadow: var(--shadow);
     }
 
@@ -36,9 +39,6 @@ template.innerHTML = `
       width: 2.5rem;
       height: 2.5rem;
       display: block;
-      filter: invert(var(--invert));
-    }
-    .top-bar__chat-icon img:hover {
       filter: invert(1);
     }
   </style>

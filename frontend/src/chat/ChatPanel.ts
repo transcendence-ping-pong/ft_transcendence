@@ -567,7 +567,7 @@ export default class ChatPanel extends HTMLElement {
         right: 0;
         width: 400px;
         height: 600px;
-        background: var(--video-transition-bg);
+        background: var(--accent-70);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border: 2px solid var(--video-transition-bg);
@@ -669,7 +669,7 @@ export default class ChatPanel extends HTMLElement {
         color: var(--text);
         padding: 0.75rem 1rem;
         cursor: pointer;
-        font-size: var(--main-font-size);
+        font-size: var(--secondary-font-size);
         font-weight: bold;
         min-width: 60px;
       }
@@ -975,7 +975,7 @@ export default class ChatPanel extends HTMLElement {
         }
 
         const messageDiv2 = document.createElement('div');
-        messageDiv2.style.cssText = 'color: var(--text); font-size: var(--main-font-size); line-height: 1.2;';
+        messageDiv2.style.cssText = 'color: var(--text); font-size: var(--secondary-font-size); line-height: 1.2;';
         messageDiv2.textContent = message;
 
         const timestampDiv = document.createElement('div');

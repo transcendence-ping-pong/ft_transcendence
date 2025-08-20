@@ -53,6 +53,7 @@ template.innerHTML = `
     }
     .profile-form__edit-btn:hover {
       background: var(--accent-secondary);
+      box-shadow: var(--shadow-soft);
       cursor: pointer;
     }
     hr {
@@ -130,6 +131,9 @@ template.innerHTML = `
       transition: background 0.2s, color 0.2s;
       margin-left: 0;
     }
+    .profile-form__auth-btn:hover {
+      box-shadow: var(--shadow-soft);
+    }
     .profile-form__auth-btn:disabled {
       cursor: not-allowed;
       opacity: 0.5;
@@ -163,6 +167,7 @@ template.innerHTML = `
     .profile-form__footer-btn:hover, .profile-form__footer-btn:focus {
       background: var(--accent);
       color: var(--text);
+      box-shadow: var(--shadow-soft);
     }
     .profile-form__footer-btn:disabled {
       background: var(--accent-secondary);
@@ -421,7 +426,7 @@ export class UserProfileForm extends HTMLElement {
 
     // hide, show simplified profile form for visitors, i.e. no password fields, no delete profile
     // if more elements are needed to be hidden, add their id to the hiddenElements array
-    const hiddenElements = ["passwordInput", "confirmPasswordInput", "viewBtn", "authSection", "editButton", "avatarOverlay", "deleteBtn","saveBtn"];
+    const hiddenElements = ["passwordInput", "confirmPasswordInput", "viewBtn", "authSection", "editButton", "avatarOverlay", "deleteBtn", "saveBtn"];
     for (const element of hiddenElements) {
       if (this[element]) {
         this[element].style.display = 'none';

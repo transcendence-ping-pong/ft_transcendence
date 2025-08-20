@@ -63,7 +63,7 @@ template.innerHTML = `
       display: flex;
       justify-content: space-between;
       gap: 1rem;
-      background: var(--accent-50);
+      background: var(--accent-70);
       padding: 0.5rem;
     }
     .auth-form__code-input {
