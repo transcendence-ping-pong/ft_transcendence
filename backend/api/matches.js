@@ -1,6 +1,6 @@
 
 const { splitIntoRandomPairs } = require('./utils');
-const { dbRun } = require('./utils');
+const { dbRun, dbGet } = require('./utils');
 const { getWinner } = require('./utils');
 
 async function matchRoutes(fastify, options) {
@@ -201,6 +201,19 @@ async function matchRoutes(fastify, options) {
 		});
 	});
 
+	fastify.get('/matches/stats/:userId', async (request, reply) => {
+		const { userId } = request.params;
+
+		try {
+			const {wins} = await dbGet(db, `SELECT COUNT(*) AS wins FROM matches WHERE remoteUserId > 0 AND (creatorUserId = ? AND winnerDisplayName = player1DisplayName) OR (remoteUserId = ? AND winnerDisplayName = player2DisplayName)`, [userId, userId]);
+			const {losses} = await dbGet(db, `SELECT COUNT(*) AS losses FROM matches WHERE remoteUserId > 0 AND (creatorUserId = ? AND winnerDisplayName = player2DisplayName) OR (remoteUserId = ? AND winnerDisplayName = player1DisplayName)`, [userId, userId]);
+			return reply.send({wins, losses});
+
+		} catch (err) {
+			return reply.send(err.message)
+		}
+
+	});
 
 };
 
