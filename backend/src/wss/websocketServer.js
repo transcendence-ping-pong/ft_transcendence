@@ -483,7 +483,9 @@ class WebSocketServer {
 		this.gameManager.startGameLoop(roomId, this.io, room.gameState, (gameState) => {
 			// if game ended by rule, emit gameEnd and stop updates
 			if (gameState.gamePhase === 'finished') {
-				this.io.to(roomId).emit('gameEnd', { winner: gameState.winner, gameState });
+				// include room context so clients can reliably map players/winner
+				const finalRoom = this.roomManager.getRoom(roomId);
+				this.io.to(roomId).emit('gameEnd', { winner: gameState.winner, gameState, room: finalRoom, roomId });
 				this.gameManager.stopGameLoop(roomId);
 				return;
 			}
@@ -567,9 +569,12 @@ class WebSocketServer {
 				}
 
 				if (result.room) {
+					// include room context consistently
 					this.io.to(roomCheck.roomId).emit('playerLeft', {
 						player: user,
-						players: result.room.players
+						players: result.room.players,
+						roomId: roomCheck.roomId,
+						room: result.room
 					});
 				}
 			}
@@ -890,6 +895,12 @@ class WebSocketServer {
 			return;
 		}
 
+		// presence requirement: receiver must be on Home to receive invite commands cleanly
+		if (targetUser.currentPath && targetUser.currentPath !== '/') {
+			socket.emit('chatError', { message: `${targetUsername} is not on Home. Try again when they are on Home.` });
+			return;
+		}
+
 		// create invite using invite manager
 		const result = this.inviteManager.createInvite(user.userId, user.username, targetUser.userId, targetUsername, difficulty);
 		if (!result.success) {
@@ -900,12 +911,7 @@ class WebSocketServer {
 		Logger.logInviteEvent('created', user.username, targetUsername, { difficulty });
 
 		if (targetUser.socketId) {
-			// presence requirement: receiver must be on Home to receive invite commands cleanly
-			if (targetUser.currentPath && targetUser.currentPath !== '/') {
-				socket.emit('chatError', { message: `${targetUsername} is not on Home. Try again when they are on Home.` });
-			} else {
-				this.io.to(targetUser.socketId).emit('gameInvite', result.inviteMessage);
-			}
+			this.io.to(targetUser.socketId).emit('gameInvite', result.inviteMessage);
 		}
 
 		socket.emit('inviteSent', {

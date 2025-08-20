@@ -20,6 +20,9 @@ export default class ChatPanel extends HTMLElement {
   private currentUsername: string = '';
   private lastInvite: any = null;
   private hasRenderedHistory: boolean = false;
+  private shownSystemMessages: Set<string> = new Set();
+  private lastSystemMessageKey: string = '';
+  private lastSystemMessageAt: number = 0;
 
   constructor() {
     super();
@@ -219,24 +222,23 @@ export default class ChatPanel extends HTMLElement {
       if (data && data.type === 'invite' && data.senderUsername && data.message) {
         this.lastInvite = data;
         this.addMessage(data.senderUsername, data.message, 'other', 'direct', data.receiverUsername, data);
-        const meUser = this.getCurrentUsername();
-        // also surface a subtle system line in chat
-        if (data.receiverUsername && data.receiverUsername === meUser) {
-          this.addMessage('', `Invite from ${data.senderUsername}${data.difficulty ? ' ('+data.difficulty+')' : ''}`, 'system', 'global');
-        }
+        // no additional system line to avoid duplicate alerts; direct message is enough
       }
     };
     window.addEventListener('gameInvite', onGameInvite);
 
-    // feedback for sender when invite is sent
-    websocketService.socket.on('inviteSent', (data: any) => {
-      this.addMessage('', `✅ Invite sent to ${data.targetUsername}`, 'system', 'global');
-    });
+    // feedback for sender when invite is sent: listen to centralized window event to avoid duplicates
+    const onInviteSent = (e: any) => {
+      const data = e.detail || {};
+      if (data && data.targetUsername) {
+        this.addMessage('', `✅ Invite sent to ${data.targetUsername}`, 'system', 'global');
+      }
+    };
+    window.addEventListener('inviteSent', onInviteSent);
 
-    // Handle invite responses (no redirect here; wait for roomCreated)
-    websocketService.socket.on('inviteAccepted', (data: any) => {
-      this.addMessage('', data.message, 'system', 'global');
-      // no sidebar notification
+    // Handle invite responses (no additional chat noise)
+    websocketService.socket.on('inviteAccepted', (_data: any) => {
+      // intentionally no chat line; navigation to game handles the flow
     });
 
     websocketService.socket.on('inviteDeclined', (data: any) => {
@@ -244,19 +246,16 @@ export default class ChatPanel extends HTMLElement {
       // no sidebar notification
     });
 
-    // Handle game countdown
-    websocketService.socket.on('gameCountdown', (data: any) => {
-      this.addMessage('', `🎮 Game starting in ${data.countdown}...`, 'system', 'global');
-    });
+    // Remove countdown logs from chat for cleaner UX
 
     // Handle game start - removed direct websocket listener to prevent conflicts
     // The gameStart event should be handled by the game orchestrator, not the chat
 
-    // Handle room creation for invite flow (keep existing event chain)
-    websocketService.socket.on('roomCreated', (data: any) => {
+    // room created: single source via window event
+    const onRoomCreated = () => {
       this.addMessage('', '🎮 Game room created!', 'system', 'global');
-      window.dispatchEvent(new CustomEvent('roomCreated', { detail: data }));
-    });
+    };
+    window.addEventListener('roomCreated', onRoomCreated);
 
     // Navigate to game on server instruction (both host/guest)
     window.addEventListener('navigateToGame', (e: any) => {
@@ -286,13 +285,9 @@ export default class ChatPanel extends HTMLElement {
       } catch { }
     });
 
-    // Handle player joined for invite flow
-    websocketService.socket.on('playerJoined', (data: any) => {
-      this.addMessage('', '🎮 Guest joined the game room!', 'system', 'global');
-
-      // Dispatch event for RemoteMultiplayerManager to handle
-      window.dispatchEvent(new CustomEvent('playerJoined', { detail: data }));
-    });
+    // Handle player joined for invite flow (listen to centralized window event)
+    // suppress extra chat noise for playerJoined; UI reacts elsewhere if needed
+    // window.addEventListener('playerJoined', () => {});
   }
 
   // Handle online users updates
@@ -457,7 +452,11 @@ export default class ChatPanel extends HTMLElement {
     messages.forEach((msg: any) => {
       try {
         if (msg.type === 'system' && msg.message !== 'Welcome to Pong Live Chat!' && msg.message !== 'Use /help to see available commands') {
-          this.renderMessageToUI('', msg.message, 'system', msg.category || 'global', undefined, undefined, msg.timestamp);
+          const key = `${msg.message}`;
+          if (!this.shownSystemMessages.has(key)) {
+            this.renderMessageToUI('', msg.message, 'system', msg.category || 'global', undefined, undefined, msg.timestamp);
+            this.shownSystemMessages.add(key);
+          }
         } else if ((msg.type === 'user' || msg.type === 'other') && msg.sender && msg.message) {
           const messageType = msg.sender === this.getCurrentUsername() ? 'user' : 'other';
           this.renderMessageToUI(msg.sender, msg.message, messageType, msg.category || 'global', undefined, undefined, msg.timestamp);
@@ -959,6 +958,21 @@ export default class ChatPanel extends HTMLElement {
       messageDiv.className = `message ${type} ${category}`;
 
       if (type === 'system') {
+        // simple de-duplication for system messages to avoid chat spam
+        const key = `${message}`;
+        const now = Date.now();
+        if (this.lastSystemMessageKey === key && (now - this.lastSystemMessageAt) < 1500) {
+          return;
+        }
+        this.lastSystemMessageKey = key;
+        this.lastSystemMessageAt = now;
+        if (this.shownSystemMessages.size > 200) {
+          this.shownSystemMessages.clear();
+        }
+        if (this.shownSystemMessages.has(key)) {
+          return;
+        }
+        this.shownSystemMessages.add(key);
         // System messages - clean, minimal style
         messageDiv.style.cssText = `
           margin: 0.5rem 0;
@@ -1008,9 +1022,7 @@ export default class ChatPanel extends HTMLElement {
         timestampDiv.style.cssText = 'color: var(--border); font-size: var(--secondary-font-size); margin-top: 0.15rem; text-align: right;';
         const ts = timestampOverride || Date.now();
         timestampDiv.textContent = new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
-
-
+        
         messageDiv.appendChild(senderDiv);
         messageDiv.appendChild(messageDiv2);
         messageDiv.appendChild(timestampDiv);

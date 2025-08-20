@@ -27,6 +27,8 @@ export class gameOrchestrator {
   private isMultiplayerMode: boolean = false;
   private multiplayerKeyDownHandler?: (event: KeyboardEvent) => void;
   private multiplayerKeyUpHandler?: (event: KeyboardEvent) => void;
+  private handledGameOver: boolean = false;
+  private handledOpponentLeft: boolean = false;
 
   private gameLevel: GameLevel = GameLevel.EASY;
   private gameMode: GameMode = GameMode.LOCAL;
@@ -125,6 +127,11 @@ export class gameOrchestrator {
         console.log('GameOrchestrator: gameStart event received', e.detail);
         console.log('GameOrchestrator: Creating multiplayer game...');
 
+        // reset one-shot guards for a fresh session
+        this.handledGameOver = false;
+        this.handledOpponentLeft = false;
+        this.lastKnownScore = { LEFT: 0, RIGHT: 0 };
+
         this.isMultiplayerMode = true;
         this.babylonCanvas.createMultiplayerGameCanvas();
         this.gameCanvas = this.babylonCanvas.getGameCanvas();
@@ -193,6 +200,8 @@ export class gameOrchestrator {
     });
 
     window.addEventListener('gameEnd', (e: CustomEvent) => {
+      if (this.handledGameOver) return;
+      this.handledGameOver = true;
       this.isMultiplayerMode = false;
       window.dispatchEvent(new CustomEvent('showMultiplayerUI'));
       this.removeMultiplayerInput();
@@ -213,13 +222,7 @@ export class gameOrchestrator {
       this.gui.showGameOver(winnerName, score);
       // stop rendering updates so the ball doesn't keep moving underneath
       try { (this.babylonCanvas as any).cleanupGame(); } catch {}
-      // chat-based notice instead of notifications
-      try {
-        const panel = document.querySelector('chat-panel') as any;
-        if (panel && typeof panel.addMessage === 'function') {
-          panel.addMessage('', `Match ended: ${winnerName} ${score.LEFT}–${score.RIGHT} (score)`, 'system', 'global');
-        }
-      } catch {}
+      // chat message is handled by Home via lastMatchSummary banner
 
       // persist match summary for Home page (simple global event)
       const summary = { winner: winnerName, score, reason: 'score', host: leftName, guest: rightName } as any;
@@ -266,61 +269,28 @@ export class gameOrchestrator {
     });
 
 	// TODO: think its somewhat buggy
-    window.addEventListener('playerDisconnected', (e: CustomEvent) => {
-      if (this.isMultiplayerMode) {
-        this.isMultiplayerMode = false;
-        this.removeMultiplayerInput();
-        this.gui.clearGUI();
-        try {
-          const panel = document.querySelector('chat-panel') as any;
-          if (panel && typeof panel.addMessage === 'function') {
-            panel.addMessage('', `Match ended: ${state.userData?.username || 'You'} (opponent left)`, 'system', 'global');
-          }
-        } catch {}
-        const summary: any = { winner: state.userData?.username || 'You', score: { LEFT: 0, RIGHT: 0 }, reason: 'opponentLeft', host: (window as any).websocketService?.getCurrentRoom?.()?.hostUsername, guest: (window as any).websocketService?.getCurrentRoom?.()?.players?.find((p:any)=>p.username?.toLowerCase()!==( (window as any).websocketService?.getCurrentRoom?.()?.hostUsername||'').toLowerCase())?.username };
-        try { localStorage.setItem('lastMatchSummary', JSON.stringify(summary)); } catch {}
-        try { window.dispatchEvent(new CustomEvent('lastMatchSummary', { detail: summary })); } catch {}
-        // host-only: persist current score and winner on opponent leave
-        (async () => {
-          try {
-            const room = (window as any).websocketService?.getCurrentRoom?.();
-            const leftName = room?.hostUsername;
-            const me = state.userData?.username || localStorage.getItem('loggedInUser');
-            const isHost = me && leftName && me.toLowerCase() === leftName.toLowerCase();
-            if (isHost && this.matchId) {
-              await updateMatch(this.matchId, me || 'You', this.lastKnownScore.LEFT, this.lastKnownScore.RIGHT);
-            }
-          } catch {}
-        })();
-        // immediate redirect to home (keep it simple for now)
-        try {
-          window.history.pushState({}, '', '/');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        } catch {
-          window.location.href = '/';
-        }
-      }
-    });
+    // removed: duplicate with playerLeft handler below
 
-    // extra safety: redirect when server notifies someone left
+    // opponent left
     window.addEventListener('playerLeft', (e: CustomEvent) => {
+      if (this.handledOpponentLeft) return;
+      this.handledOpponentLeft = true;
       if (this.isMultiplayerMode) {
         this.isMultiplayerMode = false;
         this.removeMultiplayerInput();
         this.gui.clearGUI();
-        try {
-          const panel = document.querySelector('chat-panel') as any;
-          if (panel && typeof panel.addMessage === 'function') {
-            panel.addMessage('', `Match ended: ${state.userData?.username || 'You'} (opponent left)`, 'system', 'global');
-          }
-        } catch {}
-        const summary: any = { winner: state.userData?.username || 'You', score: { LEFT: 0, RIGHT: 0 }, reason: 'opponentLeft', host: (window as any).websocketService?.getCurrentRoom?.()?.hostUsername, guest: (window as any).websocketService?.getCurrentRoom?.()?.players?.find((p:any)=>p.username?.toLowerCase()!==( (window as any).websocketService?.getCurrentRoom?.()?.hostUsername||'').toLowerCase())?.username };
+        // chat message is handled by Home via lastMatchSummary banner
+        // prefer room info embedded in event if present (backend now includes it)
+        const evtRoom = (e as any).detail?.room || (window as any).websocketService?.getCurrentRoom?.();
+        const hostName = evtRoom?.hostUsername;
+        const guestName = evtRoom?.players?.find((p:any)=>p.username?.toLowerCase() !== (hostName||'').toLowerCase())?.username;
+        const summary: any = { winner: state.userData?.username || 'You', score: this.lastKnownScore, reason: 'opponentLeft', host: hostName, guest: guestName };
         try { localStorage.setItem('lastMatchSummary', JSON.stringify(summary)); } catch {}
         try { window.dispatchEvent(new CustomEvent('lastMatchSummary', { detail: summary })); } catch {}
         // host-only: persist current score and winner on opponent leave
         (async () => {
           try {
-            const room = (window as any).websocketService?.getCurrentRoom?.();
+            const room = evtRoom;
             const leftName = room?.hostUsername;
             const me = state.userData?.username || localStorage.getItem('loggedInUser');
             const isHost = me && leftName && me.toLowerCase() === leftName.toLowerCase();
@@ -444,6 +414,13 @@ export class gameOrchestrator {
 
       // TODO FIX: arguments are obsolete (player and score), review
       this.gui.showGameOver('Player 1', { LEFT: 5, RIGHT: 3 });
+      // surface summary banner + chat line on home for normal flow
+      try {
+        const score = { LEFT: e.detail.score.LEFT, RIGHT: e.detail.score.RIGHT };
+        const summary: any = { winner, score, reason: 'score', host: state.players?.p1, guest: state.players?.p2 };
+        try { localStorage.setItem('lastMatchSummary', JSON.stringify(summary)); } catch {}
+        try { window.dispatchEvent(new CustomEvent('lastMatchSummary', { detail: summary })); } catch {}
+      } catch {}
       if (this.gameType === GameType.TOURNAMENT) {
         this.handleTournamentEvents();
       } else {

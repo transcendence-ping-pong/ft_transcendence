@@ -75,14 +75,11 @@ export class RemoteMultiplayerManager {
     });
     // Room creation - Host becomes host
     window.addEventListener('roomCreated', (e: CustomEvent) => {
-      console.log('RemoteMultiplayerManager: Room created', e.detail);
       this.state.currentRoom = this.mapToRemoteRoom(e.detail.room);
       this.state.currentRoomId = e.detail.roomId;
       this.state.isHost = true;
       this.state.isReady = false;
       this.state.isConnected = true;
-      
-      console.log('RemoteMultiplayerManager: State after room creation:', this.state);
       
       // Dispatch clean signal to UI
       window.dispatchEvent(new CustomEvent('roomStateChanged', { 
@@ -92,7 +89,6 @@ export class RemoteMultiplayerManager {
 
     // Player joined - Guest joins or host sees guest
     window.addEventListener('playerJoined', (e: CustomEvent) => {
-      console.log('RemoteMultiplayerManager: Player joined', e.detail);
       
       // If we don't have a current room, we're the guest joining
       if (!this.state.currentRoom) {
@@ -103,7 +99,7 @@ export class RemoteMultiplayerManager {
         this.state.isReady = false;
         this.state.isConnected = true;
         
-        console.log('RemoteMultiplayerManager: Guest joined, setting up guest state', this.state);
+        // setup guest state
         
         // Dispatch room state changed signal for guest
         window.dispatchEvent(new CustomEvent('roomStateChanged', { 
@@ -111,7 +107,7 @@ export class RemoteMultiplayerManager {
         }));
       } else {
         // We already have a room, so we're the host seeing a guest join
-        console.log('RemoteMultiplayerManager: Host sees guest joined, updating room state');
+        // host updates room state
         
         // Update room state with guest information
         this.state.currentRoom.currentPlayers = e.detail.room?.currentPlayers || 2;
@@ -179,7 +175,6 @@ export class RemoteMultiplayerManager {
 
     // Available rooms - List of games to join
     window.addEventListener('availableRooms', (e: CustomEvent) => {
-      console.log('RemoteMultiplayerManager: Available rooms received', e.detail);
       
       // Dispatch clean signal with rooms list
       window.dispatchEvent(new CustomEvent('availableRoomsList', { 
@@ -189,7 +184,6 @@ export class RemoteMultiplayerManager {
 
     // WebSocket errors - Handle connection issues
     window.addEventListener('websocketError', (e: CustomEvent) => {
-      console.error('RemoteMultiplayerManager: WebSocket error', e.detail);
       
       // Reset state on connection errors
       if (e.detail.message?.includes('Connection lost') || e.detail.message?.includes('Max reconnection attempts')) {
@@ -202,7 +196,6 @@ export class RemoteMultiplayerManager {
 
     // Game start - Both players ready
     window.addEventListener('gameStart', (e: CustomEvent) => {
-      console.log('RemoteMultiplayerManager: Game starting', e.detail);
       
       if (this.state.currentRoom) {
         this.state.currentRoom.status = 'playing';
@@ -215,7 +208,6 @@ export class RemoteMultiplayerManager {
 
     // Invite accepted - Handle transition from chat to multiplayer
     window.addEventListener('inviteAccepted', (e: CustomEvent) => {
-      console.log('RemoteMultiplayerManager: Invite accepted', e.detail);
       
       // If we don't have a current room, this is an invite acceptance
       if (!this.state.currentRoom && e.detail.room) {
@@ -227,7 +219,6 @@ export class RemoteMultiplayerManager {
 
   // PUBLIC - Set invite room from chat system
   public setInviteRoom(room: any, isHost: boolean) {
-    console.log('RemoteMultiplayerManager: Setting invite room', room, isHost);
     
     // Map the invite room to our format
     const mappedRoom = this.mapToRemoteRoom(room);
@@ -259,7 +250,7 @@ export class RemoteMultiplayerManager {
       }
     }
     
-    console.log('RemoteMultiplayerManager: Invite room set', this.state);
+    // invite room set
     
     // Dispatch room state changed signal
     window.dispatchEvent(new CustomEvent('roomStateChanged', { 
