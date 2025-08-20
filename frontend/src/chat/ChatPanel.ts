@@ -199,13 +199,22 @@ export default class ChatPanel extends HTMLElement {
     // Handle game invites
     // prefer window event to avoid multiple socket handlers if ChatPanel is recreated
     const onGameInvite = (e: any) => {
-      const data = e.detail;
-      if (data && data.type === 'invite' && data.senderUsername && data.message) {
-        this.lastInvite = data;
-        this.addMessage(data.senderUsername, data.message, 'other', 'direct', data.receiverUsername, data);
+        const data = e.detail;
+        if (data && data.type === 'invite' && data.senderUsername && data.message) {
+            this.lastInvite = data;
+            this.addMessage(data.senderUsername, data.message, 'other', 'direct', data.receiverUsername, data);
+        }
+        window.addEventListener('gameInvite', onGameInvite);
+    };
+
+    const onTournMatch = (e: CustomEvent) => {
+      const matches = e.detail.matches;
+      const current = matches[state.tournamentData.currentMatchIndex];
+      if (current && current.player1 && current.player2) {
+        this.addMessage('', t("game.nextMatch", { players: `${current.player1} ${t("game.and")} ${current.player2}`}), 'system', 'global');
       }
     };
-    window.addEventListener('gameInvite', onGameInvite);
+    window.addEventListener('tournament-stage', onTournMatch);
 
     // feedback for sender when invite is sent
     websocketService.socket.on('inviteSent', (data: any) => {
@@ -1117,7 +1126,6 @@ export default class ChatPanel extends HTMLElement {
     } else if (cmd.startsWith('/friend ')) {
       const [_, option, username] = cmd.split(/\s+/);
 
-      console.log("Something");
       if (!option) {
         this.addMessage('', t("chat.friendUsage"), 'system', 'global');
         return;
