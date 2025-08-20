@@ -23,7 +23,8 @@ template.innerHTML = `
       display: flex;
       flex-direction: column;
     }
-    .matches-title {
+
+    /*.matches-title {
       font-size: var(--title-font-size);
       font-weight: 600;
       margin-bottom: 0.5rem;
@@ -34,7 +35,77 @@ template.innerHTML = `
       padding: 0.7em 0.5em;
       border-bottom: 1.5px solid var(--border);
       box-shadow: 0 2px 8px -6px rgba(0,0,0,0.12);
+    }*/
+
+    .matches-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.7em 0.5em;
+      border-bottom: 1.5px solid var(--border);
+      box-shadow: 0 2px 8px -6px rgba(0,0,0,0.12);
+      margin-bottom: 0.5rem;
     }
+
+    .matches-title {
+      font-size: var(--title-font-size);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      margin: 0;
+    }
+
+    .matches-stats {
+      display: flex;
+      align-items: center;
+      gap: 2.2rem;
+      font-family: 'Roboto Mono', 'Consolas', monospace;
+      font-size: 1.5rem;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+      background: var(--body);
+      border: 2px solid var(--accent);
+      padding: 0.5rem 1.5rem;
+    }
+
+    .stat-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 60px;
+    }
+    .stat-block.loss {
+      background: var(--warning);
+    }
+    .stat-block.win {
+      background: var(--success);
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #fff;
+      margin-bottom: 0.1em;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .stat-value {
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: #fff;
+      padding: 0.05em 0.5em;
+      box-shadow: 0 2px 8px -6px rgba(0,0,0,0.10);
+      margin-bottom: 0.1em;
+      letter-spacing: 0.08em;
+    }
+
+    .stat-separator {
+      font-size: 1.7rem;
+      color: var(--border, #aaa);
+      font-weight: 700;
+      margin: 0 0.5em;
+      user-select: none;
+    }
+
     .timeline-outer {
       flex: 1 1 auto;
       height: 100%;
@@ -190,7 +261,21 @@ template.innerHTML = `
   </style>
 
   <section class="matches-section">
-    <div class="matches-title">${t('profile.matchesHistory')}</div>
+    <div class="matches-header">
+      <h3 class="matches-title">${t('profile.matchesHistory')}</h3>
+      <div class="matches-stats">
+        <div class="stat-block win">
+          <span class="stat-label">Wins</span>
+          <span class="stat-value win"></span>
+        </div>
+        <span class="stat-separator">:</span>
+        <div class="stat-block loss">
+          <span class="stat-label">Losses</span>
+          <span class="stat-value loss"></span>
+        </div>
+      </div>
+    </div>
+
     <div class="timeline-outer">
       <div class="timeline" id="timeline"></div>
       <div class="no-matches__wrapper" id="no-matches">
@@ -206,6 +291,9 @@ export class MatchesHistory extends HTMLElement {
   private userData: UserData = { email: '', username: '', userId: 2000, avatar: '' };
   private timeline: HTMLElement | null = null;
   private noMatchesWrapper: HTMLElement | null = null;
+  private stats: { wins: number; losses: number } = { wins: 0, losses: 0 };
+  private winText: HTMLElement | null = null;
+  private lossText: HTMLElement | null = null;
 
   static get observedAttributes() {
     return ['userdata'];
@@ -229,10 +317,25 @@ export class MatchesHistory extends HTMLElement {
   async connectedCallback() {
     this.timeline = this.shadowRoot?.getElementById('timeline');
     this.noMatchesWrapper = this.shadowRoot?.getElementById('no-matches');
+    this.winText = this.shadowRoot?.querySelector('.stat-value.win');
+    this.lossText = this.shadowRoot?.querySelector('.stat-value.loss');
 
     if (!this.timeline) return;
 
     await this.getMatches();
+
+    await getMatchStats(this.userData.userId).then(stats => {
+      this.stats = stats;
+      this.winText!.textContent = this.stats.wins.toString();
+      this.lossText!.textContent = this.stats.losses.toString();
+    }).catch(err => {
+      console.error('Failed to fetch match stats:', err);
+      this.stats = { wins: 0, losses: 0 };
+
+      this.winText!.textContent = '0';
+      this.lossText!.textContent = '0';
+    });
+
     if (this.matchObject.length === 0) {
       this.noMatchesWrapper!.classList.add('no-matches__wrapper--visible');
       return;
