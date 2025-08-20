@@ -212,7 +212,7 @@ class ChatUserList extends HTMLElement {
       this.render();
     };
 
-    // check every 100ms for updates (simple approach)
+    // check every 100ms for updates
     setInterval(checkForUpdates, 100);
   }
 
@@ -224,11 +224,11 @@ class ChatUserList extends HTMLElement {
     refreshButton.className = 'refresh-button';
     refreshButton.textContent = '🔄 Refresh Users';
     refreshButton.addEventListener('click', () => {
-      // chatService.requestOnlineUsers(); // Removed chatService dependency
+      // removed chatService dependency
     });
     this.usersContainer.appendChild(refreshButton);
 
-    const users = state.onlineUsers; // Changed to use state.onlineUsers
+    const users = state.onlineUsers;
     
     if (users.length === 0) {
       const noUsers = document.createElement('div');
@@ -244,12 +244,11 @@ class ChatUserList extends HTMLElement {
     });
   }
 
-  private createUserElement(user: any) { // Changed type to any as chatService is removed
+  private createUserElement(user: any) {
     const userDiv = document.createElement('div');
     userDiv.className = 'user-item';
     
-    // Removed chatService.isUserBlocked(user.username)
-    if (user.isBlocked) { // Assuming user object now includes isBlocked
+    if (user.isBlocked) {
       userDiv.classList.add('blocked');
     }
 
@@ -272,23 +271,16 @@ class ChatUserList extends HTMLElement {
       inviteButton.title = 'Invite to game';
       inviteButton.addEventListener('click', (e) => {
         e.stopPropagation();
-        // chatService.sendGameInvite(username); // Removed chatService dependency
       });
 
       // block/unblock button
       const blockButton = document.createElement('button');
-      // const isBlocked = chatService.isUserBlocked(user.username); // Removed chatService dependency
-      const isBlocked = user.isBlocked; // Assuming user object now includes isBlocked
+      const isBlocked = user.isBlocked;
       blockButton.className = `user-action block`;
       blockButton.innerHTML = isBlocked ? '🔓' : '🚫';
       blockButton.title = isBlocked ? 'Unblock user' : 'Block user';
       blockButton.addEventListener('click', (e) => {
         e.stopPropagation();
-        // if (isBlocked) { // Removed chatService dependency
-        //   this.unblockUser(user.username);
-        // } else {
-        //   this.blockUser(user.username);
-        // }
       });
 
       actions.appendChild(inviteButton);
@@ -301,26 +293,25 @@ class ChatUserList extends HTMLElement {
 
     // click to send direct message
     userDiv.addEventListener('click', () => {
-      // this.openDirectMessage(user.username); // Removed chatService dependency
+      // removed chatService dependency
     });
 
     return userDiv;
   }
 
   private inviteUser(username: string) {
-    // chatService.sendGameInvite(username); // Removed chatService dependency
+    // rRemoved chatService dependency
   }
 
   private blockUser(username: string) {
-    // chatService.blockUser(username); // Removed chatService dependency
+    // removed chatService dependency
   }
 
   private unblockUser(username: string) {
-    // chatService.unblockUser(username); // Removed chatService dependency
+    // removed chatService dependency
   }
 
   private openDirectMessage(username: string) {
-    // focus the input and add /pm command
     const chatInput = this.shadowRoot!.host.parentElement?.querySelector('chat-input');
     if (chatInput) {
       const input = chatInput.shadowRoot?.querySelector('.chat-input') as HTMLInputElement;
