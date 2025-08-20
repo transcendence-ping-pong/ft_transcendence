@@ -90,11 +90,11 @@ function isSafePassword(str) {
 }
 
 function isValidUsername(username) {
-    if (!username || username.length < 3 || username.length > 10) {
+    if (!username || username.length < 3 || username.length > 20) {
         return false;
     }
-    // Allow letters, numbers, spaces, and some common characters
-    return /^[a-zA-Z0-9\s._-]+$/.test(username);
+    // Allow letters, numbers, and some common characters
+    return /^[a-zA-Z0-9._-]+$/.test(username);
 }
 
 function isValidPassword(password) {

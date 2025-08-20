@@ -63,15 +63,17 @@ async function userRoutes(fastify, options) {
             const googleId = payload.sub;
             const email = payload.email;
             const name = payload.name;
+            const firstName = name.split(' ')[0].replace(/\s/g, '');
+
             let user = await dbGet(db, `SELECT * FROM users WHERE googleID = ?`, [googleId]);
             let username, userId;
 
             if (!user) {
                 userId = await dbRun(db,
                     `INSERT INTO users (username, password, secret, googleID, email) VALUES (?, ?, ?, ?, ?)`,
-                    [name, '', '', googleId, email]
+                    [firstName, '', '', googleId, email]
                 );
-                username = name;
+                username = firstName;
             } else {
                 username = user.username;
                 userId = user.userId;
