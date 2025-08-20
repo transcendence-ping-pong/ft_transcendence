@@ -333,7 +333,7 @@ private async handleDisable2fa() {
   try {
     const accessToken = state.userData?.accessToken;
     if (!accessToken) {
-      alert('No access token found.');
+      alert('No access token found.');//
       return;
     }
     const response = await authService.disable2FA(accessToken);
@@ -506,7 +506,8 @@ private async handleDisable2fa() {
       if (!this.isGoogleAccount()) {
         if (newPassword && newPassword.length > 6) {
           if (newPassword !== confirmPassword) {
-            throw new Error('Passwords do not match');
+              this.errorText.textContent=t("error.passwordsDoNotMatch");
+              return;
           }
           await authService.updatePassword(newPassword, accessToken);
           hasChanges = true;
@@ -516,20 +517,16 @@ private async handleDisable2fa() {
       if (hasChanges) {
         window.dispatchEvent(new CustomEvent('username-updated'));
         window.dispatchEvent(new CustomEvent('profile-loaded'));
-        alert("Profile updated successfully!");
         this.passwordInput.value = '';
         this.confirmPasswordInput.value = '';
         this.isEditMode = false;
         this.viewBtn.style.display = 'none';// TODO disable it or hide it // not working 
         this.editButton.style.backgroundColor = 'var(--accent)';
         this.toggleEditMode();
-      } else {
-        alert("No changes to save.");
       }
 
     } catch (error) {
       console.error('Error saving profile:', error);
-      alert(`Error updating profile: ${error.message}`);
     }
   }
 };

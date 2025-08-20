@@ -90,7 +90,7 @@ export class AuthFormLayout extends HTMLElement {
     * });
   */
   clearError(onClear?: () => void) {
-    this.setError('');
+    this.setError('');//this text content = '';
     onClear?.();
   }
 }
