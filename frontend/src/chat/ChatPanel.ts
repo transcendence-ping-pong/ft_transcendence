@@ -35,7 +35,7 @@ export default class ChatPanel extends HTMLElement {
     this.observeVisibility();
   }
 
-	// load messages when chat becomes visible
+  // load messages when chat becomes visible
   private observeVisibility() {
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -58,7 +58,7 @@ export default class ChatPanel extends HTMLElement {
                   this.messageHistory = parsed;
                 }
               }
-            } catch {}
+            } catch { }
           }
         }
       });
@@ -128,8 +128,8 @@ export default class ChatPanel extends HTMLElement {
         }
         // authenticate with helper so numeric userId is included from localStorage
         websocketService.authenticate(usernameFromState);
-        
-        // listen for authentication response
+
+        // Listen for authentication response
         window.addEventListener('websocketAuthenticated', (event: CustomEvent) => {
           const { success, username } = event.detail as any;
           if (success) {
@@ -219,7 +219,7 @@ export default class ChatPanel extends HTMLElement {
       const matches = e.detail.matches;
       const current = matches[state.tournamentData.currentMatchIndex];
       if (current && current.player1 && current.player2) {
-        this.addMessage('', t("game.nextMatch", { players: `${current.player1} ${t("game.and")} ${current.player2}`}), 'system', 'global');
+        this.addMessage('', t("game.nextMatch", { players: `${current.player1} ${t("game.and")} ${current.player2}` }), 'system', 'global');
       }
     };
     window.addEventListener('tournament-stage', onTournMatch);
@@ -532,22 +532,25 @@ export default class ChatPanel extends HTMLElement {
     }
   }
 
+  // when chat-panel is closed, the element should not be visible...
+  // ...or impair user interaction with the rest of the UI
   private setupStyles() {
     const style = document.createElement('style');
     style.textContent = `
       :host {
+        display: none;
+      }
+
+      :host([visible]) {
+        display: block;
         position: fixed;
         bottom: calc(var(--chat-icon-size) + 3rem);
         right: 2rem;
         width: var(--sidebar-width);
         height: 600px;
-        z-index: 9997; /* ensure it is not above topbar */
-        pointer-events: none;
-        transition: opacity 0.3s ease;
-      }
-
-      :host([visible]) {
+        z-index: 9997;
         pointer-events: all;
+        transition: opacity 0.3s ease;
       }
 
       .chat-panel {
@@ -565,16 +568,23 @@ export default class ChatPanel extends HTMLElement {
         flex-direction: column;
         overflow: hidden;
         transform: translateY(-20px);
-        opacity: 0;
         transition: all 0.3s ease;
-        z-index: 1000;
-        pointer-events: auto;
       }
 
       :host([visible]) .chat-panel {
         transform: translateY(0);
+        pointer-events: all;
         opacity: 1;
         visibility: visible;
+        display: flex;
+        z-index: 9997;
+      }
+      :host .chat-panel {
+        transform: translateY(0);
+        opacity: 0.5;
+        pointer-events: none;
+        /*visibility: hidden;*/
+        z-index: -1000;
         display: flex;
       }
 
@@ -875,7 +885,7 @@ export default class ChatPanel extends HTMLElement {
         }
       }
     });
-	
+
 
     input.addEventListener('focus', () => {
       input.style.borderColor = 'rgba(255,255,255,0.5)';
@@ -987,7 +997,7 @@ export default class ChatPanel extends HTMLElement {
         timestampDiv.style.cssText = 'color: var(--border); font-size: var(--secondary-font-size); margin-top: 0.15rem; text-align: right;';
         const ts = timestampOverride || Date.now();
         timestampDiv.textContent = new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        
+
         messageDiv.appendChild(senderDiv);
         messageDiv.appendChild(messageDiv2);
         messageDiv.appendChild(timestampDiv);
@@ -1124,7 +1134,7 @@ export default class ChatPanel extends HTMLElement {
       this.handleInviteCommand('accept');
     } else if (cmd === '/decline') {
       // decline from anywhere
-	  // a
+      // a
       // Decline the most recent game invite
       this.handleInviteCommand('decline');
     } else if (cmd.startsWith('/profile ')) {
@@ -1190,7 +1200,7 @@ export default class ChatPanel extends HTMLElement {
       const friendId = await this.getUserId(username);
       const currentId = await this.getUserId(this.getCurrentUsername());
       const result = await postAddFriend(currentId, friendId);
-      this.addMessage('', t("chat.friendAdd", {username: username}), 'system', 'global');
+      this.addMessage('', t("chat.friendAdd", { username: username }), 'system', 'global');
     } catch (err) {
       this.addMessage('', t("chat.friendAddError"), 'system', 'global');
     }
@@ -1201,7 +1211,7 @@ export default class ChatPanel extends HTMLElement {
       const friendId = await this.getUserId(username);
       const currentId = await this.getUserId(this.getCurrentUsername());
       const result = await patchAcceptFriend(currentId, friendId);
-      this.addMessage('', t("chat.friendAcc", {username: username}), 'system', 'global');
+      this.addMessage('', t("chat.friendAcc", { username: username }), 'system', 'global');
     } catch (err) {
       this.addMessage('', t("chat.friendAccError"), 'system', 'global');
     }
@@ -1212,7 +1222,7 @@ export default class ChatPanel extends HTMLElement {
       const friendId = await this.getUserId(username);
       const currentId = await this.getUserId(this.getCurrentUsername());
       const result = await deleteFriend(currentId, friendId);
-      this.addMessage('', t("chat.friendRm", {username: username}), 'system', 'global');
+      this.addMessage('', t("chat.friendRm", { username: username }), 'system', 'global');
     } catch (err) {
       this.addMessage('', t("chat.friendRmError"), 'system', 'global');
     }

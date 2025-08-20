@@ -291,18 +291,18 @@ export class MatchesHistory extends HTMLElement {
       else
         mode = `${t('game.mode1').toUpperCase()}`;
 
-		this.matchObject.push({
-			day: match.date,
-			time: match.time,
-			scorePlayer1: match.scorep1?.toString(),
-			scorePlayer2: match.scorep2?.toString(),
-			matchId: row.matchId?.toString().padStart(3, "0"),
-			tournId: match.tournId?.toString().padStart(2, "0"),
-			player1: match.p1,
-			player2: match.p2,
-			winLoss: (match.winner ? match.winner : '---'),
-			mode: mode
-		});
+      this.matchObject.push({
+        day: match.date,
+        time: match.time,
+        scorePlayer1: match.scorep1?.toString(),
+        scorePlayer2: match.scorep2?.toString(),
+        matchId: row.matchId?.toString().padStart(3, "0"),
+        tournId: match.tournId?.toString().padStart(2, "0"),
+        player1: match.p1,
+        player2: match.p2,
+        winLoss: (match.winner ? match.winner : '---'),
+        mode: mode
+      });
 
     };
   }
