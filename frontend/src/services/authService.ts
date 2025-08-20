@@ -125,7 +125,15 @@ export async function generateSecret(email: string, accessToken: string): Promis
   });
   return await res.json();
 }
-
+export async function disable2FA(accessToken: string): Promise<AuthResponse> {
+  const res = await fetch(`${BASE_URL}/disable-2fa`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+  return await res.json();
+}
 export async function updateUsername(newUsername: string, accessToken: string): Promise<AuthResponse> {
   const res = await fetch(`${BASE_URL}/change-username`, {
     method: 'POST',
