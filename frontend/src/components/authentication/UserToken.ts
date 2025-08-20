@@ -165,6 +165,11 @@ export class UserToken2 extends HTMLElement {
     this.codeInput.addEventListener('input', () => this._clearError());
   }
 
+  disconnectedCallback() {
+    this.codeInput.removeEventListener('input', () => this._clearError());
+    this.viewBtn.removeEventListener('click', () => this._togglePassword());
+  }
+
   _setError(message: string) {
     (this.layout as any).setError(message);
     this.shadowRoot!.getElementById('codeInput')!.classList.add('auth-form__input-error');

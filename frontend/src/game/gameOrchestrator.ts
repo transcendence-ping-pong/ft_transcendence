@@ -55,7 +55,7 @@ export class gameOrchestrator {
     this.babylonCanvas = new BabylonCanvas(containerId);
     this.gui = new BabylonGUI(this.babylonCanvas.getScene());
     // auto open remote UI on invite acceptance
-    try { (this.gui as any).attachInviteAutoOpen(); } catch {}
+    try { (this.gui as any).attachInviteAutoOpen(); } catch { }
 
     this.setupMultiplayerEvents();
     this.setupMenuFlow();
@@ -82,13 +82,13 @@ export class gameOrchestrator {
                 if (wss && roomId) {
                   (wss as any).currentRoomId = roomId;
                 }
-              } catch {}
+              } catch { }
             }
           }
-        } catch {}
+        } catch { }
         this.gui.showRemoteMultiplayerUI(this.gameLevel);
       }
-    } catch {}
+    } catch { }
 
     // TODO FIX: when refreshing the page, resume the game from where it left off
     this.onResize = () => {
@@ -155,14 +155,14 @@ export class gameOrchestrator {
               this.gui.clearGUI();
               this.gui.showScoreBoard(evt.detail, () => { });
             });
-          } catch {}
+          } catch { }
         }
         this.gui.hideAllGUI();
         // start server-driven countdown overlay
-        try { (this.gui as any).beginCountdownOverlay(); } catch {}
+        try { (this.gui as any).beginCountdownOverlay(); } catch { }
         window.dispatchEvent(new CustomEvent('hideMultiplayerUI'));
         this.setupMultiplayerInput();
-      
+
         // host-only: create match record for remote games
         (async () => {
           try {
@@ -178,7 +178,7 @@ export class gameOrchestrator {
             const creatorId = state.userData?.userId || parseInt(localStorage.getItem('userId') || '0');
             let remoteId = guest.userId || 0;
             if (!remoteId && guest.username) {
-              try { const prof = await getUserProfile(guest.username); remoteId = prof?.userId || 0; } catch {}
+              try { const prof = await getUserProfile(guest.username); remoteId = prof?.userId || 0; } catch { }
             }
             if (creatorId && remoteId) {
               const res = await createMatch(creatorId, remoteId, null, hostUsername, guest.username);
@@ -189,9 +189,9 @@ export class gameOrchestrator {
                 if (panel && typeof panel.addMessage === 'function') {
                   panel.addMessage('', `match created (#${this.matchId}): ${hostUsername} vs ${guest.username}`, 'system', 'global');
                 }
-              } catch {}
+              } catch { }
             }
-          } catch {}
+          } catch { }
         })();
       } catch (error) {
         this.isMultiplayerMode = false;
@@ -201,6 +201,9 @@ export class gameOrchestrator {
 
     this.onGameEnd = (e: CustomEvent) => {
       if (this.handledGameOver) return;
+
+
+
       this.handledGameOver = true;
       this.isMultiplayerMode = false;
       window.dispatchEvent(new CustomEvent('showMultiplayerUI'));
@@ -221,13 +224,13 @@ export class gameOrchestrator {
 
       this.gui.showGameOver(winnerName, score);
       // stop rendering updates so the ball doesn't keep moving underneath
-      try { (this.babylonCanvas as any).cleanupGame(); } catch {}
+      try { (this.babylonCanvas as any).cleanupGame(); } catch { }
       // chat message is handled by Home via lastMatchSummary banner
 
       // persist match summary for Home page (simple global event)
       const summary = { winner: winnerName, score, reason: 'score', host: leftName, guest: rightName } as any;
-      try { localStorage.setItem('lastMatchSummary', JSON.stringify(summary)); } catch {}
-      try { window.dispatchEvent(new CustomEvent('lastMatchSummary', { detail: summary })); } catch {}
+      try { localStorage.setItem('lastMatchSummary', JSON.stringify(summary)); } catch { }
+      try { window.dispatchEvent(new CustomEvent('lastMatchSummary', { detail: summary })); } catch { }
 
       // host-only: update match stats
       (async () => {
@@ -237,7 +240,7 @@ export class gameOrchestrator {
           if (isHost && this.matchId) {
             await updateMatch(this.matchId, winnerName, score.LEFT, score.RIGHT);
           }
-        } catch {}
+        } catch { }
       })();
       setTimeout(() => {
         this.gui.clearGUI();
@@ -252,11 +255,11 @@ export class gameOrchestrator {
 
     // reflect server countdown ticks (3->2->1) then start
     this.onGameCountdown = (e: CustomEvent) => {
-      try { (this.gui as any).setCountdownNumber(e.detail.countdown); } catch {}
+      try { (this.gui as any).setCountdownNumber(e.detail.countdown); } catch { }
     };
     window.addEventListener('gameCountdown', this.onGameCountdown as EventListener);
     this.onGameStarted = (_e: CustomEvent) => {
-      try { (this.gui as any).endCountdownOverlay(); } catch {}
+      try { (this.gui as any).endCountdownOverlay(); } catch { }
       if (this.gameCanvas instanceof MultiplayerGameCanvas) {
         (this.gameCanvas as any).startGame();
       }
@@ -272,7 +275,7 @@ export class gameOrchestrator {
     };
     window.addEventListener('gameUpdate', this.onGameUpdate as EventListener);
 
-	// TODO: think its somewhat buggy
+    // TODO: think its somewhat buggy
     // removed: duplicate with playerLeft handler below
 
     // opponent left
@@ -287,10 +290,10 @@ export class gameOrchestrator {
         // prefer room info embedded in event if present (backend now includes it)
         const evtRoom = (e as any).detail?.room || (window as any).websocketService?.getCurrentRoom?.();
         const hostName = evtRoom?.hostUsername;
-        const guestName = evtRoom?.players?.find((p:any)=>p.username?.toLowerCase() !== (hostName||'').toLowerCase())?.username;
+        const guestName = evtRoom?.players?.find((p: any) => p.username?.toLowerCase() !== (hostName || '').toLowerCase())?.username;
         const summary: any = { winner: state.userData?.username || 'You', score: this.lastKnownScore, reason: 'opponentLeft', host: hostName, guest: guestName };
-        try { localStorage.setItem('lastMatchSummary', JSON.stringify(summary)); } catch {}
-        try { window.dispatchEvent(new CustomEvent('lastMatchSummary', { detail: summary })); } catch {}
+        try { localStorage.setItem('lastMatchSummary', JSON.stringify(summary)); } catch { }
+        try { window.dispatchEvent(new CustomEvent('lastMatchSummary', { detail: summary })); } catch { }
         // host-only: persist current score and winner on opponent leave
         (async () => {
           try {
@@ -301,7 +304,7 @@ export class gameOrchestrator {
             if (isHost && this.matchId) {
               await updateMatch(this.matchId, me || 'You', this.lastKnownScore.LEFT, this.lastKnownScore.RIGHT);
             }
-          } catch {}
+          } catch { }
         })();
         try {
           window.history.pushState({}, '', '/');
@@ -346,16 +349,16 @@ export class gameOrchestrator {
 
   public destroy() {
     // remove all bound window listeners
-    try { if (this.onGameStart) window.removeEventListener('gameStart', this.onGameStart as EventListener); } catch {}
-    try { if (this.onGameEnd) window.removeEventListener('gameEnd', this.onGameEnd as EventListener); } catch {}
-    try { if (this.onGameCountdown) window.removeEventListener('gameCountdown', this.onGameCountdown as EventListener); } catch {}
-    try { if (this.onGameStarted) window.removeEventListener('gameStarted', this.onGameStarted as EventListener); } catch {}
-    try { if (this.onGameUpdate) window.removeEventListener('gameUpdate', this.onGameUpdate as EventListener); } catch {}
-    try { if (this.onPlayerLeft) window.removeEventListener('playerLeft', this.onPlayerLeft as EventListener); } catch {}
-    try { if (this.onResize) window.removeEventListener('resize', this.onResize as EventListener); } catch {}
+    try { if (this.onGameStart) window.removeEventListener('gameStart', this.onGameStart as EventListener); } catch { }
+    try { if (this.onGameEnd) window.removeEventListener('gameEnd', this.onGameEnd as EventListener); } catch { }
+    try { if (this.onGameCountdown) window.removeEventListener('gameCountdown', this.onGameCountdown as EventListener); } catch { }
+    try { if (this.onGameStarted) window.removeEventListener('gameStarted', this.onGameStarted as EventListener); } catch { }
+    try { if (this.onGameUpdate) window.removeEventListener('gameUpdate', this.onGameUpdate as EventListener); } catch { }
+    try { if (this.onPlayerLeft) window.removeEventListener('playerLeft', this.onPlayerLeft as EventListener); } catch { }
+    try { if (this.onResize) window.removeEventListener('resize', this.onResize as EventListener); } catch { }
 
     this.removeMultiplayerInput();
-    try { this.babylonCanvas.cleanupGame(); } catch {}
+    try { this.babylonCanvas.cleanupGame(); } catch { }
   }
 
   // keep track of score changes and update the GUI accordingly
@@ -434,9 +437,9 @@ export class gameOrchestrator {
       try {
         const score = { LEFT: e.detail.score.LEFT, RIGHT: e.detail.score.RIGHT };
         const summary: any = { winner, score, reason: 'score', host: state.players?.p1, guest: state.players?.p2 };
-        try { localStorage.setItem('lastMatchSummary', JSON.stringify(summary)); } catch {}
-        try { window.dispatchEvent(new CustomEvent('lastMatchSummary', { detail: summary })); } catch {}
-      } catch {}
+        try { localStorage.setItem('lastMatchSummary', JSON.stringify(summary)); } catch { }
+        try { window.dispatchEvent(new CustomEvent('lastMatchSummary', { detail: summary })); } catch { }
+      } catch { }
       if (this.gameType === GameType.TOURNAMENT) {
         this.handleTournamentEvents();
       } else {
