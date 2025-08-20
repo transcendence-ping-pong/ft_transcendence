@@ -1,13 +1,17 @@
 services:
+  addhost:
+    image: alpine
+    volumes:
+      - ./add-host.sh:/add-host.sh
+    command: sh /add-host.sh
+
   frontend:
     build: ./frontend
     command: npm run dev -- --host
     ports:
       - "3000:3000"
-    # volumes:
-    # - ./frontend:/app
-    # - frontend_node_modules:/app/node_modules
     depends_on:
+      - addhost
       - backend
 
   backend:
@@ -36,5 +40,5 @@ services:
 volumes:
   db_data:
     driver: local
-  uploads_data: # Add this volume
+  uploads_data:
     driver: local
