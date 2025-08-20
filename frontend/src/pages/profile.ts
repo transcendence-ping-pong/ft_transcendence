@@ -73,6 +73,7 @@ export async function renderProfile(containerId: string, params: Record<string, 
       </section>
 
       <section class="footer">
+        <div class="fade-top"></div>
         <img 
           src="/public/footer.png"
           alt="Footer Background"
