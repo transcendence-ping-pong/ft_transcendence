@@ -445,9 +445,8 @@ export class ChatBox extends HTMLElement {
 
   private saveMessages() {
     try {
-      if (this.messageHistory.length > 0) {
-        localStorage.setItem('chatMessages', JSON.stringify(this.messageHistory));
-      }
+      // persist to a separate key to avoid conflicting with chat-panel
+      localStorage.setItem('chatBoxMessages', JSON.stringify(this.messages));
     } catch (error) {
       localStorage.removeItem('chatMessages');
     }
@@ -455,12 +454,12 @@ export class ChatBox extends HTMLElement {
 
   private loadMessages() {
     try {
-      const savedMessages = localStorage.getItem('chatMessages');
+      const savedMessages = localStorage.getItem('chatBoxMessages');
       if (savedMessages) {
         const messages = JSON.parse(savedMessages);
         if (Array.isArray(messages)) {
           this.messages = messages;
-          this.messageHistory = messages;
+          this.messageHistory = messages.filter((m: any) => (m.type !== 'system'));
           this.renderMessages();
           this.renderCompact();
         }

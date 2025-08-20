@@ -51,4 +51,34 @@ export function renderHome(containerId: string) {
       });
     }
   }
+  // show last match summary if any
+  try {
+    const container = document.getElementById(containerId);
+    const showSummary = (summary) => {
+      const el = document.createElement('div');
+      el.style.cssText = 'position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:5000;background:rgba(0,0,0,0.6);color:white;padding:8px 12px;border-radius:8px;';
+      const reason = summary?.reason === 'opponentLeft' ? 'opponent left' : 'score';
+      const scoreText = summary?.score ? `${summary.score.LEFT}–${summary.score.RIGHT}` : '';
+      el.textContent = `Match ended: ${summary.winner}${scoreText ? ' ' + scoreText : ''}${reason ? ' (' + reason + ')' : ''}`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+
+      // also enqueue a system message into chat storage and ping chat-panel
+      try {
+        const msgText = `Match ended: ${summary.host ?? ''}${summary.host && summary.guest ? ' vs ' : ''}${summary.guest ?? ''} — Winner: ${summary.winner}${scoreText ? ' (' + scoreText + ')' : ''}${reason ? ' - ' + reason : ''}`.replace(/\s+/g, ' ').trim();
+        const stored = localStorage.getItem('chatMessages');
+        const arr = stored ? JSON.parse(stored) : [];
+        arr.push({ sender: '', message: msgText, type: 'system', category: 'global', timestamp: Date.now() });
+        localStorage.setItem('chatMessages', JSON.stringify(arr));
+        window.dispatchEvent(new CustomEvent('chatSystemMessage', { detail: { message: msgText, timestamp: Date.now() } }));
+      } catch {}
+    };
+    window.addEventListener('lastMatchSummary', (e: any) => showSummary(e.detail));
+    const cached = localStorage.getItem('lastMatchSummary');
+    if (cached) {
+      const s = JSON.parse(cached);
+      showSummary(s);
+      localStorage.removeItem('lastMatchSummary');
+    }
+  } catch {}
 }

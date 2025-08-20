@@ -93,6 +93,11 @@ class WebSocketServer {
 				this.handleBlockUser(socket, data);
 			});
 
+			// handles unblock user
+			socket.on('unblockUser', (data) => {
+				this.handleUnblockUser(socket, data);
+			});
+
 			// track client route/presence to gate certain commands
 			socket.on('updatePresence', (data) => {
 				const user = this.userManager.getUser(socket.id);
@@ -545,7 +550,12 @@ class WebSocketServer {
 
 		// create chat message using chat manager
 		const chatMessage = this.chatManager.addChatMessage(user.userId, user.username, validation.message, 'global');
-		this.io.emit('chatMessage', chatMessage);
+		// broadcast to everyone except those who have blocked the sender
+		for (const [socketId, recipient] of this.userManager.connectedUsers.entries()) {
+			const theirBlocks = this.userManager.userBlocks.get(recipient.userId);
+			if (theirBlocks && theirBlocks.has(user.userId)) continue;
+			this.io.to(socketId).emit('chatMessage', chatMessage);
+		}
 
 		Logger.logChatEvent('message', user.username, { message: validation.message });
 	}
@@ -583,7 +593,8 @@ class WebSocketServer {
 			return;
 		}
 
-		if (this.userManager.isUserBlocked(receiver.userId, user.userId)) {
+		// disallow PM if either side has blocked the other
+		if (this.userManager.isUserBlocked(receiver.userId, user.userId) || this.userManager.isUserBlocked(user.userId, receiver.userId)) {
 			socket.emit('chatError', { message: 'Cannot send message to this user' });
 			return;
 		}
@@ -608,8 +619,11 @@ class WebSocketServer {
 			validation.message
 		);
 
-		// Send to receiver
-		this.io.to(receiver.socketId).emit('directMessage', directMessage);
+		// Send to receiver unless they've blocked the sender
+		const receiverBlocks = this.userManager.userBlocks.get(receiver.userId);
+		if (!(receiverBlocks && receiverBlocks.has(user.userId))) {
+			this.io.to(receiver.socketId).emit('directMessage', directMessage);
+		}
 
 		// Send back to sender so they can see their own message
 		socket.emit('directMessage', directMessage);
@@ -643,6 +657,28 @@ class WebSocketServer {
 		});
 
 		Logger.logChatEvent('userBlocked', user.username, { blockedUsername: targetUsername });
+	}
+
+	handleUnblockUser(socket, data) {
+		const user = this.userManager.getUser(socket.id);
+		if (!user) return;
+
+		const { targetUsername } = data;
+		if (!targetUsername) return;
+
+		// remove from blocker set if exists
+		const blocks = this.userManager.userBlocks.get(user.userId);
+		if (blocks) {
+			const target = this.userManager.getUserByUsername(targetUsername);
+			if (target) {
+				blocks.delete(target.userId);
+			}
+		}
+
+		socket.emit('userBlocked', {
+			blockedUsername: targetUsername,
+			message: `You unblocked ${targetUsername}`
+		});
 	}
 
 	handleSlashCommand(socket, user, message) {
@@ -754,6 +790,12 @@ class WebSocketServer {
 			return;
 		}
 
+		// block checks: disallow inviting if either user blocked the other
+		if (this.userManager.isUserBlocked(user.userId, targetUser.userId) || this.userManager.isUserBlocked(targetUser.userId, user.userId)) {
+			socket.emit('chatError', { message: 'Cannot invite this user' });
+			return;
+		}
+
 		const receiverInGame = this.roomManager.isPlayerInRoom(targetUser.socketId).inRoom;
 		if (receiverInGame) {
 			socket.emit('chatError', { message: 'User is already in a game' });
@@ -822,6 +864,12 @@ class WebSocketServer {
 
 			if (!senderUser || !receiverUser) {
 				socket.emit('chatError', { message: 'One or both users not found' });
+				return;
+			}
+
+			// block checks before creating room (mutual blocks forbid)
+			if (this.userManager.isUserBlocked(senderUser.userId, receiverUser.userId) || this.userManager.isUserBlocked(receiverUser.userId, senderUser.userId)) {
+				socket.emit('chatError', { message: 'Cannot start match: one of the users has blocked the other' });
 				return;
 			}
 
