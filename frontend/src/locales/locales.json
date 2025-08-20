@@ -67,7 +67,8 @@
       "network": "Network error. Please try again.",
       "notFound": "Page not found.",
       "emptyFields": "Please enter both email and password.",
-      "alreadyExists": "An account with this email already exists."
+      "alreadyExists": "An account with this email already exists.",
+      "passwordsDoNotMatch": "Passwords do not match."
     },
     "game": {
       "start": "START GAME",
@@ -250,7 +251,8 @@
       "network": "Erreur réseau. Veuillez réessayer.",
       "notFound": "Page non trouvée.",
       "emptyFields": "Veuillez saisir l'email et le mot de passe.",
-      "alreadyExists": "Un compte avec cet email existe déjà."
+      "alreadyExists": "Un compte avec cet email existe déjà.",
+      "passwordsDoNotMatch": "Les mots de passe ne correspondent pas."
     },
     "game": {
       "start": "COMMENCER LE JEU",
@@ -433,7 +435,8 @@
       "network": "Erro de rede. Por favor, tente novamente.",
       "notFound": "Página não encontrada.",
       "emptyFields": "Por favor, insira o email e a senha.",
-      "alreadyExists": "Já existe uma conta com este email."
+      "alreadyExists": "Já existe uma conta com este email.",
+      "passwordsDoNotMatch": "As senhas não coincidem."
     },
     "game": {
       "start": "INICIAR JOGO",
@@ -616,7 +619,8 @@
       "network": "ネットワークエラー。もう一度お試しください。",
       "notFound": "ページが見つかりません。",
       "emptyFields": "メールアドレスとパスワードを入力してください。",
-      "alreadyExists": "このメールアドレスは既に登録されています。"
+      "alreadyExists": "このメールアドレスは既に登録されています。",
+      "passwordsDoNotMatch": "パスワードが一致しません。"
     },
     "game": {
       "start": "ゲーム開始",
