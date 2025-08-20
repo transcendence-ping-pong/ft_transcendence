@@ -134,17 +134,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.body.classList.toggle('theme-primary', state.theme === 'primary');
   document.body.classList.toggle('theme-secondary', state.theme === 'secondary');
 
-  // connects to websocket server
   websocketService.connect(`ws://${window.location.hostname}:4001`);
 
   navigate = initRouter(routes, 'app');
 
 
-  // Make websocketService available globally for chat system
+  // make websocketService available globally for chat system
   (window as any).websocketService = websocketService;
   (window as any).remoteMultiplayerManager = remoteMultiplayerManager;
 
-  // websocketAuthenticated is handled for UI feedback elsewhere; no socket connects here
 
 
   window.addEventListener('login-success', () => {
@@ -154,7 +152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 1200);
   });
 
-  // Connect RemoteMultiplayerManager when user logs in
+  // connect RemoteMultiplayerManager when user logs in
   window.addEventListener('login-success', () => {
     const username = state.userData?.username;
     if (username) {
@@ -162,7 +160,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Connect RemoteMultiplayerManager if user is already logged in
+  // connect RemoteMultiplayerManager if user is already logged in
   const loggedInUser = localStorage.getItem('loggedInUser');
   if (loggedInUser) {
     remoteMultiplayerManager.connect(loggedInUser);
@@ -171,10 +169,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // initialize chat system
   initializeChatSystem();
   // ensure chat panel is initialized before game page for invite acceptance on /game
-  // no-op if already constructed
-
-  // notification service removed
-
 
   window.addEventListener('login-success', async (e: CustomEvent) => {
     if (state.userData && !localStorage.getItem('accessToken')) {

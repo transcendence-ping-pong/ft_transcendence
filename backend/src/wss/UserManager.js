@@ -1,7 +1,6 @@
 class UserManager {
 	constructor() {
 		this.connectedUsers = new Map();
-		// simple runtime block list (online-only)
 		this.userBlocks = new Map();
 		this.userRateLimits = new Map();
 	}
@@ -18,7 +17,6 @@ class UserManager {
 			userId: userId,
 			username: username,
 			socketId: socketId,
-			// default presence to '/' so presence checks are strict
 			currentPath: '/'
 		};
 
@@ -26,7 +24,6 @@ class UserManager {
 		return user;
 	}
 
-	// optional hydration for compatibility (not required in simple mode)
 	setBlocks(blockerId, blockedIdList) {
 		const set = new Set(blockedIdList || []);
 		this.userBlocks.set(blockerId, set);
@@ -37,7 +34,7 @@ class UserManager {
 		return this.connectedUsers.get(socketId);
 	}
 
-	// gets user by username (case-insensitive)
+	// gets user by username
 	getUserByUsername(username) {
 		if (!username) return null;
 		const lower = String(username).toLowerCase();
@@ -75,7 +72,7 @@ class UserManager {
 		return Array.from(this.connectedUsers.values()).some(user => user.username === username);
 	}
 
-	// blocks target username for a given blocker id (online-only resolution)
+	// blocks target username for a given blocker id
 	blockUser(blockerId, targetUsername) {
 		const targetUser = this.getUserByUsername(targetUsername);
 		if (!targetUser) {
@@ -88,7 +85,7 @@ class UserManager {
 		return { success: true, blockedUsername: targetUsername };
 	}
 
-	// checks if recipient blocked sender (recipientId has senderId in their set)
+	// checks if recipient blocked sender
 	isUserBlocked(recipientId, senderId) {
 		return this.userBlocks.has(recipientId) && this.userBlocks.get(recipientId).has(senderId);
 	}
@@ -120,7 +117,6 @@ class UserManager {
 
 	// cleans up inactive users
 	cleanupInactiveUsers() {
-		// this could be extended to track last activity time
 		// for now, just return the current count
 		return this.connectedUsers.size;
 	}

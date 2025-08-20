@@ -18,10 +18,8 @@ export class RemoteMultiplayerManager {
     this.setupEventListeners();
   }
 
-  // PUBLIC API - Simple methods for UI to call
   public connect(username: string) {
     this.currentUsername = username;
-    // socket is connected and authenticated by main.ts
   }
 
   public createRoom(settings: any) {
@@ -34,7 +32,6 @@ export class RemoteMultiplayerManager {
 
   public setReady() {
     if (this.state.currentRoomId) {
-      // Update local state immediately for responsive UI
       this.state.isReady = true;
       websocketService.sendReady(this.state.currentRoomId);
     }
@@ -51,7 +48,6 @@ export class RemoteMultiplayerManager {
     websocketService.getAvailableRooms();
   }
 
-  // PUBLIC API - State getters
   public getState() {
     return { ...this.state };
   }
@@ -64,16 +60,14 @@ export class RemoteMultiplayerManager {
     return this.state.currentRoomId !== null;
   }
 
-  // PRIVATE - Event handling (clean signal system)
   private setupEventListeners() {
-    // After socket authentication, auto-join the invite room and auto-ready
     window.addEventListener('websocketAuthenticated', () => {
       if (this.state.currentRoomId && !this.hasAutoJoined) {
         this.joinRoom(this.state.currentRoomId);
         this.hasAutoJoined = true;
       }
     });
-    // Room creation - Host becomes host
+
     window.addEventListener('roomCreated', (e: CustomEvent) => {
       this.state.currentRoom = this.mapToRemoteRoom(e.detail.room);
       this.state.currentRoomId = e.detail.roomId;
@@ -81,52 +75,36 @@ export class RemoteMultiplayerManager {
       this.state.isReady = false;
       this.state.isConnected = true;
       
-      // Dispatch clean signal to UI
       window.dispatchEvent(new CustomEvent('roomStateChanged', { 
         detail: { ...this.state } 
       }));
     });
 
-    // Player joined - Guest joins or host sees guest
     window.addEventListener('playerJoined', (e: CustomEvent) => {
       
-      // If we don't have a current room, we're the guest joining
       if (!this.state.currentRoom) {
-        // Guest just joined, set up guest state
         this.state.currentRoom = this.mapToRemoteRoom(e.detail.room);
         this.state.currentRoomId = e.detail.roomId;
         this.state.isHost = false;
         this.state.isReady = false;
         this.state.isConnected = true;
         
-        // setup guest state
-        
-        // Dispatch room state changed signal for guest
         window.dispatchEvent(new CustomEvent('roomStateChanged', { 
           detail: { ...this.state } 
         }));
       } else {
-        // We already have a room, so we're the host seeing a guest join
-        // host updates room state
-        
-        // Update room state with guest information
         this.state.currentRoom.currentPlayers = e.detail.room?.currentPlayers || 2;
         
-        // Update the room object with guest information from the event
         if (e.detail.room) {
           this.state.currentRoom = this.mapToRemoteRoom(e.detail.room);
         }
         
-        // Host sees guest joined
         window.dispatchEvent(new CustomEvent('guestJoined', { 
           detail: { room: this.state.currentRoom } 
         }));
       }
-
-      // no auto-ready in normal flow
     });
 
-    // Player ready - Someone clicked ready
     window.addEventListener('playerReady', (e: CustomEvent) => {
       console.log('RemoteMultiplayerManager: Player ready', e.detail);
       
@@ -134,58 +112,47 @@ export class RemoteMultiplayerManager {
         const readyPlayer = e.detail.player;
         const isHostReady = readyPlayer.username === this.state.currentRoom.hostUsername;
         
-        // Update ready status in room
         if (isHostReady) {
           this.state.currentRoom.hostReady = true;
         } else {
           this.state.currentRoom.guestReady = true;
         }
         
-        // Update current user's ready status if it's them
+        // update current user's ready status if it's them
         if (readyPlayer.username === (this.state.isHost ? this.state.currentRoom.hostUsername : this.currentUsername)) {
           this.state.isReady = true;
         }
         
-        // Dispatch clean signal with ready info AND updated room state
         window.dispatchEvent(new CustomEvent('playerReadyStatus', { 
           detail: { 
             readyPlayer: readyPlayer.username,
             isHostReady,
             room: this.state.currentRoom,
-            // Include full state so UI can show both players' ready status
             fullState: { ...this.state }
           } 
         }));
       }
     });
 
-    // Player left - Someone left the room
     window.addEventListener('playerLeft', (e: CustomEvent) => {
       console.log('RemoteMultiplayerManager: Player left', e.detail);
       
       if (this.state.currentRoom) {
         this.state.currentRoom.currentPlayers = Math.max(1, this.state.currentRoom.currentPlayers - 1);
         
-        // Dispatch clean signal
         window.dispatchEvent(new CustomEvent('roomStateChanged', { 
           detail: { ...this.state } 
         }));
       }
     });
 
-    // Available rooms - List of games to join
     window.addEventListener('availableRooms', (e: CustomEvent) => {
-      
-      // Dispatch clean signal with rooms list
       window.dispatchEvent(new CustomEvent('availableRoomsList', { 
         detail: e.detail 
       }));
     });
 
-    // WebSocket errors - Handle connection issues
     window.addEventListener('websocketError', (e: CustomEvent) => {
-      
-      // Reset state on connection errors
       if (e.detail.message?.includes('Connection lost') || e.detail.message?.includes('Max reconnection attempts')) {
         this.resetState();
         window.dispatchEvent(new CustomEvent('connectionLost', { 
@@ -194,43 +161,29 @@ export class RemoteMultiplayerManager {
       }
     });
 
-    // Game start - Both players ready
+    // Game start - both players ready
     window.addEventListener('gameStart', (e: CustomEvent) => {
-      
       if (this.state.currentRoom) {
         this.state.currentRoom.status = 'playing';
-        // once playing, freeze lobby UI state so it doesn't re-render on late events
         window.dispatchEvent(new CustomEvent('hideMultiplayerUI'));
-        // Don't dispatch gameStarting here - let the UI handle the transition directly
-        // The gameStart event will be handled by the game orchestrator
       }
     });
 
-    // Invite accepted - Handle transition from chat to multiplayer
     window.addEventListener('inviteAccepted', (e: CustomEvent) => {
-      
-      // If we don't have a current room, this is an invite acceptance
       if (!this.state.currentRoom && e.detail.room) {
-        // Set up the invite room state
-        this.setInviteRoom(e.detail.room, false); // false = not host (will be determined by roomCreated/playerJoined)
+        this.setInviteRoom(e.detail.room, false);
       }
     });
   }
 
-  // PUBLIC - Set invite room from chat system
   public setInviteRoom(room: any, isHost: boolean) {
-    
-    // Map the invite room to our format
     const mappedRoom = this.mapToRemoteRoom(room);
-    
-    // Update our state
     this.state.currentRoom = mappedRoom;
     this.state.currentRoomId = mappedRoom.id;
     this.state.isHost = isHost;
     this.state.isReady = false;
     this.state.isConnected = true;
 
-    // ensure websocketService knows our room id early to avoid "Room not found" on first ready
     try {
       (websocketService as any).currentRoomId = mappedRoom.id;
     } catch {}
@@ -250,23 +203,16 @@ export class RemoteMultiplayerManager {
       }
     }
     
-    // invite room set
-    
-    // Dispatch room state changed signal
     window.dispatchEvent(new CustomEvent('roomStateChanged', { 
       detail: { ...this.state } 
     }));
   }
 
-  // PRIVATE - Helper methods
   private mapToRemoteRoom(room: any): RemoteGameRoom {
-    // Find host/guest players explicitly
     const hostPlayer = room.players?.find((p: any) => p.isHost);
     const guestPlayer = room.players?.find((p: any) => !p.isHost);
     const hostUsername = room.hostUsername || hostPlayer?.username || room.host?.username || 'Unknown';
     const guestUsername = guestPlayer?.username;
-    
-
     
     return {
       id: room.id || room.roomId,
@@ -294,7 +240,6 @@ export class RemoteMultiplayerManager {
   }
 
   public destroy() {
-    // Clean up event listeners
     window.removeEventListener('roomCreated', () => {});
     window.removeEventListener('playerJoined', () => {});
     window.removeEventListener('playerReady', () => {});
@@ -306,5 +251,4 @@ export class RemoteMultiplayerManager {
   }
 }
 
-// Singleton instance
 export const remoteMultiplayerManager = new RemoteMultiplayerManager();
