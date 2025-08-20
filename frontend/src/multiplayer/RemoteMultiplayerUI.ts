@@ -4,6 +4,7 @@ import { t } from '@/locales/Translations.js';
 import { remoteMultiplayerManager } from './RemoteMultiplayerManager.js';
 import { websocketService } from '@/services/websocketService.js';
 import { RemoteGameRoom } from './types.js';
+import '@/components/_templates/AuthFormLayout.js';
 
 export class RemoteMultiplayerUI {
   private advancedTexture: AdvancedDynamicTexture;
@@ -217,13 +218,16 @@ export class RemoteMultiplayerUI {
     const container = document.querySelector('#remote-games-modal-content');
     if (modal && container) {
       container.innerHTML = `
-        <div class="w-full max-w-3xl">
-          <div class="grid grid-cols-1 gap-3">
-            ${Array.from({ length: 4 }).map(() => `
-              <div class=\"animate-pulse bg-gray-800/60 border border-gray-700 rounded-lg h-20\"></div>
-            `).join('')}
+        <auth-form-layout>
+          <h3 slot="header">${t("game.listGames")}</h3>
+          <div slot="content" class="w-full max-w-3xl">
+            <div class="grid grid-cols-1 gap-3">
+              ${Array.from({ length: 4 }).map(() => `
+                <div class=\"animate-pulse bg-gray-800/60 border border-gray-700 rounded-lg h-20\"></div>
+              `).join('')}
+            </div>
           </div>
-        </div>
+        <auth-form-layout>
       `;
     }
   }
@@ -235,13 +239,43 @@ export class RemoteMultiplayerUI {
 
     if (!rooms || rooms.length === 0) {
       gamesListContainer.innerHTML = `
-        <div class="w-full max-w-xl text-center text-gray-300">
-          <div class="mx-auto mb-4 w-14 h-14 rounded-full bg-gray-700/60 flex items-center justify-center">🎮</div>
-          <h3 class="text-xl font-semibold text-white mb-1">No games available</h3>
-          <p class="text-gray-400 mb-4">Be the first to create a room and invite a friend.</p>
-          <button id="create-game-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Create Game</button>
+      <auth-form-layout>
+        <h3 slot="header">${t("game.listTitle")}</h3>
+        <div slot="content" class="w-full max-w-xl text-center text-gray-300">
+          <h3 style="color: var(--text); font-weight: 600; margin-bottom: 0.25rem; font-size: 1.125rem;">
+            ${t("game.noGames")}
+          </h3>
+          <p class="mb-4" style="color: var(--border); font-size: var(--main-text-size)">
+            ${t("game.beFirstToCreateRoom")}
+          </p>
         </div>
-      `;
+        <span slot="footer">
+          <style>
+            .template__primary-button {
+              padding: 1rem 0;
+              border: none;
+              background: var(--accent-secondary);
+              color: var(--body);
+              font-size: calc(var(--main-font-size) * 1.25);
+              font-weight: bold;
+              min-height: var(--button-height, 59px);
+              width: 100%;
+              cursor: pointer;
+              transition: background 0.2s, color 0.2s;
+            }
+            .template__primary-button:hover, .template__primary-button:focus {
+              background: var(--accent);
+              color: var(--text);
+            }
+          </style>
+          <button id="create-game-btn" class="template__primary-button">
+            ${t("game.createGame")}
+          </button>
+        </span>
+      </auth-form-layout>
+    `;
+
+
       const createBtn = document.querySelector('#create-game-btn') as HTMLButtonElement | null;
       if (createBtn) {
         createBtn.onclick = () => {
