@@ -28,17 +28,24 @@ export class BotPlayer {
 
   update() {
     const now = Date.now();
-    if (now - this.lastDecisionTime < 1000) return; // refresh 1s
-    this.lastDecisionTime = now;
+    if (this.targetY === null || now - this.lastDecisionTime >= 1000) {
+      this.lastDecisionTime = now;
+      if (this.isBallApproaching()) {
+        let predictedY;
+        if (this.targetY === null) {
+          predictedY = this.ball.getY();
+        } else {
+          predictedY = this.predictBallY();
+        }
 
-    if (this.isBallApproaching()) {
-      const predictedY = this.predictBallY(1); // 1s à frente
-      this.targetY = this.targetY === null
-        ? predictedY
-        : this.smoothTarget(this.targetY, predictedY);
-    } else {
-      this.targetY = null;
-      this.gameCanvas.setPaddleDirection(this.playerIndex, null);
+        this.targetY = this.targetY === null
+          ? predictedY
+          : this.smoothTarget(this.targetY, predictedY);
+
+      } else {
+        this.targetY = null;
+        this.gameCanvas.setPaddleDirection(this.playerIndex, null);
+      }
     }
 
     const paddleCenter = this.getPaddleCenter();
@@ -53,6 +60,24 @@ export class BotPlayer {
         this.gameCanvas.setPaddleDirection(this.playerIndex, null);
       }
     }
+
+    // const now = Date.now();
+    // if (now - this.lastDecisionTime < 1000) return; // refresh 1s
+    // this.lastDecisionTime = now;
+
+    // if (this.isBallApproaching()) {
+    //   const predictedY = this.predictBallY(1); // 1s à frente
+    //   this.targetY = this.targetY === null
+    //     ? predictedY
+    //     : this.smoothTarget(this.targetY, predictedY);
+    // } else {
+    //   this.targetY = null;
+    //   this.gameCanvas.setPaddleDirection(this.playerIndex, null);
+    // }
+
+   
+
+    
   }
 
   private predictBallY(secondsAhead: number = 0): number {
@@ -92,10 +117,8 @@ export class BotPlayer {
         const offset = (Math.random() - 0.5) * this.paddle.getHeight() * 0.2;
         predictedY += offset;
       }
-
       return predictedY;
     }
-
     return (top + bottom) / 2;
   }
 
@@ -143,9 +166,9 @@ export class BotPlayer {
 
   private smoothTarget(oldY: number, newY: number): number {
     switch (this.level) {
-      case 'EASY': return 0.3 * oldY + 0.7 * newY;
-      case 'MEDIUM': return 0.7 * oldY + 0.3 * newY; // mais humano, mas preciso
-      case 'HARD': return newY; // quase perfeito
+      case 'EASY': return 0.6 * oldY + 0.3 * newY;
+      case 'MEDIUM': return 0.7 * oldY + 0.3 * newY; 
+      case 'HARD': return newY;
       default: return newY;
     }
   }
@@ -158,7 +181,7 @@ export class BotPlayer {
     const fieldHeight = this.gameCanvas.getHeight();
     switch (this.level) {
       case 'EASY': return fieldHeight * 0.04;
-      case 'MEDIUM': return fieldHeight * 0.02;
+      case 'MEDIUM': return fieldHeight * 0.001;
       case 'HARD': return fieldHeight * 0.001;
       default: return fieldHeight * 0.03;
     }
