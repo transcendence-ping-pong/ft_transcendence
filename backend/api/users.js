@@ -401,7 +401,16 @@ async function userRoutes(fastify, options) {
             res.send({ has2FA: !!row.secret });
         });
     });
-
+    fastify.post('/disable-2fa', { preHandler: authenticateToken }, async (request, reply) => {
+    const userId = request.user.userId;
+    try {
+        await dbRun(db, `UPDATE users SET secret = NULL WHERE userId = ?`, [userId]);
+        reply.send({ message: '2FA disabled successfully' });
+    } catch (error) {
+        console.error('Error disabling 2FA:', error);
+        reply.status(500).send({ error: 'Failed to disable 2FA' });
+    }
+    });
     fastify.get('/current-token', { preHandler: authenticateToken }, (req, res) => {
         const { email } = req.query;
 

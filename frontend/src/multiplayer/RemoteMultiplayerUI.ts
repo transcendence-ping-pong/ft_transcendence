@@ -1,8 +1,10 @@
 import { AdvancedDynamicTexture, Button, TextBlock, Control } from '@babylonjs/gui';
 import { state } from '@/state.js';
+import { t } from '@/locales/Translations.js';
 import { remoteMultiplayerManager } from './RemoteMultiplayerManager.js';
 import { websocketService } from '@/services/websocketService.js';
 import { RemoteGameRoom } from './types.js';
+import '@/components/_templates/AuthFormLayout.js';
 
 export class RemoteMultiplayerUI {
   private advancedTexture: AdvancedDynamicTexture;
@@ -55,9 +57,9 @@ export class RemoteMultiplayerUI {
         return;
       }
     }
-    
+
     // Create game button
-    const createButton = this.createButton("Create New Game", "createButton");
+    const createButton = this.createButton(t("game.newGame"), "createButton");
     this.babylonGUI.setButtonStyle(createButton, 0, 2);
     createButton.onPointerUpObservable.add(() => {
       this.createGame();
@@ -65,22 +67,22 @@ export class RemoteMultiplayerUI {
     this.addElement(createButton);
 
     // List games button
-    const listGamesButton = this.createButton("List Games", "listGamesButton");
+    const listGamesButton = this.createButton(t("game.listGames"), "listGamesButton");
     this.babylonGUI.setButtonStyle(listGamesButton, 1, 2);
     listGamesButton.onPointerUpObservable.add(() => {
       this.showGamesModal();
     });
     this.addElement(listGamesButton);
-    
+
     // Connect and request rooms
     remoteMultiplayerManager.connect(this.currentUsername);
-    
+
     // Listen for clean signals (already attached in show())
   }
 
   private setupSignalListeners() {
     // Clean signal system - UI only listens to clean signals from manager
-    
+
     // Room state changed (any room update) - TRIGGER COMPLETE RE-RENDER
     window.addEventListener('roomStateChanged', (e: CustomEvent) => {
       if (!this.isActive) return;
@@ -107,7 +109,7 @@ export class RemoteMultiplayerUI {
         // Update the room's ready status based on the event
         const readyPlayer = e.detail.readyPlayer;
         const isHostReady = e.detail.isHostReady;
-        
+
         if (isHostReady) {
           e.detail.room.hostReady = true;
           console.log('UI: Updated room hostReady to true');
@@ -115,7 +117,7 @@ export class RemoteMultiplayerUI {
           e.detail.room.guestReady = true;
           console.log('UI: Updated room guestReady to true');
         }
-        
+
         // Also update the manager's room state to keep it in sync
         const currentRoom = remoteMultiplayerManager.getCurrentRoom();
         if (currentRoom) {
@@ -151,13 +153,13 @@ export class RemoteMultiplayerUI {
     window.addEventListener('inviteAccepted', (e: CustomEvent) => {
       if (!this.isActive) return;
       console.log('UI: Invite accepted - transitioning to multiplayer', e.detail);
-      
+
       // If we're not already in a room, this is an invite acceptance
       // We need to transition to the multiplayer interface
       if (!remoteMultiplayerManager.isInRoom()) {
         // Connect to websocket if not already connected
         remoteMultiplayerManager.connect(this.currentUsername);
-        
+
         // The inviteAccepted event will set up the room state in the manager
         // Then we'll receive roomStateChanged and render the game room
       }
@@ -177,7 +179,7 @@ export class RemoteMultiplayerUI {
   private createGame() {
     // completely clear everything and show creating state
     this.clearAllElements();
-    
+
     // show creating text
     const creatingText = new TextBlock("creatingText");
     creatingText.text = "Creating game...";
@@ -202,12 +204,12 @@ export class RemoteMultiplayerUI {
   private showGamesModal() {
     // displays games list using the same modal system as tournament
     // keeps existing buttons visible (modal opens on top)
-    
+
     // dispatch event to open modal (like tournament does)
     window.dispatchEvent(new CustomEvent('openRemoteGamesModal', {
       detail: {}
     }));
-    
+
     // request available rooms
     remoteMultiplayerManager.requestAvailableRooms();
 
@@ -216,13 +218,16 @@ export class RemoteMultiplayerUI {
     const container = document.querySelector('#remote-games-modal-content');
     if (modal && container) {
       container.innerHTML = `
-        <div class="w-full max-w-3xl">
-          <div class="grid grid-cols-1 gap-3">
-            ${Array.from({ length: 4 }).map(() => `
-              <div class=\"animate-pulse bg-gray-800/60 border border-gray-700 rounded-lg h-20\"></div>
-            `).join('')}
+        <auth-form-layout>
+          <h3 slot="header">${t("game.listGames")}</h3>
+          <div slot="content" class="w-full max-w-3xl">
+            <div class="grid grid-cols-1 gap-3">
+              ${Array.from({ length: 4 }).map(() => `
+                <div class=\"animate-pulse bg-gray-800/60 border border-gray-700 rounded-lg h-20\"></div>
+              `).join('')}
+            </div>
           </div>
-        </div>
+        <auth-form-layout>
       `;
     }
   }
@@ -234,13 +239,43 @@ export class RemoteMultiplayerUI {
 
     if (!rooms || rooms.length === 0) {
       gamesListContainer.innerHTML = `
-        <div class="w-full max-w-xl text-center text-gray-300">
-          <div class="mx-auto mb-4 w-14 h-14 rounded-full bg-gray-700/60 flex items-center justify-center">🎮</div>
-          <h3 class="text-xl font-semibold text-white mb-1">No games available</h3>
-          <p class="text-gray-400 mb-4">Be the first to create a room and invite a friend.</p>
-          <button id="create-game-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Create Game</button>
+      <auth-form-layout>
+        <h3 slot="header">${t("game.listTitle")}</h3>
+        <div slot="content" class="w-full max-w-xl text-center text-gray-300">
+          <h3 style="color: var(--text); font-weight: 600; margin-bottom: 0.25rem; font-size: 1.125rem;">
+            ${t("game.noGames")}
+          </h3>
+          <p class="mb-4" style="color: var(--border); font-size: var(--main-text-size)">
+            ${t("game.beFirstToCreateRoom")}
+          </p>
         </div>
-      `;
+        <span slot="footer">
+          <style>
+            .template__primary-button {
+              padding: 1rem 0;
+              border: none;
+              background: var(--accent-secondary);
+              color: var(--body);
+              font-size: calc(var(--main-font-size) * 1.25);
+              font-weight: bold;
+              min-height: var(--button-height, 59px);
+              width: 100%;
+              cursor: pointer;
+              transition: background 0.2s, color 0.2s;
+            }
+            .template__primary-button:hover, .template__primary-button:focus {
+              background: var(--accent);
+              color: var(--text);
+            }
+          </style>
+          <button id="create-game-btn" class="template__primary-button">
+            ${t("game.createGame")}
+          </button>
+        </span>
+      </auth-form-layout>
+    `;
+
+
       const createBtn = document.querySelector('#create-game-btn') as HTMLButtonElement | null;
       if (createBtn) {
         createBtn.onclick = () => {
@@ -301,7 +336,7 @@ export class RemoteMultiplayerUI {
         const modal = document.querySelector('generic-modal');
         if (modal) modal.remove();
       };
-      
+
       gameItem.appendChild(roomInfo);
       gameItem.appendChild(joinButton);
       gamesListContainer.appendChild(gameItem);
@@ -311,7 +346,7 @@ export class RemoteMultiplayerUI {
   private joinRoom(roomId: string) {
     // completely clear everything and show joining state
     this.clearAllElements();
-    
+
     // show joining text
     const joiningText = new TextBlock("joiningText");
     joiningText.text = "Joining game...";
@@ -335,27 +370,27 @@ export class RemoteMultiplayerUI {
     // get current state to show proper ready status
     const currentState = remoteMultiplayerManager.getState();
     const isHost = currentState.isHost;
-    
+
     // determine host and guest names and status
     const hostName = room.hostUsername;
-    
+
     // Check if there's actually a guest in the room and get their name
     const hasGuest = room.currentPlayers > 1;
     let guestName: string;
-    
+
     if (isHost) {
       if (hasGuest) {
         // Host: show guest's actual username
         guestName = room.guestUsername || 'Guest'; // fallback if guestUsername not set
       } else {
         // Host: waiting for guest
-        guestName = 'Waiting for player...';
+        guestName = t("game.waiting");
       }
     } else {
       // Guest: show own username
       guestName = this.currentUsername;
     }
-    
+
     // show ready status based on room's ready flags (not just current user)
     const hostStatus = room.hostReady ? "✅" : "⏳";
     const guestStatus = room.guestReady ? "✅" : "⏳";
@@ -363,7 +398,7 @@ export class RemoteMultiplayerUI {
     // players list
     const playersList = new TextBlock("playersList");
     playersList.text = `👑 ${hostName} ${hostStatus}\n👤 ${guestName} ${guestStatus}`;
-    playersList.color = "black";
+    playersList.color = this.guiConstants.BUTTON_FONT_COLOR;
     playersList.fontSize = (this.guiConstants.BUTTON_FONT_SIZE * 1.5 * state.scaleFactor.scaleY) + 'px';
     playersList.top = "-20%";
     playersList.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
@@ -371,7 +406,7 @@ export class RemoteMultiplayerUI {
     this.addElement(playersList);
 
     // ready button
-    const readyButton = this.createButton("Ready", "readyButton");
+    const readyButton = this.createButton(t("game.ready"), "readyButton");
     this.babylonGUI.setButtonStyle(readyButton, 0, 2);
     readyButton.top = "10%";
     readyButton.onPointerUpObservable.add(() => {
@@ -389,7 +424,7 @@ export class RemoteMultiplayerUI {
       username: this.currentUsername,
       roomId: remoteMultiplayerManager.getCurrentRoom()?.id
     });
-    
+
     // update manager state first
     remoteMultiplayerManager.setReady();
     // UI will be updated automatically when the playerReady event is received
@@ -402,19 +437,19 @@ export class RemoteMultiplayerUI {
       username: this.currentUsername,
       roomId: remoteMultiplayerManager.getCurrentRoom()?.id
     });
-    
+
     remoteMultiplayerManager.leaveRoom();
     // also clear any invite caches so UI resets cleanly
     try {
       localStorage.removeItem('inviteRoom');
       localStorage.removeItem('inviteRoomId');
-    } catch {}
+    } catch { }
     // re-render main menu
     this.renderMainMenu();
   }
 
   // HELPER METHODS
-  
+
   private clearAllElements() {
     // completely clear all elements and reset
     this.currentElements.forEach(element => {
@@ -422,7 +457,7 @@ export class RemoteMultiplayerUI {
     });
     this.currentElements = [];
   }
-  
+
   private createButton(text: string, name: string): Button {
     const button = Button.CreateSimpleButton(name, text);
     button.name = name;
@@ -437,14 +472,14 @@ export class RemoteMultiplayerUI {
   public destroy() {
     // clean up all elements
     this.clearAllElements();
-    
+
     // remove signal listeners
-    window.removeEventListener('roomStateChanged', () => {});
-    window.removeEventListener('guestJoined', () => {});
-    window.removeEventListener('playerReadyStatus', () => {});
-    window.removeEventListener('availableRoomsList', () => {});
-    window.removeEventListener('connectionLost', () => {});
+    window.removeEventListener('roomStateChanged', () => { });
+    window.removeEventListener('guestJoined', () => { });
+    window.removeEventListener('playerReadyStatus', () => { });
+    window.removeEventListener('availableRoomsList', () => { });
+    window.removeEventListener('connectionLost', () => { });
     // gameStart listener removed - no longer needed
-    window.removeEventListener('inviteAccepted', () => {});
+    window.removeEventListener('inviteAccepted', () => { });
   }
 }

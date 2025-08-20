@@ -218,14 +218,22 @@ export default class ChatPanel extends HTMLElement {
     // Handle game invites
     // prefer window event to avoid multiple socket handlers if ChatPanel is recreated
     const onGameInvite = (e: any) => {
-      const data = e.detail;
-      if (data && data.type === 'invite' && data.senderUsername && data.message) {
-        this.lastInvite = data;
-        this.addMessage(data.senderUsername, data.message, 'other', 'direct', data.receiverUsername, data);
-        // no additional system line to avoid duplicate alerts; direct message is enough
+        const data = e.detail;
+        if (data && data.type === 'invite' && data.senderUsername && data.message) {
+            this.lastInvite = data;
+            this.addMessage(data.senderUsername, data.message, 'other', 'direct', data.receiverUsername, data);
+        }
+        window.addEventListener('gameInvite', onGameInvite);
+    };
+
+    const onTournMatch = (e: CustomEvent) => {
+      const matches = e.detail.matches;
+      const current = matches[state.tournamentData.currentMatchIndex];
+      if (current && current.player1 && current.player2) {
+        this.addMessage('', t("game.nextMatch", { players: `${current.player1} ${t("game.and")} ${current.player2}`}), 'system', 'global');
       }
     };
-    window.addEventListener('gameInvite', onGameInvite);
+    window.addEventListener('tournament-stage', onTournMatch);
 
     // feedback for sender when invite is sent: listen to centralized window event to avoid duplicates
     const onInviteSent = (e: any) => {
@@ -589,7 +597,7 @@ export default class ChatPanel extends HTMLElement {
         right: 0;
         width: 400px;
         height: 600px;
-        background: var(--video-transition-bg);
+        background: var(--accent-70);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border: 2px solid var(--video-transition-bg);
@@ -691,7 +699,7 @@ export default class ChatPanel extends HTMLElement {
         color: var(--text);
         padding: 0.75rem 1rem;
         cursor: pointer;
-        font-size: var(--main-font-size);
+        font-size: var(--secondary-font-size);
         font-weight: bold;
         min-width: 60px;
       }
@@ -1015,7 +1023,7 @@ export default class ChatPanel extends HTMLElement {
         }
 
         const messageDiv2 = document.createElement('div');
-        messageDiv2.style.cssText = 'color: var(--text); font-size: var(--main-font-size); line-height: 1.2;';
+        messageDiv2.style.cssText = 'color: var(--text); font-size: var(--secondary-font-size); line-height: 1.2;';
         messageDiv2.textContent = message;
 
         const timestampDiv = document.createElement('div');
@@ -1173,7 +1181,6 @@ export default class ChatPanel extends HTMLElement {
     } else if (cmd.startsWith('/friend ')) {
       const [_, option, username] = cmd.split(/\s+/);
 
-      console.log("Something");
       if (!option) {
         this.addMessage('', t("chat.friendUsage"), 'system', 'global');
         return;

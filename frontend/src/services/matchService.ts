@@ -106,3 +106,12 @@ export async function updateMatch(matchId: number, winner: string, score1: numbe
   }
   return res.json();
 }
+
+export async function getMatchStats(userId: number) {
+  const res = await fetch(`${BASE_URL}/matches/stats/${userId}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Erro do backend: ${res.status} - ${text}`);
+  }
+  return res.json();
+}

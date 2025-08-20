@@ -92,7 +92,15 @@
       "mode1": "LOCAL",
       "mode2": "REMOTE",
       "game1": "ONE MATCH",
-      "game2": "TOURNAMENT"
+      "game2": "TOURNAMENT",
+      "listGames": "LIST GAMES",
+      "newGame": "CREATE NEW GAME",
+      "ready": "READY",
+      "waiting": "WAITING FOR PLAYERS...",
+      "listTitle": "List of Games",
+      "noGames": "No games available",
+      "beFirstToCreateRoom": "Be the first to create a room and invite a friend.",
+      "createGame": "Create Game"
     },
     "notification": {
       "title": {
@@ -267,7 +275,15 @@
       "mode1": "LOCAL",
       "mode2": "DISTANT",
       "game1": "UN MATCH",
-      "game2": "TOURNOI"
+      "game2": "TOURNOI",
+      "listGames": "LISTE DES JEUX",
+      "newGame": "CRÉER UN NOUVEAU JEU",
+      "ready": "PRÊT",
+      "waiting": "EN ATTENTE DE JOUEURS...",
+      "listTitle": "Liste des jeux disponibles",
+      "noGames": "Aucun jeu disponible",
+      "beFirstToCreateRoom": "Soyez le premier à créer une salle et à inviter un ami.",
+      "createGame": "Créer un jeu"
     },
     "notification": {
       "title": {
@@ -442,7 +458,15 @@
       "mode1": "LOCAL",
       "mode2": "REMOTO",
       "game1": "UMA PARTIDA",
-      "game2": "TORNEIO"
+      "game2": "TORNEIO",
+      "listGames": "LISTAR JOGOS",
+      "newGame": "CRIAR NOVO JOGO",
+      "ready": "PRONTO",
+      "waiting": "AGUARDANDO JOGADORES...",
+      "listTitle": "Lista de Jogos",
+      "noGames": "Nenhum jogo disponível",
+      "beFirstToCreateRoom": "Seja o primeiro a criar uma sala e convidar um amigo.",
+      "createGame": "Criar Jogo"
     },
     "notification": {
       "title": {
@@ -617,7 +641,15 @@
       "mode1": "ローカル",
       "mode2": "リモート",
       "game1": "１試合",
-      "game2": "トーナメント"
+      "game2": "トーナメント",
+      "listGames": "ゲーム一覧",
+      "newGame": "新しいゲームを作成",
+      "ready": "準備完了",
+      "waiting": "プレイヤーを待っています...",
+      "listTitle": "ゲーム一覧",
+      "noGames": "利用可能なゲームはありません",
+      "beFirstToCreateRoom": "最初にルームを作成して、友達を招待してください。",
+      "createGame": "ゲームを作成"
     },
     "notification": {
       "title": {

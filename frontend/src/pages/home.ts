@@ -39,6 +39,17 @@ export function renderHome(containerId: string) {
       <section class="screen-1 relative flex items-center justify-center h-screen w-screen">
         <div class="intro-text text-4xl text-white text-center z-10">[PLACEHOLDER]</div>
       </section>
+
+      <section class="screen-2 h-screen w-screen"></section>
+
+      <section class="footer">
+        <div class="fade-top"></div>
+        <img 
+          src="/public/footer.png"
+          alt="Footer Background"
+          class="footer-img"
+        />
+      </section>
     `;
 
     const logoutBtn = container.querySelector('#logoutBtn');

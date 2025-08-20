@@ -63,13 +63,22 @@ export async function renderProfile(containerId: string, params: Record<string, 
       <section class="screen-1 h-screen w-screen">
         <div class="page-container flex justify-between items-center">
           <atari-badge userdata='${JSON.stringify(userData)}'></atari-badge>
-          <user-profile-form userdata='${JSON.stringify(userData)}'></user-profile-form>
+          <user-profile-form userdata='${JSON.stringify(userData)}'></user-profile-form>          
         </div>
       </section>
       <section class="screen-2 h-screen w-screen">
         <div class="page-container">
           <matches-history userdata='${JSON.stringify(userData)}'></matches-history>
         </div>
+      </section>
+
+      <section class="footer">
+        <div class="fade-top"></div>
+        <img 
+          src="/public/footer.png"
+          alt="Footer Background"
+          class="footer-img"
+        />
       </section>
     `;
 

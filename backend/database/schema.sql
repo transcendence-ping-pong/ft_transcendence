@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS users (
 	userId INTEGER PRIMARY KEY AUTOINCREMENT,
 	username TEXT NOT NULL UNIQUE,
-	password TEXT, -- Remove NOT NULL constraint
-	secret TEXT,   -- Remove NOT NULL constraint
+	password TEXT,
+	secret TEXT,  
 	googleID TEXT UNIQUE,
 	avatar TEXT,
 	email TEXT
