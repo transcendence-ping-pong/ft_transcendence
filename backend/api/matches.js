@@ -41,7 +41,7 @@ async function matchRoutes(fastify, options) {
 			if (tournId)
 			{
 				await dbRun(db, `UPDATE matches SET tournamentId = ? WHERE matchId = ?`, [tournId, matchId]);
-				const row = dbGet(db, `SELECT quarterId1, quarterId2, quarterId3, quarterId4, semiId1, semiId2, finalId FROM tournaments WHERE tournamentId = ?`, [tournId]);
+				const row = await dbGet(db, `SELECT quarterId1, quarterId2, quarterId3, quarterId4, semiId1, semiId2, finalId FROM tournaments WHERE tournamentId = ?`, [tournId]);
 					if (!row)
 						throw new Error('Failed to fetch tournament match');
 
