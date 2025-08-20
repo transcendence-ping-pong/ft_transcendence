@@ -17,7 +17,9 @@ class UserManager {
 		const user = {
 			userId: userId,
 			username: username,
-			socketId: socketId
+			socketId: socketId,
+			// default presence to '/' so presence checks are strict
+			currentPath: '/'
 		};
 
 		this.connectedUsers.set(socketId, user);

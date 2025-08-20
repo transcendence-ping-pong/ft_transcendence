@@ -66,6 +66,11 @@ class WebSocketService {
         this.reconnectDelay = 1000;
         this.isReconnecting = false;
         this.isAuthenticatedFlag = true;
+        // sync current presence immediately after auth so backend blocks/permits correctly
+        try {
+          const currentPath = window.location.pathname;
+          this.socket.emit('updatePresence', { path: currentPath });
+        } catch {}
         
         window.dispatchEvent(new CustomEvent('websocketAuthenticated', { detail: { success: true, username: data.username } }));
       } else {

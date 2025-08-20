@@ -47,10 +47,7 @@ export class MultiplayerGameCanvas extends GameCanvas {
 				this.isMultiplayerMode = false;
 				this.currentRoomId = null;
 				this.playerIndex = -1;
-				
-				      window.dispatchEvent(new CustomEvent('playerDisconnected', { 
-					detail: { player: e.detail.player, players: e.detail.players } 
-				}));
+				// do not re-dispatch a synthetic event here; the orchestrator listens to playerLeft already
 			}
 		});
 	}

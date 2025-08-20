@@ -170,6 +170,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // initialize chat system
   initializeChatSystem();
+  // ensure chat panel is initialized before game page for invite acceptance on /game
+  // no-op if already constructed
 
   // notification service removed
 
