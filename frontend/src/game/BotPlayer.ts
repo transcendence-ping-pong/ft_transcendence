@@ -103,7 +103,7 @@ export class BotPlayer {
 
     let range;
     switch (this.level) {
-      case 'EASY': range = fieldWidth * 0.3; break;
+      case 'EASY': range = fieldWidth * 0.5; break;
       case 'MEDIUM': range = fieldWidth * 0.6; break;
       case 'HARD': range = fieldWidth * 0.95; break;
       default: range = fieldWidth * 0.5;
@@ -117,7 +117,7 @@ export class BotPlayer {
   }
 
   private moveTowards(targetY: number, paddleCenter: number, threshold: number) {
-    let deadZone = 1;
+    let deadZone = 0;
     if (this.level === 'HARD') {
       deadZone = 2;
     }
@@ -156,7 +156,7 @@ export class BotPlayer {
   private getReactionThreshold(): number {
     const fieldHeight = this.gameCanvas.getHeight();
     switch (this.level) {
-      case 'EASY': return fieldHeight * 0.04;
+      case 'EASY': return fieldHeight * 0.002;
       case 'MEDIUM': return fieldHeight * 0.05;
       case 'HARD': return fieldHeight * 0.01;
       default: return fieldHeight * 0.03;
