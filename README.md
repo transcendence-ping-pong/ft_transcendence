@@ -1,5 +1,8 @@
-# transcendence
+
+<img width="1904" height="1064" alt="Screenshot 2025-08-29 144308" src="https://github.com/user-attachments/assets/c16620b3-0d49-4c01-9998-347ede01d536" />
+# ft_transcendence
 This project was developed for 42 school. For comprehensive information regarding the requirements, please consult the PDF file in the subject folder of the repository. Furthermore, we have provided our notes and a concise summary below.
+
 
 ```diff
 + keywords: single page application (SPA)
